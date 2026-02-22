@@ -11,6 +11,7 @@ import { TopNav } from "@/components/navigation/TopNav"
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: '📊' },
   { name: 'Debug', href: '/admin/debug', icon: '🔍' },
+  { name: 'Exams', href: '/admin/exams', icon: '📝' },
   { name: 'Taxonomy', href: '/admin/taxonomy', icon: '🌳' },
   { name: 'Questions', href: '/admin/questions', icon: '❓' },
   { name: 'Modules', href: '/admin/modules', icon: '📦' },

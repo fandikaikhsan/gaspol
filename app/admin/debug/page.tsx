@@ -218,7 +218,7 @@ export default function AdminDebugPage() {
         </Card>
       )}
 
-      {profile?.role === "admin" && Object.values(counts).some((c) => c > 0) && (
+      {profile?.role === "admin" && Object.values(counts).some((c: any) => c > 0) && (
         <Card className="bg-green-50 border-green-200">
           <CardHeader>
             <CardTitle className="text-green-900">✅ All Set!</CardTitle>
