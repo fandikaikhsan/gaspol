@@ -551,19 +551,22 @@ export default function AdminModulesPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>{module.questions?.length || 0} questions</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>~{estimatedMinutes} min</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>{module.questions?.length || 0} questions</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span>~{estimatedMinutes} min</span>
+                      </div>
                     </div>
                     <Button
-                      variant="ghost"
+                      variant={module.is_published ? "outline" : "default"}
                       size="sm"
                       onClick={() => togglePublish(module)}
+                      className={module.is_published ? "" : "bg-green-600 hover:bg-green-700"}
                     >
                       {module.is_published ? "Unpublish" : "Publish"}
                     </Button>
