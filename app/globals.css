@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Soft Neubrutalism Design System */
+    --background: 250 100% 98%; /* #FAFAFA */
+    --foreground: 0 0% 18%; /* #2D2D2D charcoal */
+
+    --card: 0 0% 100%; /* white */
+    --card-foreground: 0 0% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 18%;
+
+    /* Pastel lavender primary */
+    --primary: 270 50% 90%; /* #E4D4F4 */
+    --primary-foreground: 0 0% 18%;
+
+    /* Pastel mint secondary */
+    --secondary: 150 55% 88%; /* #C7F0DB */
+    --secondary-foreground: 0 0% 18%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    /* Pastel pink accent */
+    --accent: 340 100% 93%; /* #FFD6E8 */
+    --accent-foreground: 0 0% 18%;
+
+    --destructive: 0 85% 70%; /* #FF6B6B */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Charcoal borders */
+    --border: 0 0% 18%; /* #2D2D2D */
+    --input: 0 0% 18%;
+    --ring: 270 50% 90%;
+
+    --radius: 0.75rem; /* 12px - chunky rounded corners */
+
+    /* Chart colors (constructs) */
+    --chart-1: 340 100% 93%; /* Pink - teliti */
+    --chart-2: 210 100% 92%; /* Sky - speed */
+    --chart-3: 270 50% 90%; /* Lavender - reasoning */
+    --chart-4: 30 100% 90%; /* Peach - computation */
+    --chart-5: 150 55% 88%; /* Mint - reading */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold text-foreground;
+  }
+
+  h1 {
+    @apply text-4xl;
+  }
+
+  h2 {
+    @apply text-3xl;
+  }
+
+  h3 {
+    @apply text-2xl;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-accent text-accent-foreground;
+  }
+}
+
+@layer components {
+  /* Brutal shadow utility */
+  .shadow-brutal {
+    box-shadow: 4px 4px 0px hsl(var(--border));
+  }
+
+  .shadow-brutal-sm {
+    box-shadow: 2px 2px 0px hsl(var(--border));
+  }
+
+  .shadow-brutal-lg {
+    box-shadow: 6px 6px 0px hsl(var(--border));
+  }
+
+  .shadow-brutal-xl {
+    box-shadow: 8px 8px 0px hsl(var(--border));
+  }
+
+  /* Neubrutalism card */
+  .card-brutal {
+    @apply bg-card border-2 border-border rounded-lg shadow-brutal;
+  }
+
+  /* Button base with brutal shadow */
+  .btn-brutal {
+    @apply border-2 border-border font-semibold transition-all duration-150;
+    @apply hover:translate-x-[2px] hover:translate-y-[2px];
+    @apply active:translate-x-[4px] active:translate-y-[4px];
+    box-shadow: 4px 4px 0px hsl(var(--border));
+  }
+
+  .btn-brutal:hover {
+    box-shadow: 2px 2px 0px hsl(var(--border));
+  }
+
+  .btn-brutal:active {
+    box-shadow: 0px 0px 0px hsl(var(--border));
+  }
+}
+
+@layer utilities {
+  /* Construct-specific backgrounds */
+  .bg-construct-teliti {
+    background-color: #FFD6E8;
+  }
+
+  .bg-construct-speed {
+    background-color: #D6E8FF;
+  }
+
+  .bg-construct-reasoning {
+    background-color: #E4D4F4;
+  }
+
+  .bg-construct-computation {
+    background-color: #FFE5CC;
+  }
+
+  .bg-construct-reading {
+    background-color: #C7F0DB;
+  }
+
+  /* Status colors */
+  .bg-status-strong {
+    background-color: #7EC876;
+  }
+
+  .bg-status-developing {
+    background-color: #F4B740;
+  }
+
+  .bg-status-weak {
+    background-color: #FF6B6B;
+  }
+
+  .bg-status-untested {
+    background-color: #E5E5E5;
+  }
+}
