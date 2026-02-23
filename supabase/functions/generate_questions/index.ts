@@ -1,6 +1,7 @@
 /**
  * generate_questions Edge Function
  * AI-powered question generation from taxonomy nodes
+ * Supports multiple AI providers: Anthropic, OpenAI, Gemini
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
@@ -11,6 +12,116 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
+interface AISettings {
+  provider: string
+  api_key: string | null
+  model: string
+}
+
+// Call the appropriate AI provider
+async function callAI(
+  settings: AISettings,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<{ content: string; tokensUsed: number }> {
+  const { provider, api_key, model } = settings
+
+  if (provider === "anthropic") {
+    const apiKey = api_key || Deno.env.get("ANTHROPIC_API_KEY")
+    if (!apiKey) throw new Error("Anthropic API key not configured")
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 8000,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Anthropic API error: ${error}`)
+    }
+
+    const data = await response.json()
+    return {
+      content: data.content[0].text,
+      tokensUsed: data.usage.input_tokens + data.usage.output_tokens,
+    }
+  }
+
+  if (provider === "openai") {
+    const apiKey = api_key || Deno.env.get("OPENAI_API_KEY")
+    if (!apiKey) throw new Error("OpenAI API key not configured")
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 8000,
+        temperature: 0.7,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`OpenAI API error: ${error}`)
+    }
+
+    const data = await response.json()
+    return {
+      content: data.choices[0].message.content,
+      tokensUsed: data.usage.total_tokens,
+    }
+  }
+
+  if (provider === "gemini") {
+    const apiKey = api_key || Deno.env.get("GOOGLE_API_KEY")
+    if (!apiKey) throw new Error("Google API key not configured")
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 8000 },
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Gemini API error: ${error}`)
+    }
+
+    const data = await response.json()
+    return {
+      content: data.candidates[0].content.parts[0].text,
+      tokensUsed: data.usageMetadata?.totalTokenCount || 0,
+    }
+  }
+
+  throw new Error(`Unsupported provider: ${provider}`)
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -19,19 +130,11 @@ serve(async (req) => {
   try {
     console.log("=== Generate Questions Function Started ===")
 
-    // Get the authorization header
     const authHeader = req.headers.get("Authorization")
-    console.log("Has auth header:", !!authHeader)
-
-    // Parse the JWT token from the authorization header
     const token = authHeader?.replace("Bearer ", "")
 
-    // Create Supabase client with SERVICE ROLE KEY
     const supabaseUrl = Deno.env.get("SUPABASE_URL")
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-
-    console.log("Supabase URL:", supabaseUrl)
-    console.log("Has service key:", !!supabaseServiceKey)
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase configuration")
@@ -39,19 +142,12 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Verify the user's JWT token manually
+    // Verify user
     let user
     if (token) {
-      console.log("Verifying token...")
       const { data: userData, error: userError } = await supabase.auth.getUser(token)
-
-      if (userError) {
-        console.error("User verification error:", userError.message)
-        throw new Error(`Auth error: ${userError.message}`)
-      }
-
+      if (userError) throw new Error(`Auth error: ${userError.message}`)
       user = userData.user
-      console.log("User verified:", user?.id)
     } else {
       throw new Error("No authorization token provided")
     }
@@ -67,6 +163,19 @@ serve(async (req) => {
       throw new Error("Admin access required")
     }
 
+    // Get AI settings
+    const { data: aiSettings } = await supabase
+      .from("ai_settings")
+      .select("provider, api_key, model")
+      .eq("is_active", true)
+      .single()
+
+    if (!aiSettings) {
+      throw new Error("No active AI provider configured. Please configure in Admin > AI Runs > Settings.")
+    }
+
+    console.log(`Using AI provider: ${aiSettings.provider}, model: ${aiSettings.model}`)
+
     // Get request body
     const body = await req.json()
     const {
@@ -77,31 +186,22 @@ serve(async (req) => {
       question_type = "MCQ5",
     } = body
 
-    console.log("Request params:", {
-      taxonomy_node_id,
-      count,
-      difficulty,
-      cognitive_level,
-      question_type,
-    })
-
     if (!taxonomy_node_id) {
       throw new Error("taxonomy_node_id is required")
     }
 
-    // Get taxonomy node with context
+    // Get taxonomy node with context and research data
     const { data: taxonomyNode } = await supabase
       .from("taxonomy_nodes")
-      .select(`
-        *,
-        exam:exams(name, exam_type, year, research_summary)
-      `)
+      .select(`*, exam:exams(name, exam_type, year, research_summary, structure_metadata, construct_profile)`)
       .eq("id", taxonomy_node_id)
       .single()
 
     if (!taxonomyNode) {
       throw new Error("Taxonomy node not found")
     }
+
+    const researchProfile = taxonomyNode.exam?.construct_profile?.[taxonomyNode.code] || null
 
     // Get parent nodes for context
     const parentNodes: any[] = []
@@ -122,53 +222,18 @@ serve(async (req) => {
       }
     }
 
-    // Build generation prompt
-    const prompt = buildGenerationPrompt(
-      taxonomyNode,
-      parentNodes,
-      count,
-      difficulty,
-      cognitive_level,
-      question_type
+    // Build prompts
+    const systemPrompt = "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure."
+    const userPrompt = buildGenerationPrompt(taxonomyNode, parentNodes, count, difficulty, cognitive_level, question_type, researchProfile)
+
+    console.log(`Calling ${aiSettings.provider} API...`)
+
+    // Call AI
+    const { content: aiOutput, tokensUsed } = await callAI(
+      aiSettings as AISettings,
+      systemPrompt,
+      userPrompt
     )
-
-    // Call Anthropic API
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY")
-    if (!anthropicKey) {
-      throw new Error("ANTHROPIC_API_KEY not configured")
-    }
-
-    console.log("Calling Anthropic API for question generation...")
-
-    const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8000,
-        temperature: 0.7, // Higher temperature for more creative questions
-        system: "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure.",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      }),
-    })
-
-    if (!anthropicResponse.ok) {
-      const errorData = await anthropicResponse.text()
-      console.error("Anthropic API error:", errorData)
-      throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`)
-    }
-
-    const anthropicData = await anthropicResponse.json()
-    const aiOutput = anthropicData.content[0].text
 
     console.log("AI output length:", aiOutput.length)
 
@@ -176,12 +241,11 @@ serve(async (req) => {
     let generatedQuestions
     try {
       generatedQuestions = JSON.parse(aiOutput)
-    } catch (e) {
+    } catch {
       const jsonMatch = aiOutput.match(/```json\n([\s\S]*?)\n```/)
       if (jsonMatch) {
         generatedQuestions = JSON.parse(jsonMatch[1])
       } else {
-        // Try brace extraction
         const firstBrace = aiOutput.indexOf('{')
         const lastBrace = aiOutput.lastIndexOf('}')
         if (firstBrace !== -1 && lastBrace !== -1) {
@@ -195,13 +259,16 @@ serve(async (req) => {
     // Log AI run
     await supabase.from("ai_runs").insert({
       job_type: "item_generation",
-      prompt_version: "v1.0",
+      prompt_version: researchProfile ? "v2.0-research" : "v1.0",
       initiated_by: user.id,
-      prompt: prompt.substring(0, 1000), // Truncate for logging
-      input_params: { taxonomy_node_id, count, difficulty, cognitive_level, question_type },
-      output_result: { question_count: generatedQuestions.questions?.length || 0 },
-      model: "claude-sonnet-4-6",
-      tokens_used: anthropicData.usage.input_tokens + anthropicData.usage.output_tokens,
+      prompt: userPrompt.substring(0, 1000),
+      input_params: {
+        taxonomy_node_id, count, difficulty, cognitive_level, question_type,
+        research_available: !!researchProfile, provider: aiSettings.provider
+      },
+      output_result: { question_count: generatedQuestions.questions?.length || 0, research_guided: !!researchProfile },
+      model: aiSettings.model,
+      tokens_used: tokensUsed,
       status: "success",
     })
 
@@ -214,24 +281,24 @@ serve(async (req) => {
           code: taxonomyNode.code,
           path: parentNodes.map((p) => p.name).join(" > ") + " > " + taxonomyNode.name,
         },
+        research_guided: !!researchProfile,
+        research_profile: researchProfile ? {
+          constructs: researchProfile.constructs,
+          time_expectations: researchProfile.time_expectations,
+          cognitive_levels: researchProfile.cognitive_levels,
+          difficulty_distribution: researchProfile.difficulty_distribution
+        } : null,
+        provider: aiSettings.provider,
+        model: aiSettings.model,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     )
   } catch (error) {
     console.error("Error in generate_questions:", error)
 
     return new Response(
-      JSON.stringify({
-        error: error.message,
-        success: false,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      }
+      JSON.stringify({ error: error.message, success: false }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     )
   }
 })
@@ -242,16 +309,14 @@ function buildGenerationPrompt(
   count: number,
   difficulty: string,
   cognitiveLevel: string,
-  questionType: string
+  questionType: string,
+  researchProfile: any = null
 ): string {
   const exam = taxonomyNode.exam
 
   let context = `You are an expert test item writer for Indonesian university entrance exams.\n\n`
-
   context += `TASK: Generate ${count} high-quality ${questionType} questions.\n\n`
-
-  context += `EXAM CONTEXT:\n`
-  context += `Exam: ${exam?.name || "N/A"} (${exam?.exam_type || "N/A"} ${exam?.year || "N/A"})\n\n`
+  context += `EXAM CONTEXT:\nExam: ${exam?.name || "N/A"} (${exam?.exam_type || "N/A"} ${exam?.year || "N/A"})\n\n`
 
   if (exam?.research_summary) {
     context += `Exam Overview:\n${exam.research_summary.substring(0, 500)}...\n\n`
@@ -263,56 +328,48 @@ function buildGenerationPrompt(
   }
   context += `${taxonomyNode.name} (${taxonomyNode.code})\n\n`
 
-  context += `TARGET NODE:\n`
-  context += `Name: ${taxonomyNode.name}\n`
-  context += `Code: ${taxonomyNode.code}\n`
-  context += `Description: ${taxonomyNode.description || "N/A"}\n`
-  context += `Level: ${taxonomyNode.level}\n\n`
+  context += `TARGET NODE:\nName: ${taxonomyNode.name}\nCode: ${taxonomyNode.code}\nDescription: ${taxonomyNode.description || "N/A"}\nLevel: ${taxonomyNode.level}\n\n`
+
+  if (researchProfile) {
+    context += `RESEARCH-BASED CONSTRUCT PROFILE:\n`
+    if (researchProfile.constructs) {
+      context += `Cognitive Constructs:\n`
+      Object.entries(researchProfile.constructs).forEach(([construct, weight]: [string, any]) => {
+        context += `  - ${construct.replace('C.', '')}: ${Math.round(weight * 100)}%\n`
+      })
+    }
+    if (researchProfile.cognitive_levels) {
+      context += `\nCognitive Level Distribution:\n`
+      Object.entries(researchProfile.cognitive_levels).forEach(([level, percentage]: [string, any]) => {
+        context += `  - ${level}: ${percentage}%\n`
+      })
+    }
+    if (researchProfile.time_expectations) {
+      context += `\nTime: ~${researchProfile.time_expectations.average}s per question\n`
+    }
+    context += `\n`
+  }
 
   context += `REQUIREMENTS:\n`
   context += `1. Generate EXACTLY ${count} questions\n`
-  context += `2. All questions must be ${difficulty} difficulty\n`
-  context += `3. All questions must be ${cognitiveLevel} cognitive level:\n`
-  context += `   - L1: Knowledge/Recall (facts, definitions, simple recall)\n`
-  context += `   - L2: Understanding/Application (apply concepts, solve problems)\n`
-  context += `   - L3: Analysis/Reasoning (analyze, evaluate, synthesize)\n`
+  context += `2. Difficulty: ${difficulty}\n`
+  context += `3. Cognitive level: ${cognitiveLevel} (L1=Recall, L2=Apply, L3=Analyze)\n`
   context += `4. Question type: ${questionType}\n`
 
   if (questionType === "MCQ5" || questionType === "MCQ4") {
     const optionCount = questionType === "MCQ5" ? 5 : 4
-    context += `5. Each question must have EXACTLY ${optionCount} options\n`
-    context += `6. EXACTLY one option must be correct\n`
-    context += `7. Distractors should be plausible but clearly incorrect\n`
+    context += `5. EXACTLY ${optionCount} options per question, ONE correct\n`
   } else if (questionType === "MCK") {
-    context += `5. Each question must have 4-5 options\n`
-    context += `6. 2-3 options should be correct\n`
-  } else if (questionType === "TF") {
-    context += `5. True/False questions only\n`
+    context += `5. 4-5 options, 2-3 correct\n`
   }
 
-  context += `8. Questions must be specific to "${taxonomyNode.name}" content\n`
-  context += `9. Use clear, unambiguous language\n`
-  context += `10. Include explanations for correct answers\n`
-  context += `11. Estimate time in seconds (typically 60-180s per question)\n`
-  context += `12. Questions should be in Bahasa Indonesia if appropriate for the exam\n\n`
+  context += `6. Include explanations\n`
+  context += `7. Time estimate in seconds (60-180s)\n`
+  context += `8. Bahasa Indonesia if appropriate\n`
+  context += `9. Include construct_weights (sum to 1.0)\n\n`
 
-  context += `OUTPUT FORMAT (JSON only, no markdown):\n`
-  context += `{\n`
-  context += `  "questions": [\n`
-  context += `    {\n`
-  context += `      "question_text": "The question text",\n`
-  context += `      "options": [\n`
-  context += `        { "text": "Option A", "is_correct": false },\n`
-  context += `        { "text": "Option B", "is_correct": true },\n`
-  context += `        { "text": "Option C", "is_correct": false }\n`
-  context += `      ],\n`
-  context += `      "explanation": "Why the correct answer is correct",\n`
-  context += `      "time_estimate_seconds": 120,\n`
-  context += `      "points": 1\n`
-  context += `    }\n`
-  context += `  ]\n`
-  context += `}\n\n`
-
+  context += `OUTPUT FORMAT (JSON only):\n`
+  context += `{"questions": [{"question_text": "...", "options": [{"text": "...", "is_correct": false}], "explanation": "...", "time_estimate_seconds": 120, "construct_weights": {"C.ATTENTION": 0.25, "C.SPEED": 0.20, "C.REASONING": 0.20, "C.COMPUTATION": 0.15, "C.READING": 0.20}, "points": 1}]}\n\n`
   context += `Generate ${count} questions now.`
 
   return context

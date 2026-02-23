@@ -86,13 +86,13 @@ serve(async (req) => {
       throw new Error("exam_type and year are required")
     }
 
-    // Batch processing: Split research into two parts to avoid timeout
+    // Batch processing: Split research into three parts to avoid timeout
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY")
     if (!anthropicKey) {
       throw new Error("ANTHROPIC_API_KEY not configured")
     }
 
-    console.log("Starting batch research process...")
+    console.log("Starting 4-batch research process...")
     const startTime = Date.now()
 
     // PART 1: Basic exam structure, timing, and scoring
@@ -109,6 +109,20 @@ serve(async (req) => {
     const part2Data = parseJSONOutput(part2Response)
     console.log("Part 2 complete")
 
+    // PART 3: Construct profiling per taxonomy node
+    console.log("Part 3: Profiling constructs and cognitive patterns...")
+    const part3Prompt = buildConstructPrompt(exam_type, year, part1Data, part2Data)
+    const part3Response = await callAnthropicAPI(anthropicKey, part3Prompt, 8000)
+    const part3Data = parseJSONOutput(part3Response)
+    console.log("Part 3 complete")
+
+    // PART 4: Error pattern profiling
+    console.log("Part 4: Profiling error patterns and common mistakes...")
+    const part4Prompt = buildErrorPatternPrompt(exam_type, year, part1Data, part2Data, part3Data)
+    const part4Response = await callAnthropicAPI(anthropicKey, part4Prompt, 8000)
+    const part4Data = parseJSONOutput(part4Response)
+    console.log("Part 4 complete")
+
     // Combine results
     const parsedOutput = {
       summary: part1Data.summary,
@@ -119,19 +133,92 @@ serve(async (req) => {
           content_details: part2Data.sections[index] || {}
         }))
       },
-      content_areas: part2Data.content_areas || []
+      content_areas: part2Data.content_areas || [],
+      construct_profile: part3Data.construct_profile || {},
+      error_patterns: part4Data.error_patterns || {}
     }
 
     const duration = Date.now() - startTime
     const totalTokens = part1Response.usage.input_tokens + part1Response.usage.output_tokens +
-                       part2Response.usage.input_tokens + part2Response.usage.output_tokens
+                       part2Response.usage.input_tokens + part2Response.usage.output_tokens +
+                       part3Response.usage.input_tokens + part3Response.usage.output_tokens +
+                       part4Response.usage.input_tokens + part4Response.usage.output_tokens
+
+    // Find or create exam record
+    const { data: existingExam } = await supabase
+      .from("exams")
+      .select("id")
+      .eq("exam_type", exam_type)
+      .eq("year", year)
+      .single()
+
+    let examId = existingExam?.id
+
+    let errorTagsCreated = 0
+
+    if (examId) {
+      // Update existing exam with research data
+      const { error: updateError } = await supabase
+        .from("exams")
+        .update({
+          structure_metadata: parsedOutput.structure,
+          construct_profile: parsedOutput.construct_profile,
+          error_patterns: parsedOutput.error_patterns,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", examId)
+
+      if (updateError) {
+        console.error("Failed to update exam:", updateError)
+        throw new Error(`Failed to update exam: ${updateError.message}`)
+      }
+
+      console.log(`Updated exam ${examId} with research data`)
+
+      // Apply research to taxonomy nodes
+      const { data: appliedCount, error: applyError } = await supabase.rpc(
+        "apply_research_to_taxonomy",
+        { p_exam_id: examId }
+      )
+
+      if (applyError) {
+        console.warn("Failed to apply research to taxonomy:", applyError)
+      } else {
+        console.log(`Applied research to ${appliedCount} taxonomy nodes`)
+      }
+
+      // Apply error patterns to tags table
+      const { data: tagsCreated, error: tagsError } = await supabase.rpc(
+        "apply_error_patterns_to_tags",
+        { p_exam_id: examId }
+      )
+
+      if (tagsError) {
+        console.warn("Failed to apply error patterns to tags:", tagsError)
+      } else {
+        errorTagsCreated = tagsCreated || 0
+        console.log(`Created/updated ${errorTagsCreated} error tags from research`)
+      }
+
+      // Apply constructs from research
+      const { data: constructsCreated, error: constructsError } = await supabase.rpc(
+        "apply_constructs_from_research",
+        { p_exam_id: examId }
+      )
+
+      if (constructsError) {
+        console.warn("Failed to apply constructs from research:", constructsError)
+      } else {
+        console.log(`Created/updated ${constructsCreated || 0} constructs from research`)
+      }
+    }
 
     // Log AI run
     await supabase.from("ai_runs").insert({
       job_type: "exam_research",
-      prompt_version: "v2.0-batch",
+      prompt_version: "v4.0-batch",
       initiated_by: user.id,
-      prompt: "Batch processing: Part 1 (Structure) + Part 2 (Content)",
+      prompt: "Batch processing: Part 1 (Structure) + Part 2 (Content) + Part 3 (Constructs) + Part 4 (Error Patterns)",
       input_params: { exam_type, year, additional_info },
       output_result: parsedOutput,
       model: "claude-sonnet-4-6",
@@ -145,6 +232,11 @@ serve(async (req) => {
         success: true,
         research_summary: parsedOutput.summary,
         structure_metadata: parsedOutput.structure,
+        construct_profile: parsedOutput.construct_profile,
+        error_patterns: parsedOutput.error_patterns,
+        exam_id: examId,
+        taxonomy_nodes_updated: appliedCount || 0,
+        error_tags_created: errorTagsCreated
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -348,4 +440,193 @@ OUTPUT (JSON only, no markdown):
     }
   ]
 }`
+}
+
+/**
+ * Build construct prompt (Part 3)
+ */
+function buildConstructPrompt(examType: string, year: number, structureData: any, contentData: any): string {
+  // Extract taxonomy nodes from content data
+  const taxonomyNodes = contentData.content_areas.map((area: any) => ({
+    section: area.section,
+    code: area.code,
+    topics: area.main_topics
+  }))
+
+  return `You are an expert psychometrician analyzing cognitive constructs in Indonesian university entrance exams.
+
+TASK: Profile cognitive constructs and patterns for ${examType} ${year} exam content areas.
+
+EXAM: ${examType} ${year}
+TAXONOMY NODES: ${JSON.stringify(taxonomyNodes, null, 2)}
+
+COGNITIVE CONSTRUCTS (5 core):
+1. C.ATTENTION - Attention & Accuracy (focus, detail orientation, avoiding careless errors)
+2. C.SPEED - Speed & Efficiency (working under time pressure, rapid processing)
+3. C.REASONING - Logical Reasoning (problem-solving, critical thinking, analysis)
+4. C.COMPUTATION - Computation & Calculation (mathematical operations, numerical work)
+5. C.READING - Reading Comprehension (text understanding, information extraction)
+
+COGNITIVE LEVELS:
+- L1 (Recall): Memory, recognition, basic knowledge
+- L2 (Application): Applying concepts, procedural skills
+- L3 (Analysis): Complex reasoning, synthesis, evaluation
+
+INSTRUCTIONS:
+For EACH taxonomy node (section/topic), analyze:
+1. **Construct Distribution**: Weight for each of the 5 constructs as DECIMALS (must sum to 1.0)
+   - Consider what cognitive skills are most demanded
+   - Base on typical question patterns for that content area
+   - Use decimals like 0.25, 0.20, NOT percentages
+2. **Cognitive Level Distribution**: Percentage of L1/L2/L3 questions as INTEGERS (must sum to 100)
+3. **Time Expectations**: Average time per question in SECONDS (integer), fast benchmark, slow benchmark
+4. **Difficulty Distribution**: Percentage easy/medium/hard as INTEGERS (must sum to 100)
+
+Base estimates on:
+- Official exam documentation
+- Typical question formats in Indonesian standardized tests
+- Content complexity and cognitive demands
+- Time pressure characteristics
+
+OUTPUT (JSON only, no markdown):
+
+{
+  "construct_profile": {
+    "TPS-PU": {
+      "constructs": {
+        "C.ATTENTION": 0.25,
+        "C.SPEED": 0.20,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.10,
+        "C.READING": 0.20
+      },
+      "cognitive_levels": {
+        "L1": 20,
+        "L2": 50,
+        "L3": 30
+      },
+      "time_expectations": {
+        "average": 90,
+        "fast": 60,
+        "slow": 120
+      },
+      "difficulty_distribution": {
+        "easy": 30,
+        "medium": 50,
+        "hard": 20
+      }
+    }
+  }
+}
+
+IMPORTANT: Provide construct_profile for ALL taxonomy nodes from the provided list. Each node code should have complete profiling data.`
+}
+
+/**
+ * Build error pattern prompt (Part 4)
+ */
+function buildErrorPatternPrompt(
+  examType: string,
+  year: number,
+  structureData: any,
+  contentData: any,
+  constructData: any
+): string {
+  const sections = structureData.structure.sections.map((s: any) => ({
+    name: s.name,
+    code: s.code,
+    question_count: s.total_questions
+  }))
+
+  const contentAreas = contentData.content_areas.map((area: any) => area.code)
+
+  return `You are an expert educational psychologist and test analyst specializing in student error patterns for Indonesian university entrance exams.
+
+TASK: Research and identify common error patterns specific to ${examType} ${year} exam.
+
+EXAM: ${examType} ${year}
+SECTIONS: ${JSON.stringify(sections, null, 2)}
+CONTENT AREAS: ${contentAreas.join(", ")}
+
+GOAL: Identify exam-specific error patterns that students commonly make. These should NOT be generic errors, but specific to this exam type and content.
+
+INSTRUCTIONS:
+1. Research common mistakes students make on this specific exam
+2. Identify error patterns unique to each content area/section
+3. Document detection signals (how to identify each error)
+4. Estimate prevalence rates by content area
+5. Consider time pressure, question complexity, and cognitive demands
+
+For each error pattern, provide:
+- Unique code (format: ERR.{EXAM}.{TYPE}, e.g., ERR.UTBK.SIGN_ERROR)
+- Name: Short descriptive name
+- Description: What this error looks like
+- Category: Group similar errors (e.g., "computation", "comprehension", "time_management", "careless", "conceptual")
+- Detection signals: How to algorithmically detect this error
+- Prevalence: How common this error is per content area (0.0 to 1.0)
+- Tips: Array of 3-4 actionable improvement tips for students
+- Remediation: Brief suggestion for how to address this error
+
+OUTPUT (JSON only, no markdown):
+
+{
+  "error_patterns": {
+    "summary": "Brief overview of common error patterns for this exam",
+    "patterns": {
+      "ERR.UTBK.SIGN_ERROR": {
+        "name": "Sign Error in Calculation",
+        "description": "Student makes positive/negative sign mistakes in algebraic or arithmetic operations",
+        "category": "computation",
+        "detection_signals": [
+          {"signal": "answer_off_by_sign", "description": "Correct absolute value but wrong sign", "threshold": 0.9},
+          {"signal": "fast_incorrect", "description": "Quick submission with wrong answer", "threshold": 0.7}
+        ],
+        "prevalence": {
+          "TPS-PK": 0.15,
+          "TKA-MTK": 0.25
+        },
+        "tips": [
+          "Write out each step and circle the sign before each number",
+          "Use color coding: blue for positive, red for negative",
+          "Double-check signs after completing calculation",
+          "Practice with sign-heavy problems daily"
+        ],
+        "remediation": "Practice sign tracking, use color coding for positive/negative"
+      },
+      "ERR.UTBK.MISREAD_NEGATION": {
+        "name": "Missed Negation in Question",
+        "description": "Student overlooks 'NOT', 'EXCEPT', 'KECUALI' in question stem",
+        "category": "comprehension",
+        "detection_signals": [
+          {"signal": "negation_in_stem", "description": "Question contains negation word", "threshold": 1.0},
+          {"signal": "selected_obvious_wrong", "description": "Selected most obviously correct option", "threshold": 0.8}
+        ],
+        "prevalence": {
+          "TPS-PU": 0.20,
+          "TPS-PBM": 0.15
+        },
+        "tips": [
+          "Circle or highlight negation words (NOT, EXCEPT, KECUALI)",
+          "Read the question twice before looking at options",
+          "Mentally rephrase: 'I need to find the WRONG answer'",
+          "Create a checklist: 'Did I check for negation words?'"
+        ],
+        "remediation": "Circle/highlight negation words, read question twice"
+      }
+    },
+    "content_area_summary": {
+      "TPS-PU": {
+        "most_common_errors": ["ERR.UTBK.MISREAD_NEGATION", "ERR.UTBK.INFERENCE_LEAP"],
+        "error_rate_estimate": 0.25
+      }
+    }
+  }
+}
+
+IMPORTANT:
+- Create at least 8-12 exam-specific error patterns
+- Base patterns on actual documented student mistakes for this exam type
+- Include prevalence data for relevant content areas
+- Detection signals should be actionable for algorithmic detection
+- Categories should help group related errors for analysis`
 }

@@ -15,7 +15,7 @@ export default function StudentLayout({
   return (
     <>
       <TopNav userRole="student" />
-      <div className="pb-16 md:pb-0">
+      <div className="pt-6 pb-16 md:pb-0">
         {children}
       </div>
       <BottomNav />

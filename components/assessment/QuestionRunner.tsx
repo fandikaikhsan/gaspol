@@ -20,7 +20,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetClose,
+} from "@/components/ui/sheet"
 import { useToast } from "@/hooks/use-toast"
+import { Grid3X3 } from "lucide-react"
 
 interface QuestionRunnerProps {
   questions: Question[]
@@ -54,6 +63,7 @@ export function QuestionRunner({
   const [sessionStartTime] = useState<Date>(new Date())
   const [timeElapsed, setTimeElapsed] = useState(0) // in seconds
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isQuestionPaletteOpen, setIsQuestionPaletteOpen] = useState(false)
 
   const currentQuestion = questions[currentIndex]
   const totalQuestions = questions.length
@@ -268,19 +278,16 @@ export function QuestionRunner({
             </Button>
 
             <div className="flex gap-2">
+              {/* Mobile-only: Jump to Question button opens bottom sheet */}
               {allowNavigation && (
                 <Button
                   variant="brutal-secondary"
-                  onClick={() => {
-                    // TODO: Show question palette
-                    toast({
-                      title: "Navigation",
-                      description: "Question palette coming soon!",
-                    })
-                  }}
+                  onClick={() => setIsQuestionPaletteOpen(true)}
                   disabled={isSubmitting}
+                  className="md:hidden"
                 >
-                  Jump to Question
+                  <Grid3X3 className="h-4 w-4 mr-2" />
+                  Jump
                 </Button>
               )}
 
@@ -295,9 +302,9 @@ export function QuestionRunner({
           </CardFooter>
         </Card>
 
-        {/* Question Grid Navigation (if allowed) */}
+        {/* Question Grid Navigation - Desktop only */}
         {allowNavigation && (
-          <Card>
+          <Card className="hidden md:block">
             <CardHeader>
               <h3 className="font-semibold">Quick Navigation</h3>
             </CardHeader>
@@ -343,6 +350,75 @@ export function QuestionRunner({
             </CardContent>
           </Card>
         )}
+
+        {/* Mobile Question Palette - Bottom Sheet */}
+        <Sheet open={isQuestionPaletteOpen} onOpenChange={setIsQuestionPaletteOpen}>
+          <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl">
+            <SheetHeader className="text-left mb-4">
+              <SheetTitle>Jump to Question</SheetTitle>
+              <SheetDescription>
+                {Object.keys(answers).length} of {totalQuestions} answered
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="space-y-4">
+              {/* Question Grid */}
+              <div className="grid grid-cols-5 gap-3">
+                {questions.map((q, idx) => {
+                  const isAnswered = !!answers[q.id]
+                  const isCurrent = idx === currentIndex
+
+                  return (
+                    <SheetClose asChild key={q.id}>
+                      <button
+                        onClick={() => {
+                          goToQuestion(idx)
+                          setIsQuestionPaletteOpen(false)
+                        }}
+                        disabled={isSubmitting}
+                        className={`
+                          aspect-square rounded-xl border-2 border-border font-bold text-lg
+                          transition-all active:scale-95
+                          ${isCurrent ? 'bg-primary text-primary-foreground shadow-brutal' : ''}
+                          ${!isCurrent && isAnswered ? 'bg-secondary' : ''}
+                          ${!isCurrent && !isAnswered ? 'bg-background' : ''}
+                        `}
+                      >
+                        {idx + 1}
+                      </button>
+                    </SheetClose>
+                  )
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex justify-center gap-6 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-primary border-2 border-border rounded-lg" />
+                  <span className="text-sm">Current</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-secondary border-2 border-border rounded-lg" />
+                  <span className="text-sm">Answered</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-background border-2 border-border rounded-lg" />
+                  <span className="text-sm">Empty</span>
+                </div>
+              </div>
+
+              {/* Quick stats */}
+              <div className="flex justify-between items-center pt-4 px-2">
+                <div className="text-sm text-muted-foreground">
+                  Progress: {Math.round(progress)}%
+                </div>
+                <div className="text-sm font-medium">
+                  {totalQuestions - Object.keys(answers).length} remaining
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   )

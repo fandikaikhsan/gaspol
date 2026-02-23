@@ -1,330 +1,268 @@
 "use client"
 
 /**
- * Analytics Dashboard
- * Phase 3: Analytics Dashboard
- *
- * Full analytics with readiness score, construct profile, skill breakdown
+ * Student Analytics Dashboard
+ * Display readiness score, constructs, coverage, and insights
  */
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ReadinessRing } from "@/components/analytics/ReadinessRing"
-import { RadarChartFull } from "@/components/analytics/RadarChartFull"
-import { ConstructBars } from "@/components/analytics/ConstructBars"
 import { useToast } from "@/hooks/use-toast"
-import { calculateReadinessFromSkillStates, getReadinessGradeLabel } from "@/lib/analytics/readiness-score"
-import { getUserFriendlyError } from "@/lib/utils/error-messages"
-import { identifyWeakConstructs, type ConstructProfile } from "@/lib/analytics/construct-scoring"
+import { Loader2, TrendingUp, Target, Brain, AlertCircle, RefreshCw } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ReadinessScore } from "@/components/analytics/ReadinessScore"
+import { ConstructRadarChart } from "@/components/analytics/ConstructRadarChart"
+import { CoverageMap } from "@/components/analytics/CoverageMap"
+import { WeakSkillsList } from "@/components/analytics/WeakSkillsList"
+import { ErrorPatternAnalysis } from "@/components/analytics/ErrorPatternAnalysis"
+
+interface AnalyticsSnapshot {
+  id: string
+  scope: string
+  coverage: Record<string, number>
+  readiness: number
+  radar: Record<string, number>
+  constructs: Record<string, number>
+  top_weak_skills: Array<{
+    node_id: string
+    name: string
+    code: string
+    level: number
+    mastery: number
+    attempt_count: number
+  }>
+  top_error_tags: Array<{
+    tag_id: string
+    name: string
+    count: number
+    percentage: number
+  }>
+  created_at: string
+}
+
+interface ExamConfig {
+  exam_id: string
+  exam_type: string
+  exam_name: string
+  construct_count: number
+  error_tag_count: number
+}
+
+// Compute breakdown from snapshot data (avoids NaN)
+function computeBreakdown(snapshot: AnalyticsSnapshot) {
+  const coverageValues = Object.values(snapshot.coverage || {})
+  const coverageCount = coverageValues.length
+
+  // Calculate coverage percentage (avoid division by zero)
+  const coveragePct = coverageCount > 0
+    ? (coverageValues.reduce((a, b) => a + (b as number), 0) / coverageCount) * 100
+    : 0
+
+  // Calculate average mastery from weak skills (if available)
+  const weakSkills = snapshot.top_weak_skills || []
+  const masteryAvg = weakSkills.length > 0
+    ? (1 - (weakSkills.reduce((sum, s) => sum + s.mastery, 0) / weakSkills.length)) * 100
+    : snapshot.readiness || 50
+
+  // Construct average as proxy for consistency
+  const constructValues = Object.values(snapshot.constructs || {})
+  const constructAvg = constructValues.length > 0
+    ? constructValues.reduce((a, b) => a + (b as number), 0) / constructValues.length
+    : 50
+
+  return {
+    mastery_avg: Math.round(masteryAvg),
+    coverage_pct: Math.round(coveragePct),
+    consistency: Math.round(constructAvg),
+    time_efficiency: Math.round(snapshot.readiness || 50) // Use readiness as proxy
+  }
+}
 
 export default function AnalyticsPage() {
-  const router = useRouter()
   const { toast } = useToast()
-
-  const [user, setUser] = useState<any>(null)
-  const [userState, setUserState] = useState<any>(null)
-  const [readiness, setReadiness] = useState<any>(null)
-  const [constructProfile, setConstructProfile] = useState<ConstructProfile | null>(null)
-  const [skillStates, setSkillStates] = useState<any[]>([])
+  const [snapshot, setSnapshot] = useState<AnalyticsSnapshot | null>(null)
+  const [examConfig, setExamConfig] = useState<ExamConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
-    const fetchData = async () => {
-      const supabase = createClient()
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
+    loadSnapshot()
+  }, [])
 
-      if (!currentUser) {
-        router.push('/login')
-        return
-      }
-
-      setUser(currentUser)
-
-      // Fetch user state
-      const { data: state } = await supabase
-        .from('user_state')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single()
-
-      setUserState(state)
-
-      // Fetch skill states
-      const { data: skills } = await supabase
-        .from('user_skill_state')
-        .select('*')
-        .eq('user_id', currentUser.id)
-
-      setSkillStates(skills || [])
-
-      // Fetch construct states
-      const { data: constructs } = await supabase
-        .from('user_construct_state')
-        .select('*')
-        .eq('user_id', currentUser.id)
-
-      // Build construct profile
-      const profile: any = {}
-      ;['teliti', 'speed', 'reasoning', 'computation', 'reading'].forEach(construct => {
-        const state = constructs?.find(c => c.construct_name === construct)
-        profile[construct] = state || {
-          construct_name: construct,
-          score: 50,
-          confidence: 0,
-          trend: 'stable',
-          data_points: 0,
-        }
-      })
-
-      setConstructProfile(profile)
-
-      // Calculate readiness
-      const totalSkills = 36 // TODO: Get from taxonomy
-      const readinessResult = await calculateReadinessFromSkillStates(skills || [], totalSkills)
-      setReadiness(readinessResult)
-
-      setIsLoading(false)
-    }
-
-    fetchData()
-  }, [router])
-
-  const handleGeneratePlan = async () => {
-    if (!user) return
-
-    setIsGeneratingPlan(true)
-
+  const loadSnapshot = async () => {
+    setIsLoading(true)
     try {
       const supabase = createClient()
 
-      // Call generate_plan Edge Function
-      const response = await fetch('/api/generate-plan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({}),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate plan')
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error("Not authenticated")
       }
 
-      toast({
-        title: "Plan Generated! 🎯",
-        description: "Your personalized study plan is ready",
-      })
+      // Fetch snapshot and exam config in parallel
+      const [snapshotResult, examConfigResult] = await Promise.all([
+        supabase.rpc("get_latest_snapshot", {
+          p_user_id: user.id,
+          p_scope: null // Get most recent of any type
+        }),
+        supabase.rpc("get_user_exam_config", {
+          p_user_id: user.id
+        })
+      ])
 
-      router.push('/plan')
+      if (snapshotResult.error) throw snapshotResult.error
+
+      if (snapshotResult.data && snapshotResult.data.length > 0) {
+        setSnapshot(snapshotResult.data[0])
+      } else {
+        setSnapshot(null)
+      }
+
+      // Set exam config (for passing to components)
+      if (examConfigResult.data && examConfigResult.data.length > 0) {
+        setExamConfig(examConfigResult.data[0])
+      }
     } catch (error) {
+      console.error("Load snapshot error:", error)
       toast({
         variant: "destructive",
-        title: "Error",
-        description: getUserFriendlyError(error, "Failed to generate plan. Please try again."),
+        title: "Failed to Load Analytics",
+        description: error instanceof Error ? error.message : "Please try again"
       })
     } finally {
-      setIsGeneratingPlan(false)
+      setIsLoading(false)
+    }
+  }
+
+  const generateSnapshot = async () => {
+    setIsRefreshing(true)
+    try {
+      const supabase = createClient()
+
+      const { data, error } = await supabase.functions.invoke("generate_snapshot", {
+        body: {
+          scope: "checkpoint"
+        }
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        toast({
+          title: "Analytics Updated!",
+          description: "Your latest performance has been analyzed."
+        })
+        loadSnapshot()
+      }
+    } catch (error) {
+      console.error("Generate snapshot error:", error)
+      toast({
+        variant: "destructive",
+        title: "Failed to Update Analytics",
+        description: error instanceof Error ? error.message : "Please try again"
+      })
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading analytics...</p>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
-  const weakConstructs = constructProfile ? identifyWeakConstructs(constructProfile) : []
-  const weakSkills = skillStates.filter(s => s.mastery_level === 'weak')
-  const canGeneratePlan = userState?.current_phase === 'BASELINE_COMPLETE'
+  // No snapshot available
+  if (!snapshot) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+          <AlertCircle className="h-16 w-16 text-muted-foreground" />
+          <h2 className="text-2xl font-bold">No Analytics Available Yet</h2>
+          <p className="text-muted-foreground text-center max-w-md">
+            Start practicing questions to build your analytics. Your performance data will be
+            analyzed automatically as you complete practice sessions.
+          </p>
+          <Button onClick={generateSnapshot} disabled={isRefreshing}>
+            {isRefreshing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "Generate Analytics Now"
+            )}
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Your Analytics</h1>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Your Analytics</h1>
           <p className="text-muted-foreground">
-            Deep insights into your performance and readiness
+            {examConfig && (
+              <span className="mr-2">
+                <Badge variant="outline">{examConfig.exam_type}</Badge>
+              </span>
+            )}
+            Last updated: {new Date(snapshot.created_at).toLocaleDateString()}
           </p>
         </div>
-
-        {/* Readiness Score */}
-        {readiness && (
-          <Card className="bg-gradient-to-br from-primary/10 to-secondary/10">
-            <CardHeader>
-              <CardTitle>Overall Readiness</CardTitle>
-              <CardDescription>
-                Combined score across all performance metrics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <ReadinessRing score={readiness.score} size="lg" showDelta={false} />
-
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <Badge variant={
-                      readiness.grade === 'excellent' ? 'strong' :
-                      readiness.grade === 'good' ? 'developing' :
-                      readiness.grade === 'fair' ? 'outline' :
-                      'destructive'
-                    } className="text-base px-4 py-1">
-                      {getReadinessGradeLabel(readiness.grade)}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground">Accuracy</div>
-                      <div className="text-2xl font-bold">{Math.round(readiness.breakdown.accuracy)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Speed Index</div>
-                      <div className="text-2xl font-bold">{Math.round(readiness.breakdown.speed_index)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Stability</div>
-                      <div className="text-2xl font-bold">{Math.round(readiness.breakdown.stability)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Coverage</div>
-                      <div className="text-2xl font-bold">{Math.round(readiness.breakdown.coverage)}%</div>
-                    </div>
-                  </div>
-
-                  {readiness.recommendations.length > 0 && (
-                    <div className="bg-background p-4 rounded-lg border-2 border-border">
-                      <h4 className="font-semibold mb-2">Recommendations:</h4>
-                      <ul className="space-y-1 text-sm">
-                        {readiness.recommendations.map((rec: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2">
-                            <span className="text-primary">•</span>
-                            <span>{rec}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Construct Radar Chart */}
-          {constructProfile && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Construct Profile</CardTitle>
-                <CardDescription>
-                  Five-dimensional skill assessment
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RadarChartFull profile={constructProfile} />
-              </CardContent>
-            </Card>
+        <Button
+          variant="outline"
+          onClick={generateSnapshot}
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh Analytics
+            </>
           )}
-
-          {/* Construct Bars */}
-          {constructProfile && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Detailed Breakdown</CardTitle>
-                <CardDescription>
-                  Individual construct scores and trends
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ConstructBars profile={constructProfile} showDetails={true} />
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Weak Areas */}
-        {(weakConstructs.length > 0 || weakSkills.length > 0) && (
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <CardTitle className="text-destructive">Areas Needing Attention</CardTitle>
-              <CardDescription>
-                Focus on these areas to improve your readiness
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {weakConstructs.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-2">Weak Constructs:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {weakConstructs.map((construct) => (
-                      <Badge key={construct} variant="weak">
-                        {construct.charAt(0).toUpperCase() + construct.slice(1)}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {weakSkills.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-2">Weak Micro-Skills:</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {weakSkills.length} skill{weakSkills.length !== 1 ? 's' : ''} need improvement
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Generate Plan CTA */}
-        {canGeneratePlan && (
-          <Card className="border-primary border-4">
-            <CardHeader>
-              <CardTitle className="text-primary">Ready to Start Your Plan?</CardTitle>
-              <CardDescription>
-                Generate a personalized study plan based on your analytics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={handleGeneratePlan}
-                disabled={isGeneratingPlan}
-                className="w-full"
-                size="lg"
-              >
-                {isGeneratingPlan ? 'Generating...' : 'Generate My Study Plan'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {!canGeneratePlan && (
-          <Card>
-            <CardContent className="text-center py-6">
-              <p className="text-muted-foreground">
-                Complete all baseline modules to generate your study plan
-              </p>
-              <Button
-                onClick={() => router.push('/baseline')}
-                variant="brutal-outline"
-                className="mt-4"
-              >
-                Continue Baseline Assessment
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        </Button>
       </div>
+
+      {/* Readiness Score - Big Hero Section */}
+      <ReadinessScore
+        score={snapshot.readiness || 50}
+        breakdown={computeBreakdown(snapshot)}
+      />
+
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Cognitive Constructs */}
+        <ConstructRadarChart
+          constructs={snapshot.constructs as any}
+          examId={examConfig?.exam_id}
+        />
+
+        {/* Coverage Map */}
+        <CoverageMap coverage={snapshot.coverage} />
+      </div>
+
+      {/* Weak Skills */}
+      <WeakSkillsList weakSkills={snapshot.top_weak_skills || []} />
+
+      {/* Error Patterns */}
+      <ErrorPatternAnalysis
+        errorTags={snapshot.top_error_tags || []}
+        examId={examConfig?.exam_id}
+      />
     </div>
   )
 }

@@ -75,10 +75,7 @@ export function FlashcardStack({ flashcards, onComplete }: FlashcardStackProps) 
           `}
         >
           {/* Front */}
-          <Card className={`
-            absolute inset-0 backface-hidden
-            ${!isFlipped ? '' : 'invisible'}
-          `}>
+          <Card className="absolute inset-0 backface-hidden">
             <CardContent className="h-full flex flex-col items-center justify-center p-8 text-center">
               <p className="text-2xl font-bold mb-4">{currentCard.front_text}</p>
               <p className="text-sm text-muted-foreground">Tap to flip</p>
@@ -86,10 +83,7 @@ export function FlashcardStack({ flashcards, onComplete }: FlashcardStackProps) 
           </Card>
 
           {/* Back */}
-          <Card className={`
-            absolute inset-0 backface-hidden rotate-y-180 bg-primary/10
-            ${isFlipped ? '' : 'invisible'}
-          `}>
+          <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-primary/10">
             <CardContent className="h-full flex flex-col items-center justify-center p-8 text-center">
               <p className="text-xl leading-relaxed">{currentCard.back_text}</p>
               <p className="text-sm text-muted-foreground mt-4">Tap to flip back</p>

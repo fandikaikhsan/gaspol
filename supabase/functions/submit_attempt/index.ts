@@ -1,410 +1,362 @@
 /**
- * submit_attempt Edge Function
- * Phase 2: Question Runner & Assessment Engine
+ * Submit Attempt Edge Function
+ * Processes student answers and triggers analysis pipeline
  *
- * CORE BUSINESS LOGIC:
- * 1. Validate answer
- * 2. Compute score (is_correct)
- * 3. Derive error tags based on question difficulty + time spent
- * 4. Update user_skill_state (accuracy, speed, stability)
- * 5. Update user_construct_state based on construct_weights
+ * Features:
+ * - Validates access to question
+ * - Computes correctness from question_options
+ * - Inserts attempt record
+ * - Applies rule-based error tags
+ * - Triggers mastery update (queued for Task #11)
+ * - Returns immediate feedback
  */
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createClient } from "jsr:@supabase/supabase-js@2"
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
 interface SubmitAttemptRequest {
   question_id: string
-  user_answer: string
+  selected_answer: string | string[] // "B" for MCQ or ["A","C"] for MCK
   time_spent_sec: number
-  context_type: 'baseline' | 'drill' | 'mock' | 'recycle' | 'flashcard' | 'swipe'
-  context_id: string
-  module_id?: string
-}
-
-interface Question {
-  id: string
-  micro_skill_id: string
-  difficulty: 'easy' | 'medium' | 'hard'
-  cognitive_level: 'L1' | 'L2' | 'L3'
-  question_format: 'MCQ5' | 'MCK-Table' | 'Fill-in'
-  correct_answer: string
-  construct_weights: {
-    teliti: number
-    speed: number
-    reasoning: number
-    computation: number
-    reading: number
+  confidence?: number // 1-5
+  context?: {
+    module_id?: string
+    baseline_module_id?: string
+    checkpoint_id?: string
   }
 }
 
-serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+interface QuestionData {
+  id: string
+  question_type: string
+  difficulty: string
+  time_estimate_seconds: number
+  construct_weights: Record<string, number>
+  is_active: boolean
+  options: Record<string, any> // JSONB field with option data
+  correct_answer: string | string[] // The correct answer(s)
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    console.log("=== SUBMIT ATTEMPT START ===")
 
-    // Get user from auth
-    const authHeader = req.headers.get('Authorization')!
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user } } = await supabase.auth.getUser(token)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
-    if (!user) {
-      throw new Error('Unauthorized')
+    console.log("Environment vars loaded")
+
+    // Create service role client for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    console.log("Supabase client created")
+
+    // Get user from JWT token (Edge Runtime has already verified it)
+    const authHeader = req.headers.get("Authorization")
+
+    console.log("Auth header present:", !!authHeader)
+
+    if (!authHeader) {
+      console.error("Missing authorization header")
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
     }
+
+    // Extract user ID from the already-verified JWT
+    const token = authHeader.replace("Bearer ", "")
+
+    console.log("Token extracted, length:", token.length)
+
+    let userId: string
+    try {
+      // Decode JWT payload (it's just base64, no verification needed since Edge Runtime already did it)
+      const payloadBase64 = token.split('.')[1]
+      console.log("Payload base64 extracted")
+
+      // Use atob for base64 decoding (available in Deno)
+      const payloadJson = atob(payloadBase64)
+      console.log("Payload decoded")
+
+      const payload = JSON.parse(payloadJson)
+      console.log("Payload parsed")
+
+      userId = payload.sub
+      console.log("User ID extracted:", userId)
+    } catch (decodeError) {
+      console.error("Failed to decode token:", decodeError)
+      return new Response(
+        JSON.stringify({ error: "Failed to decode token", details: String(decodeError) }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (!userId) {
+      console.error("No user ID in token payload")
+      return new Response(
+        JSON.stringify({ error: "Invalid token: no user ID in payload" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    console.log("=== AUTH SUCCESS ===")
+    console.log("User ID:", userId)
 
     // Parse request body
     const body: SubmitAttemptRequest = await req.json()
-    const { question_id, user_answer, time_spent_sec, context_type, context_id, module_id } = body
+    const {
+      question_id,
+      selected_answer,
+      time_spent_sec,
+      confidence,
+      context = {}
+    } = body
 
-    // Fetch question
+    // Validate required fields
+    if (!question_id || selected_answer === undefined || !time_spent_sec) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: question_id, selected_answer, time_spent_sec" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // =====================================================
+    // 1. FETCH QUESTION DATA
+    // =====================================================
     const { data: question, error: questionError } = await supabase
-      .from('questions')
-      .select('*')
-      .eq('id', question_id)
+      .from("questions")
+      .select(`
+        id,
+        question_type,
+        question_format,
+        difficulty,
+        time_estimate_seconds,
+        construct_weights,
+        is_active,
+        options,
+        correct_answer
+      `)
+      .eq("id", question_id)
       .single()
 
     if (questionError || !question) {
-      throw new Error('Question not found')
+      console.error("Question query failed:", {
+        questionError,
+        question_id,
+        hasQuestion: !!question
+      })
+      return new Response(
+        JSON.stringify({
+          error: "Question not found",
+          details: questionError?.message || "Question does not exist",
+          question_id
+        }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
     }
 
-    // 1. Validate answer and compute is_correct
-    const isCorrect = validateAnswer(
-      user_answer,
-      question.correct_answer,
-      question.question_format
-    )
+    const questionData = question as unknown as QuestionData
 
-    // 2. Derive error tags
-    const errorTags = deriveErrorTags(
-      isCorrect,
-      question.difficulty,
-      time_spent_sec,
-      question.cognitive_level
-    )
+    // Check if question is active
+    if (!questionData.is_active) {
+      return new Response(
+        JSON.stringify({ error: "Question is not active" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
 
-    // 3. Compute construct impacts
-    const constructImpacts = computeConstructImpacts(
-      isCorrect,
-      question.construct_weights,
-      errorTags
-    )
+    // =====================================================
+    // 2. COMPUTE CORRECTNESS
+    // =====================================================
+    // correct_answer can be a string ("B") or array (["A","C"]) stored as JSONB
+    const correctAnswer = questionData.correct_answer
+    let isCorrect = false
 
-    // 4. Insert attempt record
+    // Determine question format (handle both question_type and question_format fields)
+    const questionFormat = (questionData as any).question_format || questionData.question_type || 'MCQ5'
+
+    if (questionFormat.includes('MCQ') || questionData.question_type === "MCQ") {
+      // Single answer - exact match
+      isCorrect = typeof selected_answer === "string"
+        && typeof correctAnswer === "string"
+        && selected_answer === correctAnswer
+    } else if (questionFormat.includes('MCK') || questionData.question_type === "MCK") {
+      // Multiple answers - must match all correct options
+      if (Array.isArray(selected_answer)) {
+        const userAnswers = [...selected_answer].sort()
+        const correctAnswers = Array.isArray(correctAnswer)
+          ? [...correctAnswer].sort()
+          : typeof correctAnswer === "string"
+            ? correctAnswer.split(',').map(a => a.trim()).sort()
+            : []
+        isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers)
+      }
+    } else if (questionFormat.includes('Fill')) {
+      // Fill-in answer - normalize and compare
+      const normalizeAnswer = (ans: string) => ans.trim().toLowerCase()
+      isCorrect = typeof selected_answer === "string"
+        && typeof correctAnswer === "string"
+        && normalizeAnswer(selected_answer) === normalizeAnswer(correctAnswer)
+    }
+
+    // Fallback: If no format matched, try direct comparison
+    if (!isCorrect && selected_answer === correctAnswer) {
+      isCorrect = true
+    }
+
+    // =====================================================
+    // 3. INSERT ATTEMPT RECORD
+    // =====================================================
+    const attemptData = {
+      user_id: userId,
+      question_id: question_id,
+      module_id: context.module_id || null,
+      baseline_module_id: context.baseline_module_id || null,
+      checkpoint_id: context.checkpoint_id || null,
+      is_correct: isCorrect,
+      user_answer: JSON.stringify({ selected: selected_answer }),
+      time_spent_sec: time_spent_sec,
+      confidence: confidence || null,
+      context_type: context.baseline_module_id ? "baseline" : (context.module_id ? "drill" : "practice"),
+      context_id: context.baseline_module_id || context.module_id || null
+    }
+
     const { data: attempt, error: attemptError } = await supabase
-      .from('attempts')
-      .insert({
-        user_id: user.id,
-        question_id,
-        context_type,
-        context_id,
-        module_id,
-        user_answer,
-        is_correct: isCorrect,
-        time_spent_sec,
-        error_tags: errorTags,
-        construct_impacts: constructImpacts,
-      })
+      .from("attempts")
+      .insert(attemptData)
       .select()
       .single()
 
     if (attemptError) {
-      throw attemptError
+      console.error("Failed to insert attempt:", attemptError)
+      throw new Error("Failed to save attempt")
     }
 
-    // 5. Update user_skill_state
-    await updateUserSkillState(supabase, user.id, question.micro_skill_id, isCorrect, time_spent_sec)
+    // =====================================================
+    // 4. APPLY RULE-BASED ERROR TAGS
+    // =====================================================
+    const errorTags: Array<{ tag_id: string; source: string; confidence: number }> = []
 
-    // 6. Update user_construct_state
-    await updateUserConstructState(supabase, user.id, constructImpacts)
+    const expectedTime = questionData.time_estimate_seconds || 120
+
+    // Tag: Too slow
+    if (time_spent_sec > expectedTime * 1.5) {
+      errorTags.push({
+        tag_id: "ERR.SLOW",
+        source: "rule",
+        confidence: 1.0
+      })
+    }
+
+    // Tag: Too rushed
+    if (time_spent_sec < expectedTime * 0.3) {
+      errorTags.push({
+        tag_id: "ERR.RUSHED",
+        source: "rule",
+        confidence: 1.0
+      })
+    }
+
+    // Tag: Careless (incorrect + fast)
+    if (!isCorrect && time_spent_sec < expectedTime * 0.6) {
+      errorTags.push({
+        tag_id: "ERR.CARELESS",
+        source: "rule",
+        confidence: 0.8
+      })
+    }
+
+    // Tag: Struggle (incorrect + slow)
+    if (!isCorrect && time_spent_sec > expectedTime * 1.3) {
+      errorTags.push({
+        tag_id: "ERR.STRUGGLE",
+        source: "rule",
+        confidence: 0.8
+      })
+    }
+
+    // Insert error tags if any
+    if (errorTags.length > 0 && attempt) {
+      const tagInserts = errorTags.map(tag => ({
+        attempt_id: attempt.id,
+        ...tag
+      }))
+
+      const { error: tagsError } = await supabase
+        .from("attempt_error_tags")
+        .insert(tagInserts)
+
+      if (tagsError) {
+        console.error("Failed to insert error tags:", tagsError)
+        // Non-critical, continue
+      }
+    }
+
+    // =====================================================
+    // 5. TRIGGER MASTERY UPDATE (Async)
+    // =====================================================
+    // Call mastery calculation engine
+    const { error: analyticsError } = await supabase.rpc('process_attempt_analytics', {
+      p_user_id: userId,
+      p_question_id: question_id,
+      p_is_correct: isCorrect
+    })
+
+    if (analyticsError) {
+      console.error("Analytics update failed:", analyticsError)
+      // Non-critical, continue - we can recalculate later
+    } else {
+      console.log(`Analytics updated for user ${userId}, question ${question_id}`)
+    }
+
+    // =====================================================
+    // 6. RETURN IMMEDIATE FEEDBACK
+    // =====================================================
+    const response = {
+      success: true,
+      attempt_id: attempt.id,
+      is_correct: isCorrect,
+      correct_answer: correctAnswer,
+      time_spent_sec: time_spent_sec,
+      feedback: {
+        is_correct: isCorrect,
+        message: isCorrect
+          ? "Correct! Great job!"
+          : "Incorrect. Review the explanation to understand why.",
+        error_tags: errorTags.map(t => t.tag_id),
+        difficulty: questionData.difficulty
+      }
+    }
+
+    return new Response(
+      JSON.stringify(response),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      }
+    )
+
+  } catch (error) {
+    console.error("Submit attempt error:", error)
 
     return new Response(
       JSON.stringify({
-        success: true,
-        attempt,
-        is_correct: isCorrect,
-        error_tags: errorTags,
+        error: error instanceof Error ? error.message : "Internal server error"
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     )
   }
 })
-
-/**
- * Validate user answer against correct answer
- */
-function validateAnswer(
-  userAnswer: string,
-  correctAnswer: string,
-  format: string
-): boolean {
-  const cleanUser = userAnswer.trim()
-  const cleanCorrect = correctAnswer.trim()
-
-  switch (format) {
-    case 'MCQ5':
-      // Simple string comparison (A, B, C, D, E)
-      return cleanUser.toUpperCase() === cleanCorrect.toUpperCase()
-
-    case 'MCK-Table':
-      // Compare arrays of selected cells
-      const userCells = cleanUser.split(',').map(s => s.trim()).sort()
-      const correctCells = cleanCorrect.split(',').map(s => s.trim()).sort()
-      return JSON.stringify(userCells) === JSON.stringify(correctCells)
-
-    case 'Fill-in':
-      // Numeric comparison with tolerance
-      const userNum = parseFloat(cleanUser)
-      const correctNum = parseFloat(cleanCorrect)
-
-      if (!isNaN(userNum) && !isNaN(correctNum)) {
-        // Allow 0.1% tolerance for floating point
-        const tolerance = Math.abs(correctNum) * 0.001
-        return Math.abs(userNum - correctNum) <= tolerance
-      }
-
-      // Text comparison (case-insensitive)
-      return cleanUser.toLowerCase() === cleanCorrect.toLowerCase()
-
-    default:
-      return false
-  }
-}
-
-/**
- * Derive error tags based on performance
- */
-function deriveErrorTags(
-  isCorrect: boolean,
-  difficulty: string,
-  timeSpent: number,
-  cognitiveLevel: string
-): string[] {
-  if (isCorrect) {
-    return [] // No error tags for correct answers
-  }
-
-  const tags: string[] = []
-
-  // Expected time thresholds (in seconds) by difficulty
-  const expectedTime = {
-    easy: 60,
-    medium: 90,
-    hard: 120,
-  }
-
-  const threshold = expectedTime[difficulty as keyof typeof expectedTime] || 90
-
-  // Rushing (too fast for difficulty)
-  if (timeSpent < threshold * 0.5) {
-    tags.push('ceroboh') // careless/rushing
-  }
-
-  // Taking too long but still wrong
-  if (timeSpent > threshold * 1.5) {
-    tags.push('konsep_lemah') // weak conceptual understanding
-  }
-
-  // Difficulty-specific tags
-  if (difficulty === 'easy') {
-    tags.push('fundamental_gap') // Basic concept not mastered
-  } else if (difficulty === 'medium') {
-    tags.push('kurang_latihan') // Needs more practice
-  } else if (difficulty === 'hard') {
-    tags.push('advanced_topic') // Advanced topic needs review
-  }
-
-  // Cognitive level tags
-  if (cognitiveLevel === 'L3') {
-    tags.push('analytical_weakness') // Struggle with analysis
-  }
-
-  return tags
-}
-
-/**
- * Compute construct impacts based on correctness and weights
- */
-function computeConstructImpacts(
-  isCorrect: boolean,
-  constructWeights: Record<string, number>,
-  errorTags: string[]
-): Record<string, number> {
-  const impacts: Record<string, number> = {}
-
-  // Base impact: +weight if correct, -weight if wrong
-  const multiplier = isCorrect ? 1 : -1
-
-  for (const [construct, weight] of Object.entries(constructWeights)) {
-    impacts[construct] = weight * multiplier
-
-    // Additional penalties based on error tags
-    if (!isCorrect) {
-      if (errorTags.includes('ceroboh') && construct === 'teliti') {
-        impacts[construct] -= 0.1 // Extra penalty for carelessness
-      }
-      if (errorTags.includes('analytical_weakness') && construct === 'reasoning') {
-        impacts[construct] -= 0.1
-      }
-    }
-  }
-
-  return impacts
-}
-
-/**
- * Update user_skill_state for the micro-skill
- */
-async function updateUserSkillState(
-  supabase: any,
-  userId: string,
-  microSkillId: string,
-  isCorrect: boolean,
-  timeSpent: number
-) {
-  // Fetch current state
-  const { data: currentState } = await supabase
-    .from('user_skill_state')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('micro_skill_id', microSkillId)
-    .single()
-
-  const now = new Date().toISOString()
-
-  if (!currentState) {
-    // Create new state
-    await supabase.from('user_skill_state').insert({
-      user_id: userId,
-      micro_skill_id: microSkillId,
-      accuracy: isCorrect ? 100 : 0,
-      avg_speed_index: 50, // Neutral start
-      stability: 100,
-      attempt_count: 1,
-      correct_count: isCorrect ? 1 : 0,
-      total_time_sec: timeSpent,
-      avg_time_sec: timeSpent,
-      mastery_level: 'developing',
-      last_attempted_at: now,
-    })
-  } else {
-    // Update existing state
-    const newAttemptCount = currentState.attempt_count + 1
-    const newCorrectCount = currentState.correct_count + (isCorrect ? 1 : 0)
-    const newAccuracy = (newCorrectCount / newAttemptCount) * 100
-
-    const newTotalTime = currentState.total_time_sec + timeSpent
-    const newAvgTime = newTotalTime / newAttemptCount
-
-    // Determine mastery level
-    let masteryLevel = 'developing'
-    if (newAccuracy >= 80 && newAttemptCount >= 5) {
-      masteryLevel = 'strong'
-    } else if (newAccuracy < 50) {
-      masteryLevel = 'weak'
-    }
-
-    await supabase
-      .from('user_skill_state')
-      .update({
-        accuracy: newAccuracy,
-        attempt_count: newAttemptCount,
-        correct_count: newCorrectCount,
-        total_time_sec: newTotalTime,
-        avg_time_sec: newAvgTime,
-        mastery_level: masteryLevel,
-        last_attempted_at: now,
-      })
-      .eq('user_id', userId)
-      .eq('micro_skill_id', microSkillId)
-  }
-}
-
-/**
- * Update user_construct_state with impacts
- */
-async function updateUserConstructState(
-  supabase: any,
-  userId: string,
-  impacts: Record<string, number>
-) {
-  const constructs = ['teliti', 'speed', 'reasoning', 'computation', 'reading']
-
-  for (const construct of constructs) {
-    const impact = impacts[construct] || 0
-
-    // Fetch current state
-    const { data: currentState } = await supabase
-      .from('user_construct_state')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('construct_name', construct)
-      .single()
-
-    const now = new Date().toISOString()
-
-    if (!currentState) {
-      // Create new state (start at 50)
-      const newScore = Math.max(0, Math.min(100, 50 + impact * 10))
-
-      await supabase.from('user_construct_state').insert({
-        user_id: userId,
-        construct_name: construct,
-        score: newScore,
-        confidence: 10, // Low confidence initially
-        trend: 'stable',
-        data_points: 1,
-        last_updated_at: now,
-      })
-    } else {
-      // Update existing state
-      const newDataPoints = currentState.data_points + 1
-      const newScore = Math.max(0, Math.min(100, currentState.score + impact * 5))
-
-      // Determine trend
-      let trend = 'stable'
-      if (newScore > currentState.score + 2) {
-        trend = 'improving'
-      } else if (newScore < currentState.score - 2) {
-        trend = 'declining'
-      }
-
-      // Increase confidence with more data
-      const newConfidence = Math.min(90, currentState.confidence + 2)
-
-      await supabase
-        .from('user_construct_state')
-        .update({
-          score: newScore,
-          confidence: newConfidence,
-          trend,
-          data_points: newDataPoints,
-          last_updated_at: now,
-        })
-        .eq('user_id', userId)
-        .eq('construct_name', construct)
-    }
-  }
-}

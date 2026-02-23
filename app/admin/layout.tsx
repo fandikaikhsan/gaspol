@@ -13,17 +13,23 @@ import {
   FileText,
   Network,
   HelpCircle,
+  Layers,
   Package,
   Target,
-  Bot
+  Bot,
+  Sliders,
+  Activity
 } from "lucide-react"
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Debug', href: '/admin/debug', icon: Bug },
+  { name: 'Diagnostics', href: '/admin/diagnostics', icon: Activity },
   { name: 'Exams', href: '/admin/exams', icon: FileText },
   { name: 'Taxonomy', href: '/admin/taxonomy', icon: Network },
   { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
+  { name: 'Flashcards', href: '/admin/flashcards', icon: Layers },
+  { name: 'Metadata', href: '/admin/metadata', icon: Sliders },
   { name: 'Modules', href: '/admin/modules', icon: Package },
   { name: 'Baseline', href: '/admin/baseline', icon: Target },
   { name: 'AI Runs', href: '/admin/ai-runs', icon: Bot },
@@ -37,7 +43,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background">
       <TopNav userRole="admin" />
-      <div className="flex">
+      <div className="flex pt-6">
         {/* Sidebar */}
         <aside className="w-64 border-r-2 border-border min-h-screen p-6 hidden md:block">
           <div className="mb-8">

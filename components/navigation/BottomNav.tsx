@@ -23,7 +23,7 @@ import { createClient } from "@/lib/supabase/client"
 const navigation = [
   { name: "Plan", href: "/plan", icon: Target },
   { name: "Locked-In", href: "/locked-in", icon: Lock },
-  { name: "Taktis", href: "/taktis/flashcards", icon: Zap },
+  { name: "Taktis", href: "/taktis", icon: Zap },
   { name: "Analytics", href: "/analytics", icon: BarChart2 },
 ]
 
