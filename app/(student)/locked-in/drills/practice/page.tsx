@@ -20,11 +20,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Loader2 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 function DrillPracticeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { t } = useTranslation('lockedIn')
+  const { t: tc } = useTranslation('common')
 
   const mode = searchParams.get('mode') // mixed, focused, weak
   const moduleId = searchParams.get('module')
@@ -151,7 +154,7 @@ function DrillPracticeContent() {
         }
 
         if (questionsData.length === 0) {
-          setError('No questions available for this drill. Please try a different selection.')
+          setError(t('practice.noQuestions'))
           setIsLoading(false)
           return
         }
@@ -280,8 +283,8 @@ function DrillPracticeContent() {
       }
 
       toast({
-        title: "Drill Complete!",
-        description: `Score: ${score.toFixed(0)}% (${correctCount}/${totalCount} correct)`,
+        title: t('practice.complete'),
+        description: t('practice.scoreDesc', { score: score.toFixed(0), correct: correctCount, total: totalCount }),
       })
 
       // Navigate to results or back to drills
@@ -291,8 +294,8 @@ function DrillPracticeContent() {
       console.error('Error completing drill:', err)
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to submit your answers. Please try again.",
+        title: tc('error.title'),
+        description: tc('error.submissionFailedDesc'),
       })
     }
   }
@@ -302,7 +305,7 @@ function DrillPracticeContent() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="text-lg text-muted-foreground">Loading questions...</p>
+          <p className="text-lg text-muted-foreground">{t('practice.loading')}</p>
         </div>
       </div>
     )
@@ -317,7 +320,7 @@ function DrillPracticeContent() {
               <p className="text-lg font-medium text-destructive mb-4">{error}</p>
               <Button onClick={() => router.push('/locked-in/drills')}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Drills
+                {t('practice.backToDrills')}
               </Button>
             </CardContent>
           </Card>
@@ -340,12 +343,14 @@ function DrillPracticeContent() {
 }
 
 export default function DrillPracticePage() {
+  const { t: tc } = useTranslation('common')
+
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="text-lg text-muted-foreground">Loading...</p>
+          <p className="text-lg text-muted-foreground">{tc('status.loading')}</p>
         </div>
       </div>
     }>

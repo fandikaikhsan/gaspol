@@ -15,12 +15,14 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { getUserFriendlyError, getDevMessage } from "@/lib/utils/error-messages"
+import { useTranslation } from "@/lib/i18n"
 
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/plan"
   const { toast } = useToast()
+  const { t } = useTranslation('auth')
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -42,17 +44,17 @@ export default function LoginPage() {
         if (error.message.includes("Email not confirmed")) {
           toast({
             variant: "destructive",
-            title: "Email Not Confirmed",
+            title: t('login.emailNotConfirmed'),
             description: getDevMessage(
               "Please check your email and click the confirmation link. Or disable email confirmation in Supabase dashboard for development.",
-              "Please check your email and click the confirmation link to activate your account."
+              t('login.emailNotConfirmedDesc')
             ),
           })
         } else {
           toast({
             variant: "destructive",
-            title: "Login Failed",
-            description: getUserFriendlyError(error, "Invalid email or password. Please try again."),
+            title: t('login.failed'),
+            description: getUserFriendlyError(error, t('login.failedDesc')),
           })
         }
         return
@@ -60,8 +62,8 @@ export default function LoginPage() {
 
       if (data.user) {
         toast({
-          title: "Welcome back!",
-          description: "Redirecting to your dashboard...",
+          title: t('login.welcomeBack'),
+          description: t('login.redirecting'),
         })
         router.push(redirectTo)
         router.refresh()
@@ -69,8 +71,8 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: getUserFriendlyError(error, "An unexpected error occurred. Please try again."),
+        title: t('login.failed'),
+        description: getUserFriendlyError(error, t('login.failedDesc')),
       })
     } finally {
       setIsLoading(false)
@@ -81,21 +83,21 @@ export default function LoginPage() {
     <Card className="bg-background">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl mb-2">
-          Welcome to Gaspol! 🎯
+          {t('login.title')}
         </CardTitle>
         <CardDescription>
-          Sign in to continue your UTBK preparation
+          {t('login.subtitle')}
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleLogin}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('login.email')}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="nama@email.com"
+              placeholder={t('login.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -104,11 +106,11 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('login.password')}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder={t('login.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -123,16 +125,16 @@ export default function LoginPage() {
             className="w-full"
             disabled={isLoading}
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? t('login.submitting') : t('login.submit')}
           </Button>
 
           <div className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {t('login.noAccount')}{" "}
             <Link
               href="/signup"
               className="font-semibold text-primary hover:underline"
             >
-              Sign up
+              {t('login.signupLink')}
             </Link>
           </div>
         </CardFooter>

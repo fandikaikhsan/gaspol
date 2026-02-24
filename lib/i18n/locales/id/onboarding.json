@@ -1,0 +1,51 @@
+{
+  "step": "Langkah {{step}} dari 3",
+  "package": {
+    "title": "Berapa lama waktu yang kamu punya?",
+    "subtitle": "Pilih durasi persiapan — kami akan buatkan rencana yang personal",
+    "7days": "7 Hari",
+    "7daysDesc": "Mode sprint — persiapan minggu terakhir",
+    "14days": "14 Hari",
+    "14daysDesc": "Intensif — fokus 2 minggu",
+    "21days": "21 Hari",
+    "21daysDesc": "Seimbang — rencana 3 minggu",
+    "30days": "30 Hari",
+    "30daysDesc": "Komprehensif — satu bulan penuh"
+  },
+  "time": {
+    "title": "Waktu belajar harian?",
+    "subtitle": "Berapa lama kamu bisa belajar setiap hari?",
+    "30min": "30 menit/hari",
+    "30minDesc": "Sesi singkat",
+    "60min": "1 jam/hari",
+    "60minDesc": "Standar",
+    "90min": "1,5 jam/hari",
+    "90minDesc": "Intensif",
+    "120min": "2+ jam/hari",
+    "120minDesc": "Komitmen penuh"
+  },
+  "target": {
+    "title": "Universitas tujuan kamu?",
+    "subtitle": "Kami akan sesuaikan persiapan dengan standar mereka",
+    "universityLabel": "Universitas Tujuan *",
+    "universityPlaceholder": "contoh: Universitas Indonesia",
+    "majorLabel": "Jurusan Tujuan (Opsional)",
+    "majorPlaceholder": "contoh: Kedokteran, Teknik Informatika"
+  },
+  "summary": {
+    "title": "Ringkasan Rencana Kamu:",
+    "duration": "📅 Durasi: {{days}} hari",
+    "dailyStudy": "⏱️ Belajar harian: {{minutes}} menit",
+    "targetUni": "🎯 Tujuan: {{university}}"
+  },
+  "toast": {
+    "missingInfo": "Informasi Belum Lengkap",
+    "missingInfoDesc": "Silakan masukkan universitas tujuan kamu",
+    "setupComplete": "Pengaturan Selesai! 🎯",
+    "setupCompleteDesc": "Mari mulai dengan baseline assessment kamu",
+    "error": "Error",
+    "errorDesc": "Gagal menyimpan preferensi. Silakan coba lagi."
+  },
+  "submit": "Mulai Baseline Assessment",
+  "submitting": "Menyiapkan..."
+}

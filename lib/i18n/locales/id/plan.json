@@ -1,0 +1,58 @@
+{
+  "title": "Rencana Belajar Kamu",
+  "cycleInfo": "Siklus {{cycle}} | {{completed}}/{{total}} tugas selesai",
+  "baselineIncomplete": {
+    "subtitle": "Selesaikan baseline assessment untuk membuka rencana belajar personal kamu",
+    "completeBaseline": "Selesaikan Baseline Assessment",
+    "baselineDesc": "Diagnostik singkat untuk memahami level kamu saat ini",
+    "progressPercent": "{{percent}}% Selesai",
+    "progress": "Progres",
+    "modulesCount": "{{completed}}/{{total}} modul",
+    "moduleLabel": "Modul {{idx}}",
+    "continueAssessment": "Lanjutkan Assessment",
+    "startAssessment": "Mulai Assessment",
+    "completeTasks": "Selesaikan Tugas Belajar",
+    "completeTasksDesc": "Tugas personal berdasarkan hasil assessment kamu",
+    "recycleAssessment": "Re-cycle Assessment",
+    "recycleAssessmentDesc": "Pantau peningkatanmu dengan assessment lanjutan yang terarah"
+  },
+  "baselineComplete": {
+    "subtitle": "Buat rencana belajar personal kamu",
+    "assessmentComplete": "Baseline Assessment Selesai!",
+    "avgScore": "Skor Rata-rata: {{score}}%",
+    "generatePlan": "Buat Rencana Belajar Kamu",
+    "generatePlanDesc": "Berdasarkan hasil baseline kamu, kami akan buatkan rencana belajar personal",
+    "generating": "Membuat...",
+    "generateButton": "Buat Rencana Saya",
+    "recycleAssessment": "Re-cycle Assessment",
+    "recycleLockedDesc": "Terbuka setelah menyelesaikan tugas belajar kamu"
+  },
+  "active": {
+    "firstAssessment": "Assessment Pertama",
+    "studyTasks": "Tugas Belajar",
+    "requiredCount": "{{completed}}/{{required}} wajib",
+    "secondAssessment": "Assessment Kedua",
+    "currentReadiness": "Kesiapan Saat Ini",
+    "currentReadinessDesc": "Skor kesiapan ujian keseluruhan kamu",
+    "taskProgress": "Progres Tugas",
+    "taskProgressDesc": "Selesaikan tugas wajib untuk membuka re-cycle",
+    "requiredTasks": "Tugas Wajib",
+    "allTasks": "Semua Tugas",
+    "yourTasks": "Tugas Kamu",
+    "browseAllPractice": "Jelajahi Semua Latihan",
+    "noTasks": "Belum ada tugas",
+    "noTasksDesc": "Tugas personal kamu akan muncul di sini",
+    "completeMoreRequired": "Selesaikan {{count}} tugas wajib lagi",
+    "startRecycle": "Mulai Re-cycle Assessment"
+  },
+  "dayProgress": "Hari {{current}}/{{total}}",
+  "studyPlanProgress": "Progres Rencana Belajar",
+  "daysLeft": "{{count}} hari lagi",
+  "makeEveryDayCount": "Manfaatkan setiap hari!",
+  "completeToUnlock": "Selesaikan tugas wajib untuk membuka",
+  "toast": {
+    "planGenerated": "Rencana Dibuat!",
+    "planGeneratedDesc": "Rencana belajar personal kamu sudah siap",
+    "error": "Error"
+  }
+}

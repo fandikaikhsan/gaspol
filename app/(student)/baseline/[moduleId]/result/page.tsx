@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { useTranslation } from "@/lib/i18n"
 
 interface ModuleCompletion {
   score: number
@@ -34,6 +35,7 @@ interface ModuleCompletion {
 export default function BaselineResultPage() {
   const router = useRouter()
   const params = useParams()
+  const { t } = useTranslation('baseline')
   const moduleId = params.moduleId as string
 
   const [completion, setCompletion] = useState<ModuleCompletion | null>(null)
@@ -85,7 +87,7 @@ export default function BaselineResultPage() {
   if (isLoading || !completion) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading results...</p>
+        <p className="text-lg text-muted-foreground">{t('loadingResults')}</p>
       </div>
     )
   }
@@ -110,9 +112,9 @@ export default function BaselineResultPage() {
           </div>
 
           <div>
-            <h1 className="text-4xl font-bold mb-2">Module Complete!</h1>
+            <h1 className="text-4xl font-bold mb-2">{t('result.title')}</h1>
             <p className="text-muted-foreground">
-              Great work! Here's how you performed
+              {t('result.subtitle')}
             </p>
           </div>
         </div>
@@ -120,7 +122,7 @@ export default function BaselineResultPage() {
         {/* Score Card */}
         <Card className="bg-gradient-to-br from-primary/10 to-secondary/10">
           <CardHeader>
-            <CardTitle>Your Score</CardTitle>
+            <CardTitle>{t('result.yourScore')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
@@ -129,14 +131,14 @@ export default function BaselineResultPage() {
                   {accuracy}%
                 </div>
                 <p className="text-muted-foreground mt-2">
-                  {completion.correct_count} out of {completion.total_questions} correct
+                  {t('result.correctOf', { correct: completion.correct_count, total: completion.total_questions })}
                 </p>
               </div>
 
               <div className="text-right space-y-2">
                 <div>
-                  <p className="text-sm text-muted-foreground">Avg Time/Question</p>
-                  <p className="text-2xl font-bold">{avgTimePerQuestion}s</p>
+                  <p className="text-sm text-muted-foreground">{t('result.avgTime')}</p>
+                  <p className="text-2xl font-bold">{t('result.avgTimeValue', { seconds: avgTimePerQuestion })}</p>
                 </div>
               </div>
             </div>
@@ -146,9 +148,9 @@ export default function BaselineResultPage() {
         {/* Partial Analytics */}
         <Card>
           <CardHeader>
-            <CardTitle>Performance Snapshot</CardTitle>
+            <CardTitle>{t('result.performance')}</CardTitle>
             <CardDescription>
-              Based on this module - full analytics after all modules complete
+              {t('result.performanceSubtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -156,7 +158,7 @@ export default function BaselineResultPage() {
             {completion.readiness_score && (
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-semibold">Readiness Score</span>
+                  <span className="font-semibold">{t('result.readiness')}</span>
                   <span className={`text-2xl font-bold ${getScoreColor(completion.readiness_score)}`}>
                     {Math.round(completion.readiness_score)}%
                   </span>
@@ -171,14 +173,14 @@ export default function BaselineResultPage() {
             {/* Construct Profile */}
             {constructs && (
               <div className="space-y-3">
-                <h3 className="font-semibold">Skill Profile</h3>
+                <h3 className="font-semibold">{t('result.skillProfile')}</h3>
 
                 {[
-                  { name: 'Teliti (Careful)', key: 'teliti_score', color: 'bg-construct-teliti' },
-                  { name: 'Speed', key: 'speed_score', color: 'bg-construct-speed' },
-                  { name: 'Reasoning', key: 'reasoning_score', color: 'bg-construct-reasoning' },
-                  { name: 'Computation', key: 'computation_score', color: 'bg-construct-computation' },
-                  { name: 'Reading', key: 'reading_score', color: 'bg-construct-reading' },
+                  { name: t('result.teliti'), key: 'teliti_score', color: 'bg-construct-teliti' },
+                  { name: t('result.speed'), key: 'speed_score', color: 'bg-construct-speed' },
+                  { name: t('result.reasoning'), key: 'reasoning_score', color: 'bg-construct-reasoning' },
+                  { name: t('result.computation'), key: 'computation_score', color: 'bg-construct-computation' },
+                  { name: t('result.reading'), key: 'reading_score', color: 'bg-construct-reading' },
                 ].map(({ name, key, color }) => {
                   const score = constructs[key as keyof typeof constructs] || 50
                   return (
@@ -206,16 +208,16 @@ export default function BaselineResultPage() {
           <Card className="border-status-strong border-4">
             <CardHeader>
               <CardTitle className="text-status-strong">
-                🎉 Baseline Assessment Complete!
+                {t('result.allComplete')}
               </CardTitle>
               <CardDescription>
-                All modules finished. Ready to generate your personalized study plan?
+                {t('result.allCompleteDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/analytics">
                 <Button className="w-full" size="lg">
-                  View Full Analytics & Generate Plan
+                  {t('result.viewAnalytics')}
                 </Button>
               </Link>
             </CardContent>
@@ -226,14 +228,14 @@ export default function BaselineResultPage() {
         <div className="flex gap-4">
           <Link href="/baseline" className="flex-1">
             <Button variant="brutal-outline" className="w-full">
-              Back to Baseline Hub
+              {t('result.backToHub')}
             </Button>
           </Link>
 
           {!allComplete && (
             <Link href="/baseline" className="flex-1">
               <Button className="w-full">
-                Continue to Next Module
+                {t('result.continueNext')}
               </Button>
             </Link>
           )}

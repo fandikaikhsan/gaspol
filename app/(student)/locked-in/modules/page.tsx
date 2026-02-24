@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, BookOpen, Clock, Target, Sparkles, Play, CheckCircle } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 interface Module {
   id: string
@@ -38,6 +39,8 @@ interface SuggestedModule {
 
 export default function ModulesPage() {
   const router = useRouter()
+  const { t } = useTranslation('lockedIn')
+  const { t: tc } = useTranslation('common')
   const [allModules, setAllModules] = useState<Module[]>([])
   const [suggestedModules, setSuggestedModules] = useState<SuggestedModule[]>([])
   const [completedModuleIds, setCompletedModuleIds] = useState<Set<string>>(new Set())
@@ -176,7 +179,7 @@ export default function ModulesPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading modules...</p>
+        <p className="text-lg text-muted-foreground">{t('modules.loadingModules')}</p>
       </div>
     )
   }
@@ -194,9 +197,9 @@ export default function ModulesPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Study Modules</h1>
+            <h1 className="text-3xl font-bold">{t('modules.title')}</h1>
             <p className="text-muted-foreground">
-              Pre-made learning modules curated by experts
+              {t('modules.subtitle')}
             </p>
           </div>
         </div>
@@ -205,15 +208,15 @@ export default function ModulesPage() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="suggested">
               <Sparkles className="h-4 w-4 mr-2" />
-              For You
+              {t('modules.forYou')}
             </TabsTrigger>
             <TabsTrigger value="all">
               <BookOpen className="h-4 w-4 mr-2" />
-              All Modules
+              {t('modules.allModules')}
             </TabsTrigger>
             <TabsTrigger value="completed">
               <CheckCircle className="h-4 w-4 mr-2" />
-              Completed
+              {t('modules.completedTab')}
             </TabsTrigger>
           </TabsList>
 
@@ -223,9 +226,9 @@ export default function ModulesPage() {
               <Card>
                 <CardContent className="py-8 text-center">
                   <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">No Suggestions Yet</p>
+                  <p className="text-lg font-medium">{t('modules.noSuggestions')}</p>
                   <p className="text-muted-foreground">
-                    Complete more practice to get personalized module recommendations
+                    {t('modules.noSuggestionsDesc')}
                   </p>
                 </CardContent>
               </Card>
@@ -247,7 +250,7 @@ export default function ModulesPage() {
                             <div className="flex items-center gap-2">
                               <CardTitle>{module.name}</CardTitle>
                               <Badge className={priorityColors[priority]}>
-                                {priority === 'high' ? 'Priority' : priority === 'medium' ? 'Suggested' : 'Try This'}
+                                {priority === 'high' ? t('modules.priority') : priority === 'medium' ? t('modules.priority') : t('modules.trySuggested')}
                               </Badge>
                             </div>
                             <CardDescription>{reason}</CardDescription>
@@ -260,18 +263,18 @@ export default function ModulesPage() {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Target className="h-4 w-4" />
-                            {module.question_count} questions
+                            {t('modules.questionsCount', { count: module.question_count })}
                           </span>
                           {module.time_limit_min && (
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {module.time_limit_min} min
+                              {t('modules.timeLimit', { minutes: module.time_limit_min })}
                             </span>
                           )}
                         </div>
                         <Button variant="brutal" size="sm">
                           <Play className="h-4 w-4 mr-2" />
-                          Start
+                          {tc('button.start')}
                         </Button>
                       </div>
                     </CardContent>
@@ -287,9 +290,9 @@ export default function ModulesPage() {
               <Card>
                 <CardContent className="py-8 text-center">
                   <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">No Modules Available</p>
+                  <p className="text-lg font-medium">{t('modules.noModulesAvailable')}</p>
                   <p className="text-muted-foreground">
-                    Check back later for new study modules
+                    {t('modules.noModulesAvailableDesc')}
                   </p>
                 </CardContent>
               </Card>
@@ -320,7 +323,7 @@ export default function ModulesPage() {
                             <div className="text-right text-sm text-muted-foreground">
                               <p>{module.question_count} Q</p>
                               {module.time_limit_min && (
-                                <p>{module.time_limit_min} min</p>
+                                <p>{t('modules.timeLimit', { minutes: module.time_limit_min })}</p>
                               )}
                             </div>
                             <Button variant="brutal" size="sm">
@@ -341,9 +344,9 @@ export default function ModulesPage() {
               <Card>
                 <CardContent className="py-8 text-center">
                   <CheckCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">No Completed Modules</p>
+                  <p className="text-lg font-medium">{t('modules.noCompleted')}</p>
                   <p className="text-muted-foreground">
-                    Complete some modules to see them here
+                    {t('modules.noCompletedDesc')}
                   </p>
                 </CardContent>
               </Card>
@@ -366,16 +369,16 @@ export default function ModulesPage() {
                             <div>
                               <p className="font-medium">{module.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                Score: {module.completion_score?.toFixed(0)}%
+                                {t('modules.score', { score: module.completion_score?.toFixed(0) ?? '0' })}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
                             <Badge variant="outline" className="bg-green-100 text-green-800">
-                              Completed
+                              {t('modules.completed')}
                             </Badge>
                             <Button variant="brutal-outline" size="sm">
-                              Retry
+                              {tc('button.retry')}
                             </Button>
                           </div>
                         </div>

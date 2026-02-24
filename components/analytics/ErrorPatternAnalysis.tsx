@@ -19,6 +19,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { createClient } from "@/lib/supabase/client"
+import { useTranslation } from "@/lib/i18n"
 
 interface ErrorTag {
   tag_id: string
@@ -67,6 +68,7 @@ const DEFAULT_TIPS = [
 ]
 
 export function ErrorPatternAnalysis({ errorTags, examId }: ErrorPatternAnalysisProps) {
+  const { t } = useTranslation('analytics')
   const [tagMetadata, setTagMetadata] = useState<Record<string, ErrorTagMetadata>>({})
   const [isLoading, setIsLoading] = useState(true)
 
@@ -130,10 +132,10 @@ export function ErrorPatternAnalysis({ errorTags, examId }: ErrorPatternAnalysis
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          Common Error Patterns
+          {t('errorPatterns.title')}
         </CardTitle>
         <CardDescription>
-          Mistakes you make most often (last 30 days)
+          {t('errorPatterns.subtitle')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -147,10 +149,10 @@ export function ErrorPatternAnalysis({ errorTags, examId }: ErrorPatternAnalysis
             <div className="p-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-blue-900">
-                  {totalErrors} total errors analyzed
+                  {t('errorPatterns.totalErrors', { count: totalErrors })}
                 </span>
                 <Badge className="bg-blue-500 text-white">
-                  {errorTags.length} patterns found
+                  {t('errorPatterns.patternsFound', { count: errorTags.length })}
                 </Badge>
               </div>
             </div>
@@ -196,7 +198,7 @@ export function ErrorPatternAnalysis({ errorTags, examId }: ErrorPatternAnalysis
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
                             <span className={info.textColor}>
-                              Impact on your performance
+                              {t('errorPatterns.impact')}
                             </span>
                             <span className="font-medium">{tag.percentage}%</span>
                           </div>
@@ -211,7 +213,7 @@ export function ErrorPatternAnalysis({ errorTags, examId }: ErrorPatternAnalysis
                         {/* Actionable tips */}
                         <div>
                           <h4 className={`font-semibold text-sm ${info.textColor} mb-2`}>
-                            💡 How to Improve:
+                            {t('errorPatterns.howToImprove')}
                           </h4>
                           <ul className="space-y-1">
                             {info.tips.map((tip, i) => (
@@ -225,7 +227,7 @@ export function ErrorPatternAnalysis({ errorTags, examId }: ErrorPatternAnalysis
                         {/* Occurrence count */}
                         <div className="pt-2 border-t border-white">
                           <p className="text-xs text-muted-foreground">
-                            Occurred <strong>{tag.count}</strong> times out of {totalErrors} errors
+                            {t('errorPatterns.occurredTimes', { count: tag.count, total: totalErrors })}
                           </p>
                         </div>
                       </div>
@@ -238,22 +240,22 @@ export function ErrorPatternAnalysis({ errorTags, examId }: ErrorPatternAnalysis
             {/* Overall recommendations */}
             <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
               <h4 className="font-semibold text-green-900 mb-2">
-                🎯 General Strategies
+                {t('errorPatterns.strategies')}
               </h4>
               <ul className="text-sm text-green-800 space-y-1">
-                <li>• Focus on your top 1-2 error patterns first</li>
-                <li>• Track your progress weekly to see improvements</li>
-                <li>• Reflect on mistakes immediately after practice</li>
-                <li>• Develop a pre-answer checklist (read, think, check)</li>
+                <li>{t('errorPatterns.strat1')}</li>
+                <li>{t('errorPatterns.strat2')}</li>
+                <li>{t('errorPatterns.strat3')}</li>
+                <li>{t('errorPatterns.strat4')}</li>
               </ul>
             </div>
           </div>
         ) : (
           <div className="text-center py-8">
             <Target className="h-12 w-12 mx-auto text-green-500 mb-2" />
-            <p className="font-medium text-green-700 mb-1">Excellent work!</p>
+            <p className="font-medium text-green-700 mb-1">{t('errorPatterns.excellentWork')}</p>
             <p className="text-sm text-muted-foreground">
-              No error patterns detected yet. Keep practicing!
+              {t('errorPatterns.noPatterns')}
             </p>
           </div>
         )}

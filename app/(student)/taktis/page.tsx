@@ -9,39 +9,42 @@
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Layers, Zap } from "lucide-react"
-
-const studyModes = [
-  {
-    id: "flashcards",
-    name: "Flashcards",
-    description: "Flip cards to test your memory and reinforce key concepts",
-    icon: Layers,
-    href: "/taktis/flashcards",
-    color: "bg-pastel-lavender",
-    available: true,
-  },
-  {
-    id: "swipe",
-    name: "Quick Swipe",
-    description: "Tinder-style rapid answers for speed training",
-    icon: Zap,
-    href: "/taktis/swipe",
-    color: "bg-pastel-peach",
-    available: false,
-  },
-]
+import { useTranslation } from "@/lib/i18n"
 
 export default function TaktisPage() {
   const router = useRouter()
+  const { t } = useTranslation('taktis')
+  const { t: tc } = useTranslation('common')
+
+  const studyModes = [
+    {
+      id: "flashcards",
+      name: t('flashcards.title'),
+      description: t('flashcards.desc'),
+      icon: Layers,
+      href: "/taktis/flashcards",
+      color: "bg-pastel-lavender",
+      available: true,
+    },
+    {
+      id: "swipe",
+      name: t('swipe.title'),
+      description: t('swipe.desc'),
+      icon: Zap,
+      href: "/taktis/swipe",
+      color: "bg-pastel-peach",
+      available: false,
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Taktis</h1>
+          <h1 className="text-4xl font-bold mb-2">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Quick study modes for rapid skill reinforcement
+            {t('subtitle')}
           </p>
         </div>
 
@@ -69,7 +72,7 @@ export default function TaktisPage() {
                         <h2 className="text-xl font-bold">{mode.name}</h2>
                         {!mode.available && (
                           <span className="text-xs bg-muted px-2 py-1 rounded-full border border-border">
-                            Coming Soon
+                            {tc('status.comingSoon')}
                           </span>
                         )}
                       </div>

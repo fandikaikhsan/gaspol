@@ -1,0 +1,51 @@
+{
+  "step": "Step {{step}} of 3",
+  "package": {
+    "title": "How much time do you have?",
+    "subtitle": "Choose your prep duration - we'll create a personalized plan",
+    "7days": "7 Days",
+    "7daysDesc": "Sprint mode - final week prep",
+    "14days": "14 Days",
+    "14daysDesc": "Intensive - 2 weeks focus",
+    "21days": "21 Days",
+    "21daysDesc": "Balanced - 3 weeks plan",
+    "30days": "30 Days",
+    "30daysDesc": "Comprehensive - full month"
+  },
+  "time": {
+    "title": "Daily study time?",
+    "subtitle": "How much time can you commit each day?",
+    "30min": "30 min/day",
+    "30minDesc": "Quick sessions",
+    "60min": "1 hour/day",
+    "60minDesc": "Standard",
+    "90min": "1.5 hours/day",
+    "90minDesc": "Intensive",
+    "120min": "2+ hours/day",
+    "120minDesc": "Full commitment"
+  },
+  "target": {
+    "title": "Your target university?",
+    "subtitle": "We'll tailor your prep to match their standards",
+    "universityLabel": "Target University *",
+    "universityPlaceholder": "e.g., Universitas Indonesia",
+    "majorLabel": "Target Major (Optional)",
+    "majorPlaceholder": "e.g., Kedokteran, Teknik Informatika"
+  },
+  "summary": {
+    "title": "Your Plan Summary:",
+    "duration": "📅 Duration: {{days}} days",
+    "dailyStudy": "⏱️ Daily study: {{minutes}} minutes",
+    "targetUni": "🎯 Target: {{university}}"
+  },
+  "toast": {
+    "missingInfo": "Missing Information",
+    "missingInfoDesc": "Please enter your target university",
+    "setupComplete": "Setup Complete! 🎯",
+    "setupCompleteDesc": "Let's start with your baseline assessment",
+    "error": "Error",
+    "errorDesc": "Failed to save your preferences. Please try again."
+  },
+  "submit": "Start Baseline Assessment",
+  "submitting": "Setting up..."
+}

@@ -17,24 +17,13 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
-
-const PACKAGE_OPTIONS = [
-  { value: 7, label: "7 Days", subtitle: "Sprint mode - final week prep", color: "bg-construct-teliti" },
-  { value: 14, label: "14 Days", subtitle: "Intensive - 2 weeks focus", color: "bg-construct-speed" },
-  { value: 21, label: "21 Days", subtitle: "Balanced - 3 weeks plan", color: "bg-construct-reasoning" },
-  { value: 30, label: "30 Days", subtitle: "Comprehensive - full month", color: "bg-construct-computation" },
-]
-
-const TIME_BUDGET_OPTIONS = [
-  { value: 30, label: "30 min/day", subtitle: "Quick sessions" },
-  { value: 60, label: "1 hour/day", subtitle: "Standard" },
-  { value: 90, label: "1.5 hours/day", subtitle: "Intensive" },
-  { value: 120, label: "2+ hours/day", subtitle: "Full commitment" },
-]
+import { useTranslation } from "@/lib/i18n"
 
 export default function OnboardingPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation('onboarding')
+  const { t: tc } = useTranslation('common')
 
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -45,12 +34,26 @@ export default function OnboardingPage() {
   const [targetUniversity, setTargetUniversity] = useState("")
   const [targetMajor, setTargetMajor] = useState("")
 
+  const PACKAGE_OPTIONS = [
+    { value: 7, label: t('package.7days'), subtitle: t('package.7daysDesc'), color: "bg-construct-teliti" },
+    { value: 14, label: t('package.14days'), subtitle: t('package.14daysDesc'), color: "bg-construct-speed" },
+    { value: 21, label: t('package.21days'), subtitle: t('package.21daysDesc'), color: "bg-construct-reasoning" },
+    { value: 30, label: t('package.30days'), subtitle: t('package.30daysDesc'), color: "bg-construct-computation" },
+  ]
+
+  const TIME_BUDGET_OPTIONS = [
+    { value: 30, label: t('time.30min'), subtitle: t('time.30minDesc') },
+    { value: 60, label: t('time.60min'), subtitle: t('time.60minDesc') },
+    { value: 90, label: t('time.90min'), subtitle: t('time.90minDesc') },
+    { value: 120, label: t('time.120min'), subtitle: t('time.120minDesc') },
+  ]
+
   const handleComplete = async () => {
     if (!targetUniversity.trim()) {
       toast({
         variant: "destructive",
-        title: "Missing Information",
-        description: "Please enter your target university",
+        title: t('toast.missingInfo'),
+        description: t('toast.missingInfoDesc'),
       })
       return
     }
@@ -99,8 +102,8 @@ export default function OnboardingPage() {
       })
 
       toast({
-        title: "Setup Complete! 🎯",
-        description: "Let's start with your baseline assessment",
+        title: t('toast.setupComplete'),
+        description: t('toast.setupCompleteDesc'),
       })
 
       // Redirect to baseline
@@ -110,8 +113,8 @@ export default function OnboardingPage() {
       console.error("Onboarding error:", error)
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to save your preferences. Please try again.",
+        title: t('toast.error'),
+        description: t('toast.errorDesc'),
       })
     } finally {
       setIsLoading(false)
@@ -134,7 +137,7 @@ export default function OnboardingPage() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground text-center">
-            Step {step} of 3
+            {t('step', { step })}
           </p>
         </div>
 
@@ -142,9 +145,9 @@ export default function OnboardingPage() {
         {step === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle>How much time do you have?</CardTitle>
+              <CardTitle>{t('package.title')}</CardTitle>
               <CardDescription>
-                Choose your prep duration - we'll create a personalized plan
+                {t('package.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -180,7 +183,7 @@ export default function OnboardingPage() {
                 className="w-full mt-6"
                 size="lg"
               >
-                Continue
+                {tc('button.continue')}
               </Button>
             </CardContent>
           </Card>
@@ -190,9 +193,9 @@ export default function OnboardingPage() {
         {step === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle>Daily study time?</CardTitle>
+              <CardTitle>{t('time.title')}</CardTitle>
               <CardDescription>
-                How much time can you commit each day?
+                {t('time.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -229,10 +232,10 @@ export default function OnboardingPage() {
                   className="flex-1"
                   size="lg"
                 >
-                  Back
+                  {tc('button.back')}
                 </Button>
                 <Button onClick={() => setStep(3)} className="flex-1" size="lg">
-                  Continue
+                  {tc('button.continue')}
                 </Button>
               </div>
             </CardContent>
@@ -243,19 +246,19 @@ export default function OnboardingPage() {
         {step === 3 && (
           <Card>
             <CardHeader>
-              <CardTitle>Your target university?</CardTitle>
+              <CardTitle>{t('target.title')}</CardTitle>
               <CardDescription>
-                We'll tailor your prep to match their standards
+                {t('target.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="university">
-                  Target University <span className="text-destructive">*</span>
+                  {t('target.universityLabel')}
                 </Label>
                 <Input
                   id="university"
-                  placeholder="e.g., Universitas Indonesia"
+                  placeholder={t('target.universityPlaceholder')}
                   value={targetUniversity}
                   onChange={(e) => setTargetUniversity(e.target.value)}
                   disabled={isLoading}
@@ -264,11 +267,11 @@ export default function OnboardingPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="major">
-                  Target Major <span className="text-muted-foreground text-sm">(Optional)</span>
+                  {t('target.majorLabel')}
                 </Label>
                 <Input
                   id="major"
-                  placeholder="e.g., Kedokteran, Teknik Informatika"
+                  placeholder={t('target.majorPlaceholder')}
                   value={targetMajor}
                   onChange={(e) => setTargetMajor(e.target.value)}
                   disabled={isLoading}
@@ -277,11 +280,11 @@ export default function OnboardingPage() {
 
               {/* Summary */}
               <div className="bg-muted p-4 rounded-lg mt-6 space-y-2">
-                <p className="font-semibold text-sm">Your Plan Summary:</p>
+                <p className="font-semibold text-sm">{t('summary.title')}</p>
                 <ul className="text-sm space-y-1">
-                  <li>📅 Duration: <strong>{packageDays} days</strong></li>
-                  <li>⏱️ Daily study: <strong>{timeBudget} minutes</strong></li>
-                  <li>🎯 Target: <strong>{targetUniversity || "Not specified"}</strong></li>
+                  <li>{t('summary.duration', { days: packageDays })}</li>
+                  <li>{t('summary.dailyStudy', { minutes: timeBudget })}</li>
+                  <li>{t('summary.targetUni', { university: targetUniversity || "Not specified" })}</li>
                 </ul>
               </div>
 
@@ -293,7 +296,7 @@ export default function OnboardingPage() {
                   size="lg"
                   disabled={isLoading}
                 >
-                  Back
+                  {tc('button.back')}
                 </Button>
                 <Button
                   onClick={handleComplete}
@@ -301,7 +304,7 @@ export default function OnboardingPage() {
                   size="lg"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Setting up..." : "Start Baseline Assessment"}
+                  {isLoading ? t('submitting') : t('submit')}
                 </Button>
               </div>
             </CardContent>

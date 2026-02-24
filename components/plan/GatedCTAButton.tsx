@@ -3,6 +3,7 @@
  * Phase 4: Plan Generation & Task System
  */
 
+import { useTranslation } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -19,6 +20,8 @@ export function GatedCTAButton({
   lockedReason,
   onClick,
 }: GatedCTAButtonProps) {
+  const { t: tp } = useTranslation('plan')
+
   if (isUnlocked) {
     return (
       <Card className="border-primary border-4">
@@ -44,10 +47,10 @@ export function GatedCTAButton({
           className="w-full opacity-50 cursor-not-allowed"
           size="lg"
         >
-          🔒 {lockedReason}
+          {lockedReason}
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-2">
-          Complete required tasks to unlock
+          {tp('completeToUnlock')}
         </p>
       </CardContent>
     </Card>

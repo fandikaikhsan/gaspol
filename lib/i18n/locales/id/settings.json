@@ -1,0 +1,51 @@
+{
+  "title": "Pengaturan Profil",
+  "profile": {
+    "title": "Informasi Profil",
+    "subtitle": "Lihat detail akun kamu",
+    "email": "Email",
+    "role": "Peran",
+    "student": "Siswa"
+  },
+  "name": {
+    "title": "Edit Nama",
+    "subtitle": "Ubah nama tampilan kamu",
+    "label": "Nama Lengkap",
+    "placeholder": "Nama lengkap kamu",
+    "saving": "Menyimpan...",
+    "save": "Simpan Nama",
+    "success": "Nama Diperbarui ✅",
+    "successDesc": "Profil kamu berhasil diperbarui.",
+    "error": "Pembaruan Gagal",
+    "errorDesc": "Gagal memperbarui nama. Silakan coba lagi."
+  },
+  "password": {
+    "title": "Ubah Password",
+    "subtitle": "Perbarui password kamu",
+    "newPassword": "Password Baru",
+    "newPasswordPlaceholder": "Minimal 6 karakter",
+    "confirmPassword": "Konfirmasi Password Baru",
+    "confirmPasswordPlaceholder": "Ulangi password baru",
+    "changing": "Mengubah...",
+    "change": "Ubah Password",
+    "mismatch": "Password Tidak Cocok",
+    "mismatchDesc": "Password baru tidak cocok.",
+    "weak": "Password Lemah",
+    "weakDesc": "Password minimal 6 karakter.",
+    "success": "Password Diubah ✅",
+    "successDesc": "Password kamu berhasil diperbarui.",
+    "error": "Gagal Mengubah Password",
+    "errorDesc": "Gagal mengubah password. Silakan coba lagi."
+  },
+  "language": {
+    "title": "Bahasa",
+    "subtitle": "Pilih bahasa tampilan",
+    "id": "Bahasa Indonesia",
+    "en": "English"
+  },
+  "logout": {
+    "title": "Keluar",
+    "subtitle": "Keluar dari akun kamu",
+    "button": "Keluar"
+  }
+}

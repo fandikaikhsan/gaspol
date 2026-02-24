@@ -22,6 +22,7 @@ import { ProgressHeader } from "@/components/plan/ProgressHeader"
 import { TaskCard } from "@/components/plan/TaskCard"
 import { GatedCTAButton } from "@/components/plan/GatedCTAButton"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 import {
   CheckCircle2,
   Circle,
@@ -60,6 +61,8 @@ interface PlanTask {
 export default function PlanDashboardPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation('plan')
+  const { t: tc } = useTranslation('common')
 
   const [user, setUser] = useState<any>(null)
   const [userState, setUserState] = useState<any>(null)
@@ -174,8 +177,8 @@ export default function PlanDashboardPage() {
 
       if (result.success) {
         toast({
-          title: "Plan Generated!",
-          description: "Your personalized study plan is ready",
+          title: t('toast.planGenerated'),
+          description: t('toast.planGeneratedDesc'),
         })
         // Refresh the page data
         window.location.reload()
@@ -185,7 +188,7 @@ export default function PlanDashboardPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: t('toast.error'),
         description: error.message || "Failed to generate plan",
       })
     } finally {
@@ -230,9 +233,9 @@ export default function PlanDashboardPage() {
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold">Your Study Plan</h1>
+            <h1 className="text-4xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              Complete the baseline assessment to unlock your personalized plan
+              {t('baselineIncomplete.subtitle')}
             </p>
           </div>
 
@@ -245,15 +248,15 @@ export default function PlanDashboardPage() {
                     1
                   </div>
                   <div>
-                    <CardTitle>Complete Baseline Assessment</CardTitle>
+                    <CardTitle>{t('baselineIncomplete.completeBaseline')}</CardTitle>
                     <CardDescription>
-                      Quick diagnostic to understand your current level
+                      {t('baselineIncomplete.baselineDesc')}
                     </CardDescription>
                   </div>
                 </div>
                 {baselineProgress > 0 && (
                   <Badge variant="secondary">
-                    {Math.round(baselineProgress)}% Complete
+                    {t('baselineIncomplete.progressPercent', { percent: Math.round(baselineProgress) })}
                   </Badge>
                 )}
               </div>
@@ -262,9 +265,9 @@ export default function PlanDashboardPage() {
               {/* Progress */}
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>Progress</span>
+                  <span>{t('baselineIncomplete.progress')}</span>
                   <span className="font-medium">
-                    {baselineModules.filter(m => m.is_completed).length}/{baselineModules.length} modules
+                    {t('baselineIncomplete.modulesCount', { completed: baselineModules.filter(m => m.is_completed).length, total: baselineModules.length })}
                   </span>
                 </div>
                 <Progress value={baselineProgress} className="h-3" />
@@ -298,7 +301,7 @@ export default function PlanDashboardPage() {
                 className="w-full"
                 onClick={() => router.push('/baseline')}
               >
-                {baselineProgress > 0 ? 'Continue Assessment' : 'Start Assessment'}
+                {baselineProgress > 0 ? t('baselineIncomplete.continueAssessment') : t('baselineIncomplete.startAssessment')}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>
@@ -312,9 +315,9 @@ export default function PlanDashboardPage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-muted-foreground">Complete Study Tasks</CardTitle>
+                  <CardTitle className="text-muted-foreground">{t('baselineIncomplete.completeTasks')}</CardTitle>
                   <CardDescription>
-                    Personalized tasks based on your assessment results
+                    {t('baselineIncomplete.completeTasksDesc')}
                   </CardDescription>
                 </div>
               </div>
@@ -328,9 +331,9 @@ export default function PlanDashboardPage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-muted-foreground">Re-cycle Assessment</CardTitle>
+                  <CardTitle className="text-muted-foreground">{t('baselineIncomplete.recycleAssessment')}</CardTitle>
                   <CardDescription>
-                    Track your improvement with a targeted follow-up assessment
+                    {t('baselineIncomplete.recycleAssessmentDesc')}
                   </CardDescription>
                 </div>
               </div>
@@ -347,9 +350,9 @@ export default function PlanDashboardPage() {
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold">Your Study Plan</h1>
+            <h1 className="text-4xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              Generate your personalized study plan
+              {t('baselineComplete.subtitle')}
             </p>
           </div>
 
@@ -359,9 +362,9 @@ export default function PlanDashboardPage() {
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
                 <div>
-                  <CardTitle className="text-green-800">Baseline Assessment Complete!</CardTitle>
+                  <CardTitle className="text-green-800">{t('baselineComplete.assessmentComplete')}</CardTitle>
                   <CardDescription className="text-green-700">
-                    Average Score: {(baselineModules.reduce((acc, m) => acc + (m.score || 0), 0) / baselineModules.length).toFixed(0)}%
+                    {t('baselineComplete.avgScore', { score: (baselineModules.reduce((acc, m) => acc + (m.score || 0), 0) / baselineModules.length).toFixed(0) })}
                   </CardDescription>
                 </div>
               </div>
@@ -376,9 +379,9 @@ export default function PlanDashboardPage() {
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle>Generate Your Study Plan</CardTitle>
+                  <CardTitle>{t('baselineComplete.generatePlan')}</CardTitle>
                   <CardDescription>
-                    Based on your baseline results, we will create a personalized study plan
+                    {t('baselineComplete.generatePlanDesc')}
                   </CardDescription>
                 </div>
               </div>
@@ -392,12 +395,12 @@ export default function PlanDashboardPage() {
                 {isGeneratingPlan ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
+                    {t('baselineComplete.generating')}
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Generate My Plan
+                    {t('baselineComplete.generateButton')}
                   </>
                 )}
               </Button>
@@ -412,9 +415,9 @@ export default function PlanDashboardPage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-muted-foreground">Re-cycle Assessment</CardTitle>
+                  <CardTitle className="text-muted-foreground">{t('baselineComplete.recycleAssessment')}</CardTitle>
                   <CardDescription>
-                    Unlocks after completing your study tasks
+                    {t('baselineComplete.recycleLockedDesc')}
                   </CardDescription>
                 </div>
               </div>
@@ -442,9 +445,9 @@ export default function PlanDashboardPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Your Study Plan</h1>
+          <h1 className="text-4xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Cycle {currentCycle.cycle_number} | {completedTasks}/{tasks.length} tasks complete
+            {t('cycleInfo', { cycle: currentCycle.cycle_number, completed: completedTasks, total: tasks.length })}
           </p>
         </div>
 
@@ -463,8 +466,8 @@ export default function PlanDashboardPage() {
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
                 <div>
-                  <p className="font-semibold text-green-800">1st Assessment</p>
-                  <p className="text-sm text-green-600">Complete</p>
+                  <p className="font-semibold text-green-800">{t('active.firstAssessment')}</p>
+                  <p className="text-sm text-green-600">{tc('status.complete')}</p>
                 </div>
               </div>
             </CardContent>
@@ -480,9 +483,9 @@ export default function PlanDashboardPage() {
                   <Target className="h-8 w-8 text-primary" />
                 )}
                 <div>
-                  <p className="font-semibold">Study Tasks</p>
+                  <p className="font-semibold">{t('active.studyTasks')}</p>
                   <p className="text-sm text-muted-foreground">
-                    {completedRequired}/{currentCycle.required_task_count} required
+                    {t('active.requiredCount', { completed: completedRequired, required: currentCycle.required_task_count })}
                   </p>
                 </div>
               </div>
@@ -499,9 +502,9 @@ export default function PlanDashboardPage() {
                   <Lock className="h-8 w-8 text-muted-foreground" />
                 )}
                 <div>
-                  <p className="font-semibold">2nd Assessment</p>
+                  <p className="font-semibold">{t('active.secondAssessment')}</p>
                   <p className="text-sm text-muted-foreground">
-                    {canUnlockRecycle ? 'Ready' : 'Locked'}
+                    {canUnlockRecycle ? tc('status.ready') : tc('status.locked')}
                   </p>
                 </div>
               </div>
@@ -513,8 +516,8 @@ export default function PlanDashboardPage() {
         <div className="grid md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Current Readiness</CardTitle>
-              <CardDescription>Your overall exam readiness score</CardDescription>
+              <CardTitle>{t('active.currentReadiness')}</CardTitle>
+              <CardDescription>{t('active.currentReadinessDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
               <ReadinessRing score={readinessScore} size="md" showDelta={false} />
@@ -523,13 +526,13 @@ export default function PlanDashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Task Progress</CardTitle>
-              <CardDescription>Complete required tasks to unlock re-cycle</CardDescription>
+              <CardTitle>{t('active.taskProgress')}</CardTitle>
+              <CardDescription>{t('active.taskProgressDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>Required Tasks</span>
+                  <span>{t('active.requiredTasks')}</span>
                   <span className="font-semibold">
                     {completedRequired}/{currentCycle.required_task_count}
                   </span>
@@ -544,7 +547,7 @@ export default function PlanDashboardPage() {
 
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>All Tasks</span>
+                  <span>{t('active.allTasks')}</span>
                   <span className="font-semibold">
                     {completedTasks}/{tasks.length}
                   </span>
@@ -563,14 +566,14 @@ export default function PlanDashboardPage() {
         {/* Tasks List */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Your Tasks</h2>
+            <h2 className="text-2xl font-bold">{t('active.yourTasks')}</h2>
             <Button
               variant="brutal-outline"
               size="sm"
               onClick={() => router.push('/locked-in')}
             >
               <BookOpen className="h-4 w-4 mr-2" />
-              Browse All Practice
+              {t('active.browseAllPractice')}
             </Button>
           </div>
 
@@ -578,9 +581,9 @@ export default function PlanDashboardPage() {
             <Card>
               <CardContent className="py-8 text-center">
                 <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">No tasks yet</p>
+                <p className="text-lg font-medium">{t('active.noTasks')}</p>
                 <p className="text-muted-foreground">
-                  Your personalized tasks will appear here
+                  {t('active.noTasksDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -594,8 +597,8 @@ export default function PlanDashboardPage() {
         {/* Re-cycle CTA */}
         <GatedCTAButton
           isUnlocked={canUnlockRecycle || isRecycleUnlocked}
-          unlockedText="Start Re-cycle Assessment"
-          lockedReason={`Complete ${currentCycle.required_task_count - completedRequired} more required task(s)`}
+          unlockedText={t('active.startRecycle')}
+          lockedReason={t('active.completeMoreRequired', { count: currentCycle.required_task_count - completedRequired })}
           onClick={() => router.push('/recycle')}
         />
       </div>

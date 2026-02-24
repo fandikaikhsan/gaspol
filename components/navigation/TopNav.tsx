@@ -19,6 +19,7 @@ import {
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n"
 
 interface TopNavProps {
   userRole?: "student" | "admin"
@@ -28,6 +29,7 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
+  const { t } = useTranslation('common')
 
   useEffect(() => {
     loadProfile()
@@ -57,23 +59,21 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
     router.refresh()
   }
 
-  // Student navigation links
+  // Student navigation links (translated)
   const studentLinks = [
-    { href: "/plan", label: "Plan" },
-    { href: "/locked-in", label: "Locked-In" },
-    { href: "/taktis", label: "Taktis" },
-    { href: "/analytics", label: "Analytics" },
+    { href: "/plan", labelKey: "nav.plan" },
+    { href: "/locked-in", labelKey: "nav.lockedIn" },
+    { href: "/taktis", labelKey: "nav.taktis" },
+    { href: "/analytics", labelKey: "nav.analytics" },
   ]
 
-  // Admin navigation links
+  // Admin navigation links (kept as-is, English only)
   const adminLinks = [
     { href: "/admin/taxonomy", label: "Taxonomy" },
     { href: "/admin/questions", label: "Questions" },
     { href: "/admin/modules", label: "Modules" },
     { href: "/admin/baseline", label: "Baseline" },
   ]
-
-  const navLinks = userRole === "admin" ? adminLinks : studentLinks
 
   return (
     <nav className="hidden md:flex items-center justify-between px-6 py-4 bg-background border-b-4 border-border">
@@ -83,28 +83,46 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
         className="flex items-center gap-2"
       >
         <Rocket className="h-6 w-6" />
-        <div className="text-2xl font-bold text-foreground">Gaspol</div>
+        <div className="text-2xl font-bold text-foreground">{t('nav.gaspol')}</div>
       </Link>
 
       {/* Navigation Links */}
       <div className="flex items-center gap-2">
-        {navLinks.map((link) => {
-          const isActive = pathname.startsWith(link.href)
-          return (
-            <Link key={link.href} href={link.href}>
-              <Button
-                variant={isActive ? "default" : "ghost"}
-                className={
-                  isActive
-                    ? "bg-construct-speed text-foreground border-2 border-border shadow-brutal-sm hover:bg-construct-speed/90"
-                    : "hover:bg-muted"
-                }
-              >
-                {link.label}
-              </Button>
-            </Link>
-          )
-        })}
+        {userRole === "admin"
+          ? adminLinks.map((link) => {
+              const isActive = pathname.startsWith(link.href)
+              return (
+                <Link key={link.href} href={link.href}>
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    className={
+                      isActive
+                        ? "bg-construct-speed text-foreground border-2 border-border shadow-brutal-sm hover:bg-construct-speed/90"
+                        : "hover:bg-muted"
+                    }
+                  >
+                    {link.label}
+                  </Button>
+                </Link>
+              )
+            })
+          : studentLinks.map((link) => {
+              const isActive = pathname.startsWith(link.href)
+              return (
+                <Link key={link.href} href={link.href}>
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    className={
+                      isActive
+                        ? "bg-construct-speed text-foreground border-2 border-border shadow-brutal-sm hover:bg-construct-speed/90"
+                        : "hover:bg-muted"
+                    }
+                  >
+                    {t(link.labelKey)}
+                  </Button>
+                </Link>
+              )
+            })}
       </div>
 
       {/* User Menu */}
@@ -117,17 +135,17 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-2">
             <p className="text-sm font-semibold">
-              {profile?.full_name || "User"}
+              {profile?.full_name || t('nav.user')}
             </p>
             <p className="text-xs text-muted-foreground">{profile?.email}</p>
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/settings")}>
-            Profile Settings
+            {t('nav.profileSettings')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-            Logout
+            {t('nav.logout')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

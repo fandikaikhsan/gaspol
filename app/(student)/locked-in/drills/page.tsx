@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Shuffle, Focus, Search, Target, ArrowLeft, Play, BookOpen, Sparkles } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 interface TaxonomyNode {
   id: string
@@ -53,6 +54,8 @@ interface WeakSkill {
 
 export default function DrillsPage() {
   const router = useRouter()
+  const { t } = useTranslation('lockedIn')
+  const { t: tc } = useTranslation('common')
   const [activeTab, setActiveTab] = useState("quick-start")
   const [searchTerm, setSearchTerm] = useState("")
   const [topics, setTopics] = useState<TaxonomyNode[]>([])
@@ -198,7 +201,7 @@ export default function DrillsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading...</p>
+        <p className="text-lg text-muted-foreground">{tc('status.loading')}</p>
       </div>
     )
   }
@@ -216,9 +219,9 @@ export default function DrillsPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Practice Drills</h1>
+            <h1 className="text-3xl font-bold">{t('drills.title')}</h1>
             <p className="text-muted-foreground">
-              Choose your practice mode
+              {t('drills.chooseMode')}
             </p>
           </div>
         </div>
@@ -227,7 +230,7 @@ export default function DrillsPage() {
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
-              <span className="font-medium">Questions per session:</span>
+              <span className="font-medium">{t('drills.questionsPerSession')}</span>
               <div className="flex gap-2">
                 {[5, 10, 15, 20].map((count) => (
                   <Button
@@ -247,11 +250,11 @@ export default function DrillsPage() {
         {/* Tabs */}
         <Tabs defaultValue="quick-start" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="quick-start">Quick Start</TabsTrigger>
-            <TabsTrigger value="by-topic">By Topic</TabsTrigger>
-            <TabsTrigger value="modules">Modules</TabsTrigger>
+            <TabsTrigger value="quick-start">{t('drills.quickStart')}</TabsTrigger>
+            <TabsTrigger value="by-topic">{t('drills.byTopic')}</TabsTrigger>
+            <TabsTrigger value="modules">{t('drills.modulesTab')}</TabsTrigger>
             <TabsTrigger value="weak-skills">
-              Weak Skills
+              {t('drills.weakSkillsTab')}
               {weakSkills.length > 0 && (
                 <Badge variant="destructive" className="ml-2">
                   {weakSkills.length}
@@ -274,9 +277,9 @@ export default function DrillsPage() {
                       <Shuffle className="h-7 w-7" />
                     </div>
                     <div>
-                      <CardTitle>Mixed Drill</CardTitle>
+                      <CardTitle>{t('drills.mixedDrill')}</CardTitle>
                       <CardDescription>
-                        Random questions from all topics
+                        {t('drills.mixedDrillDesc')}
                       </CardDescription>
                     </div>
                   </div>
@@ -284,11 +287,11 @@ export default function DrillsPage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      {selectedQuestionCount} questions
+                      {t('drills.questionsCount', { count: selectedQuestionCount })}
                     </span>
                     <Button variant="brutal" size="sm">
                       <Play className="h-4 w-4 mr-2" />
-                      Start
+                      {tc('button.start')}
                     </Button>
                   </div>
                 </CardContent>
@@ -307,11 +310,11 @@ export default function DrillsPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <CardTitle>Target Weak Areas</CardTitle>
-                          <Badge variant="destructive">Recommended</Badge>
+                          <CardTitle>{t('drills.targetWeakAreas')}</CardTitle>
+                          <Badge variant="destructive">{t('drills.recommended')}</Badge>
                         </div>
                         <CardDescription>
-                          Focus on your {weakSkills.length} weakest skills
+                          {t('drills.targetWeakDesc', { count: weakSkills.length })}
                         </CardDescription>
                       </div>
                     </div>
@@ -319,11 +322,11 @@ export default function DrillsPage() {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">
-                        {selectedQuestionCount} questions
+                        {t('drills.questionsCount', { count: selectedQuestionCount })}
                       </span>
                       <Button variant="brutal" size="sm" className="bg-red-500 hover:bg-red-600">
                         <Play className="h-4 w-4 mr-2" />
-                        Start
+                        {tc('button.start')}
                       </Button>
                     </div>
                   </CardContent>
@@ -338,7 +341,7 @@ export default function DrillsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search topics..."
+                placeholder={t('drills.searchTopics')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -351,7 +354,7 @@ export default function DrillsPage() {
                 <Card>
                   <CardContent className="py-8 text-center">
                     <p className="text-muted-foreground">
-                      {searchTerm ? 'No topics found matching your search' : 'No topics available'}
+                      {searchTerm ? t('drills.noTopicsFound') : t('drills.noTopics')}
                     </p>
                   </CardContent>
                 </Card>
@@ -395,9 +398,9 @@ export default function DrillsPage() {
               <Card>
                 <CardContent className="py-8 text-center">
                   <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">No Modules Available</p>
+                  <p className="text-lg font-medium">{t('drills.noModules')}</p>
                   <p className="text-muted-foreground">
-                    Pre-made drill modules will appear here when available
+                    {t('drills.noModulesDesc')}
                   </p>
                 </CardContent>
               </Card>
@@ -421,12 +424,12 @@ export default function DrillsPage() {
                               {module.is_suggested && (
                                 <Badge variant="secondary">
                                   <Sparkles className="h-3 w-3 mr-1" />
-                                  Suggested
+                                  {t('drills.suggested')}
                                 </Badge>
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {module.description || (module.target_name ? `Focus: ${module.target_name}` : 'Mixed topics')}
+                              {module.description || (module.target_name ? `Focus: ${module.target_name}` : t('drills.mixedDrillDesc'))}
                             </p>
                           </div>
                         </div>
@@ -452,9 +455,9 @@ export default function DrillsPage() {
               <Card>
                 <CardContent className="py-8 text-center">
                   <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">No Weak Skills Detected</p>
+                  <p className="text-lg font-medium">{t('drills.noWeakSkills')}</p>
                   <p className="text-muted-foreground">
-                    Complete more practice sessions to identify areas needing improvement
+                    {t('drills.noWeakSkillsDesc')}
                   </p>
                 </CardContent>
               </Card>
@@ -464,9 +467,9 @@ export default function DrillsPage() {
                   <CardContent className="py-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-red-800">Practice All Weak Skills</p>
+                        <p className="font-medium text-red-800">{t('drills.practiceAllWeak')}</p>
                         <p className="text-sm text-red-600">
-                          {weakSkills.length} skills need improvement
+                          {t('drills.practiceAllWeakDesc', { count: weakSkills.length })}
                         </p>
                       </div>
                       <Button
@@ -475,7 +478,7 @@ export default function DrillsPage() {
                         onClick={() => startWeakSkillDrill(weakSkills.map(s => s.node_id))}
                       >
                         <Play className="h-4 w-4 mr-2" />
-                        Start All
+                        {t('drills.startAll')}
                       </Button>
                     </div>
                   </CardContent>
@@ -500,10 +503,10 @@ export default function DrillsPage() {
                                 <span>{skill.code}</span>
                                 <span>|</span>
                                 <span className="text-red-600">
-                                  Mastery: {skill.mastery.toFixed(0)}%
+                                  {t('drills.mastery', { percent: skill.mastery.toFixed(0) })}
                                 </span>
                                 <span>|</span>
-                                <span>{skill.attempt_count} attempts</span>
+                                <span>{t('drills.attempts', { count: skill.attempt_count })}</span>
                               </div>
                             </div>
                           </div>

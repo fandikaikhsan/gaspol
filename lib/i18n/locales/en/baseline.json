@@ -1,0 +1,53 @@
+{
+  "title": "Baseline Assessment",
+  "subtitle": "Let's establish your starting point with quick diagnostic modules",
+  "progress": {
+    "title": "Overall Progress",
+    "subtitle": "Complete all modules to generate your personalized study plan",
+    "modulesOf": "{{completed}} of {{total}} modules",
+    "allComplete": "✓ All modules complete!",
+    "viewAnalytics": "View Full Analytics & Generate Plan"
+  },
+  "modules": {
+    "title": "Assessment Modules",
+    "moduleNumber": "Module {{number}}",
+    "completed": "✓ Completed",
+    "estimatedTime": "⏱️ ~{{minutes}} min",
+    "score": "Score: {{score}}%",
+    "retake": "Retake",
+    "empty": "No baseline modules available. Please contact support."
+  },
+  "result": {
+    "title": "Module Complete!",
+    "subtitle": "Great work! Here's how you performed",
+    "yourScore": "Your Score",
+    "correctOf": "{{correct}} out of {{total}} correct",
+    "avgTime": "Avg Time/Question",
+    "avgTimeValue": "{{seconds}}s",
+    "performance": "Performance Snapshot",
+    "performanceSubtitle": "Based on this module - full analytics after all modules complete",
+    "readiness": "Readiness Score",
+    "skillProfile": "Skill Profile",
+    "teliti": "Teliti (Careful)",
+    "speed": "Speed",
+    "reasoning": "Reasoning",
+    "computation": "Computation",
+    "reading": "Reading",
+    "allComplete": "🎉 Baseline Assessment Complete!",
+    "allCompleteDesc": "All modules finished. Ready to generate your personalized study plan?",
+    "viewAnalytics": "View Full Analytics & Generate Plan",
+    "backToHub": "Back to Baseline Hub",
+    "continueNext": "Continue to Next Module"
+  },
+  "moduleRunner": {
+    "notFound": "Module Not Found",
+    "notFoundDesc": "Could not find module with ID: {{id}}. Error: {{error}}",
+    "noQuestions": "No questions in this module. Please add questions via the admin Module Composer.",
+    "loadingAssessment": "Loading assessment...",
+    "completeToast": "Module Complete! 🎉",
+    "completeToastDesc": "You scored {{score}}%",
+    "noQuestionsAvailable": "No questions available",
+    "returnToHub": "Return to baseline hub"
+  },
+  "loadingResults": "Loading results..."
+}

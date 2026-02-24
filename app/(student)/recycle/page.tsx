@@ -12,10 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 
 export default function RecycleHubPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation('recycle')
+  const { t: tc } = useTranslation('common')
   const [user, setUser] = useState<any>(null)
   const [userState, setUserState] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
@@ -60,8 +63,8 @@ export default function RecycleHubPage() {
 
     setIsCreating(true)
     toast({
-      title: "Creating checkpoint...",
-      description: "Analyzing weak areas",
+      title: t('toast.creating'),
+      description: t('toast.creatingDesc'),
     })
 
     try {
@@ -81,8 +84,8 @@ export default function RecycleHubPage() {
       if (!data?.success) throw new Error(data?.error || 'Failed to create checkpoint')
 
       toast({
-        title: "Checkpoint ready!",
-        description: `${data.question_count} questions targeting ${data.weak_skills_targeted} weak areas`,
+        title: t('toast.ready'),
+        description: t('toast.readyDesc', { questions: data.question_count, skills: data.weak_skills_targeted }),
       })
 
       router.push(
@@ -92,7 +95,7 @@ export default function RecycleHubPage() {
       console.error('Failed to create checkpoint:', err)
       toast({
         variant: "destructive",
-        title: "Error",
+        title: t('toast.error'),
         description: err.message || "Failed to create checkpoint",
       })
     } finally {
@@ -102,7 +105,7 @@ export default function RecycleHubPage() {
 
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
-      <p>Loading...</p>
+      <p>{tc('status.loading')}</p>
     </div>
   }
 
@@ -113,22 +116,22 @@ export default function RecycleHubPage() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Re-cycle Checkpoint 🔄</h1>
+          <h1 className="text-4xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Targeted assessment of weak areas with delta analytics
+            {t('subtitle')}
           </p>
         </div>
 
         {!isUnlocked && (
           <Card className="border-muted bg-muted/20">
             <CardContent className="text-center py-12">
-              <p className="text-6xl mb-4">🔒</p>
-              <h3 className="text-2xl font-bold mb-2">Locked</h3>
+              <p className="text-6xl mb-4">{t('locked')}</p>
+              <h3 className="text-2xl font-bold mb-2">{t('lockedTitle')}</h3>
               <p className="text-muted-foreground mb-6">
-                Complete required tasks in your study plan to unlock re-cycle
+                {t('lockedDesc')}
               </p>
               <Button onClick={() => router.push('/plan')}>
-                Go to Study Plan
+                {t('goToPlan')}
               </Button>
             </CardContent>
           </Card>
@@ -138,9 +141,9 @@ export default function RecycleHubPage() {
           <>
             <Card className="border-primary bg-primary/5">
               <CardHeader>
-                <CardTitle>Create New Checkpoint</CardTitle>
+                <CardTitle>{t('createCheckpoint')}</CardTitle>
                 <CardDescription>
-                  Test your improvement in weak areas
+                  {t('createCheckpointDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -150,18 +153,18 @@ export default function RecycleHubPage() {
                   className="w-full"
                   size="lg"
                 >
-                  {isCreating ? 'Creating...' : 'Start New Checkpoint'}
+                  {isCreating ? t('creating') : t('startCheckpoint')}
                 </Button>
               </CardContent>
             </Card>
 
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Past Checkpoints</h2>
+              <h2 className="text-2xl font-bold">{t('pastCheckpoints')}</h2>
               {checkpoints.length === 0 && (
                 <Card>
                   <CardContent className="text-center py-8">
                     <p className="text-muted-foreground">
-                      No checkpoints yet. Create your first one above!
+                      {t('noCheckpoints')}
                     </p>
                   </CardContent>
                 </Card>
@@ -171,11 +174,11 @@ export default function RecycleHubPage() {
                 <Card key={checkpoint.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>Checkpoint #{idx + 1}</CardTitle>
+                      <CardTitle>{t('checkpointNumber', { number: idx + 1 })}</CardTitle>
                       {checkpoint.is_completed ? (
-                        <Badge variant="strong">Complete</Badge>
+                        <Badge variant="strong">{tc('status.complete')}</Badge>
                       ) : (
-                        <Badge>In Progress</Badge>
+                        <Badge>{tc('status.inProgress')}</Badge>
                       )}
                     </div>
                     <CardDescription>
@@ -185,10 +188,7 @@ export default function RecycleHubPage() {
                   <CardContent>
                     {checkpoint.delta_readiness && (
                       <p className="text-sm">
-                        Readiness change:{' '}
-                        <span className={checkpoint.delta_readiness > 0 ? 'text-status-strong' : 'text-destructive'}>
-                          {checkpoint.delta_readiness > 0 ? '+' : ''}{checkpoint.delta_readiness}
-                        </span>
+                        {t('readinessChange', { delta: `${checkpoint.delta_readiness > 0 ? '+' : ''}${checkpoint.delta_readiness}` })}
                       </p>
                     )}
                   </CardContent>

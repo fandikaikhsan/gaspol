@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "plan": "Plan",
+    "lockedIn": "Locked-In",
+    "taktis": "Taktis",
+    "analytics": "Analytics",
+    "menu": "Menu",
+    "profileSettings": "Pengaturan Profil",
+    "logout": "Keluar",
+    "user": "Pengguna",
+    "gaspol": "Gaspol"
+  },
+  "button": {
+    "start": "Mulai",
+    "continue": "Lanjutkan",
+    "back": "Kembali",
+    "finish": "Selesai",
+    "next": "Selanjutnya",
+    "previous": "Sebelumnya",
+    "submit": "Kirim",
+    "submitting": "Mengirim...",
+    "save": "Simpan",
+    "saving": "Menyimpan...",
+    "retry": "Coba Lagi",
+    "retake": "Ulang",
+    "cancel": "Batal",
+    "done": "Selesai",
+    "review": "Tinjau",
+    "goBack": "Kembali",
+    "refreshPage": "Muat Ulang Halaman"
+  },
+  "status": {
+    "loading": "Memuat...",
+    "complete": "Selesai",
+    "locked": "Terkunci",
+    "ready": "Siap",
+    "required": "Wajib",
+    "comingSoon": "Segera Hadir",
+    "inProgress": "Sedang Berjalan",
+    "done": "✓ Selesai"
+  },
+  "error": {
+    "title": "Error",
+    "unexpected": "Terjadi kesalahan. Silakan coba lagi.",
+    "somethingWrong": "Terjadi Kesalahan",
+    "unexpectedError": "Terjadi kesalahan tak terduga. Silakan muat ulang halaman.",
+    "submissionFailed": "Pengiriman Gagal",
+    "submissionFailedDesc": "Gagal mengirim jawaban. Silakan coba lagi."
+  },
+  "time": {
+    "minutes": "menit",
+    "seconds": "detik",
+    "daysLeft": "{{count}} hari lagi",
+    "daysUntilExam": "Hari Menuju Ujian",
+    "estimated": "~{{minutes}} menit",
+    "score": "Skor: {{score}}%"
+  },
+  "question": {
+    "questionOf": "Soal {{current}} dari {{total}}",
+    "answered": "Dijawab",
+    "unanswered": "Belum Dijawab",
+    "current": "Saat Ini",
+    "empty": "Kosong",
+    "remaining": "{{count}} tersisa",
+    "progress": "Progres: {{percent}}%",
+    "answeredOf": "{{answered}} dari {{total}} dijawab",
+    "jumpToQuestion": "Lompat ke Soal",
+    "quickNavigation": "Navigasi Cepat",
+    "jump": "Lompat",
+    "unsupported": "Format soal tidak didukung",
+    "unansweredWarning": "Kamu memiliki {{count}} soal belum dijawab. Tetap kirim?"
+  },
+  "assessment": {
+    "baseline": "Baseline Assessment",
+    "practiceDrill": "Latihan Drill",
+    "mockTest": "Ujian Simulasi",
+    "recycleCheckpoint": "Re-cycle Checkpoint",
+    "timeRemaining": "Sisa Waktu",
+    "timeElapsed": "Waktu Berlalu",
+    "timesUp": "Waktu Habis!",
+    "timesUpDesc": "Jawaban kamu sedang dikirim otomatis..."
+  }
+}

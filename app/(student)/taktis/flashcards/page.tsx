@@ -11,11 +11,13 @@ import { createClient } from "@/lib/supabase/client"
 import { FlashcardStack } from "@/components/taktis/FlashcardStack"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 
 function FlashcardsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { t } = useTranslation('taktis')
 
   const taskId = searchParams.get('taskId')
 
@@ -74,15 +76,15 @@ function FlashcardsContent() {
     }
 
     toast({
-      title: "Great work!",
-      description: "Flashcard session complete",
+      title: t('flashcards.complete'),
+      description: t('flashcards.completeDesc'),
     })
     router.push('/plan')
   }
 
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
-      <p>Loading flashcards...</p>
+      <p>{t('flashcards.loading')}</p>
     </div>
   }
 
@@ -90,12 +92,12 @@ function FlashcardsContent() {
     return <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto text-center py-12">
         <p className="text-2xl mb-4">📚</p>
-        <p className="text-lg font-semibold mb-2">No flashcards available</p>
+        <p className="text-lg font-semibold mb-2">{t('flashcards.noCards')}</p>
         <p className="text-muted-foreground mb-6">
-          Flashcards will be added soon
+          {t('flashcards.noCardsDesc')}
         </p>
         <Button onClick={() => router.push('/plan')}>
-          Back to Plan
+          {t('flashcards.backToPlan')}
         </Button>
       </div>
     </div>
@@ -105,8 +107,8 @@ function FlashcardsContent() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto py-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Flashcards 🗂️</h1>
-          <p className="text-muted-foreground">Quick review with flip cards</p>
+          <h1 className="text-4xl font-bold mb-2">{t('flashcards.pageTitle')}</h1>
+          <p className="text-muted-foreground">{t('flashcards.pageSubtitle')}</p>
         </div>
 
         <FlashcardStack
@@ -120,10 +122,12 @@ function FlashcardsContent() {
 }
 
 export default function FlashcardsPage() {
+  const { t } = useTranslation('taktis')
+
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Loading flashcards...</p>
+        <p>{t('flashcards.loading')}</p>
       </div>
     }>
       <FlashcardsContent />

@@ -12,11 +12,14 @@ import { createClient } from "@/lib/supabase/client"
 import { QuestionRunner } from "@/components/assessment/QuestionRunner"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 
 export default function DrillRunnerPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
+  const { t } = useTranslation('lockedIn')
+  const { t: tc } = useTranslation('common')
   const taskId = params.taskId as string
 
   const [user, setUser] = useState<any>(null)
@@ -47,7 +50,7 @@ export default function DrillRunnerPage() {
       if (taskError || !taskData) {
         toast({
           variant: "destructive",
-          title: "Task not found",
+          title: t('drill.taskNotFound'),
         })
         router.push('/plan')
         return
@@ -62,8 +65,8 @@ export default function DrillRunnerPage() {
         // Generate module on-the-fly
         // For demo, redirect back
         toast({
-          title: "Module generation needed",
-          description: "This feature requires module generation",
+          title: t('drill.moduleNeeded'),
+          description: t('drill.moduleNeededDesc'),
         })
         router.push('/plan')
         return
@@ -142,28 +145,28 @@ export default function DrillRunnerPage() {
         .eq('id', taskId)
 
       toast({
-        title: "Drill Complete! 🎯",
-        description: `Score: ${score.toFixed(0)}%`,
+        title: t('drill.complete'),
+        description: t('drill.scoreDesc', { score: score.toFixed(0) }),
       })
 
       router.push('/plan')
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Submission failed",
+        title: t('drill.submissionFailed'),
       })
     }
   }
 
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
-      <p>Loading drill...</p>
+      <p>{t('drill.loading')}</p>
     </div>
   }
 
   if (!questions.length) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
-      <p>No questions available</p>
+      <p>{t('drill.noQuestions')}</p>
     </div>
   }
 

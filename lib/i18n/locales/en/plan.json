@@ -1,0 +1,58 @@
+{
+  "title": "Your Study Plan",
+  "cycleInfo": "Cycle {{cycle}} | {{completed}}/{{total}} tasks complete",
+  "baselineIncomplete": {
+    "subtitle": "Complete the baseline assessment to unlock your personalized plan",
+    "completeBaseline": "Complete Baseline Assessment",
+    "baselineDesc": "Quick diagnostic to understand your current level",
+    "progressPercent": "{{percent}}% Complete",
+    "progress": "Progress",
+    "modulesCount": "{{completed}}/{{total}} modules",
+    "moduleLabel": "Module {{idx}}",
+    "continueAssessment": "Continue Assessment",
+    "startAssessment": "Start Assessment",
+    "completeTasks": "Complete Study Tasks",
+    "completeTasksDesc": "Personalized tasks based on your assessment results",
+    "recycleAssessment": "Re-cycle Assessment",
+    "recycleAssessmentDesc": "Track your improvement with a targeted follow-up assessment"
+  },
+  "baselineComplete": {
+    "subtitle": "Generate your personalized study plan",
+    "assessmentComplete": "Baseline Assessment Complete!",
+    "avgScore": "Average Score: {{score}}%",
+    "generatePlan": "Generate Your Study Plan",
+    "generatePlanDesc": "Based on your baseline results, we will create a personalized study plan",
+    "generating": "Generating...",
+    "generateButton": "Generate My Plan",
+    "recycleAssessment": "Re-cycle Assessment",
+    "recycleLockedDesc": "Unlocks after completing your study tasks"
+  },
+  "active": {
+    "firstAssessment": "1st Assessment",
+    "studyTasks": "Study Tasks",
+    "requiredCount": "{{completed}}/{{required}} required",
+    "secondAssessment": "2nd Assessment",
+    "currentReadiness": "Current Readiness",
+    "currentReadinessDesc": "Your overall exam readiness score",
+    "taskProgress": "Task Progress",
+    "taskProgressDesc": "Complete required tasks to unlock re-cycle",
+    "requiredTasks": "Required Tasks",
+    "allTasks": "All Tasks",
+    "yourTasks": "Your Tasks",
+    "browseAllPractice": "Browse All Practice",
+    "noTasks": "No tasks yet",
+    "noTasksDesc": "Your personalized tasks will appear here",
+    "completeMoreRequired": "Complete {{count}} more required task(s)",
+    "startRecycle": "Start Re-cycle Assessment"
+  },
+  "dayProgress": "Day {{current}}/{{total}}",
+  "studyPlanProgress": "Study Plan Progress",
+  "daysLeft": "{{count}} days left",
+  "makeEveryDayCount": "Make every day count!",
+  "completeToUnlock": "Complete required tasks to unlock",
+  "toast": {
+    "planGenerated": "Plan Generated!",
+    "planGeneratedDesc": "Your personalized study plan is ready",
+    "error": "Error"
+  }
+}

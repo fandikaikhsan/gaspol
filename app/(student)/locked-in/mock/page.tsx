@@ -12,11 +12,14 @@ import { QuestionRunner } from "@/components/assessment/QuestionRunner"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 function MockTestContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { t } = useTranslation('lockedIn')
+  const { t: tc } = useTranslation('common')
 
   const taskId = searchParams.get('taskId')
   const questionCount = parseInt(searchParams.get('count') || '20')
@@ -55,7 +58,7 @@ function MockTestContent() {
         const selected = shuffled.slice(0, questionCount)
 
         if (selected.length === 0) {
-          setError('No questions available for mock test.')
+          setError(t('mock.noQuestions'))
           setIsLoading(false)
           return
         }
@@ -140,8 +143,8 @@ function MockTestContent() {
       }
 
       toast({
-        title: "Mock Test Complete!",
-        description: `Score: ${score.toFixed(0)}% (${correctCount}/${totalCount} correct)`,
+        title: t('mock.complete'),
+        description: t('mock.scoreDesc', { score: score.toFixed(0), correct: correctCount, total: totalCount }),
       })
 
       router.push('/locked-in')
@@ -149,8 +152,8 @@ function MockTestContent() {
       console.error('Error completing mock test:', err)
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to submit your answers. Please try again.",
+        title: tc('error.title'),
+        description: tc('error.submissionFailedDesc'),
       })
     }
   }
@@ -160,7 +163,7 @@ function MockTestContent() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="text-lg text-muted-foreground">Preparing mock test...</p>
+          <p className="text-lg text-muted-foreground">{t('mock.preparing')}</p>
         </div>
       </div>
     )
@@ -175,7 +178,7 @@ function MockTestContent() {
             onClick={() => router.push('/locked-in')}
             className="text-primary underline"
           >
-            Back to Hub
+            {t('mock.backToHub')}
           </button>
         </div>
       </div>
@@ -198,12 +201,14 @@ function MockTestContent() {
 }
 
 export default function MockTestPage() {
+  const { t: tc } = useTranslation('common')
+
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="text-lg text-muted-foreground">Loading...</p>
+          <p className="text-lg text-muted-foreground">{tc('status.loading')}</p>
         </div>
       </div>
     }>

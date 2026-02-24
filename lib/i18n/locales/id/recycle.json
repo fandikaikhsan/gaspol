@@ -1,0 +1,23 @@
+{
+  "title": "Re-cycle Checkpoint 🔄",
+  "subtitle": "Assessment terarah pada area lemah dengan delta analytics",
+  "locked": "🔒",
+  "lockedTitle": "Terkunci",
+  "lockedDesc": "Selesaikan tugas wajib di rencana belajar untuk membuka re-cycle",
+  "goToPlan": "Ke Rencana Belajar",
+  "createCheckpoint": "Buat Checkpoint Baru",
+  "createCheckpointDesc": "Uji peningkatanmu di area lemah",
+  "creating": "Membuat...",
+  "startCheckpoint": "Mulai Checkpoint Baru",
+  "pastCheckpoints": "Checkpoint Sebelumnya",
+  "noCheckpoints": "Belum ada checkpoint. Buat checkpoint pertamamu di atas!",
+  "checkpointNumber": "Checkpoint #{{number}}",
+  "readinessChange": "Perubahan kesiapan: {{delta}}",
+  "toast": {
+    "creating": "Membuat checkpoint...",
+    "creatingDesc": "Menganalisis area lemah",
+    "ready": "Checkpoint siap!",
+    "readyDesc": "{{questions}} soal menargetkan {{skills}} area lemah",
+    "error": "Error"
+  }
+}

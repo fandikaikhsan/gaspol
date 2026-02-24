@@ -1,0 +1,33 @@
+{
+  "title": "Taktis",
+  "subtitle": "Mode belajar cepat untuk penguatan skill yang efektif",
+  "flashcards": {
+    "title": "Flashcards",
+    "desc": "Balik kartu untuk menguji ingatan dan memperkuat konsep penting",
+    "pageTitle": "Flashcards 🗂️",
+    "pageSubtitle": "Review cepat dengan kartu balik",
+    "loading": "Memuat flashcards...",
+    "noCards": "Tidak ada flashcards tersedia",
+    "noCardsDesc": "Flashcards akan segera ditambahkan",
+    "backToPlan": "Kembali ke Plan",
+    "cardOf": "Kartu {{current}} dari {{total}}",
+    "tapToFlip": "Ketuk untuk membalik",
+    "tapToFlipBack": "Ketuk untuk membalik kembali",
+    "howWell": "Seberapa baik kamu tahu ini?",
+    "forgot": "Lupa",
+    "hard": "Sulit",
+    "good": "Baik",
+    "easy": "Mudah",
+    "complete": "Kerja bagus!",
+    "completeDesc": "Sesi flashcard selesai"
+  },
+  "swipe": {
+    "title": "Quick Swipe",
+    "desc": "Jawaban cepat ala Tinder untuk latihan kecepatan",
+    "pageTitle": "Quick Swipe ⚡",
+    "pageSubtitle": "Geser kanan untuk benar, kiri untuk lewati",
+    "score": "Skor: {{correct}}/{{total}}",
+    "comingSoon": "🚧 Antarmuka swipe segera hadir",
+    "comingSoonDesc": "Sistem jawab cepat berbasis sentuh untuk mobile"
+  }
+}

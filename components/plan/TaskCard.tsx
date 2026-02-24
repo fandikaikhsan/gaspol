@@ -4,6 +4,7 @@
  */
 
 import Link from "next/link"
+import { useTranslation } from "@/lib/i18n"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,11 +26,11 @@ interface TaskCardProps {
 }
 
 const taskIcons = {
-  drill_focus: '🎯',
-  drill_mixed: '🔄',
-  mock: '📝',
-  flashcard: '🗂️',
-  review: '👁️',
+  drill_focus: '',
+  drill_mixed: '',
+  mock: '',
+  flashcard: '',
+  review: '',
 }
 
 const taskColors = {
@@ -58,7 +59,9 @@ function getTaskHref(task: TaskCardProps['task']): string {
 }
 
 export function TaskCard({ task }: TaskCardProps) {
-  const icon = taskIcons[task.task_type as keyof typeof taskIcons] || '📌'
+  const { t } = useTranslation('common')
+  const { t: tp } = useTranslation('plan')
+  const icon = taskIcons[task.task_type as keyof typeof taskIcons] || ''
   const color = taskColors[task.task_type as keyof typeof taskColors] || 'bg-muted'
 
   return (
@@ -75,26 +78,26 @@ export function TaskCard({ task }: TaskCardProps) {
             </div>
           </div>
           {task.is_completed && (
-            <Badge variant="strong">✓ Done</Badge>
+            <Badge variant="strong">{t('status.done')}</Badge>
           )}
           {!task.is_completed && task.is_required && (
-            <Badge variant="destructive">Required</Badge>
+            <Badge variant="destructive">{t('status.required')}</Badge>
           )}
         </div>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            ⏱️ ~{task.estimated_duration_min} min
+            {t('time.estimated', { minutes: task.estimated_duration_min })}
             {task.is_completed && task.completion_score && (
               <span className="ml-4 font-semibold text-foreground">
-                Score: {task.completion_score.toFixed(0)}%
+                {t('time.score', { score: task.completion_score.toFixed(0) })}
               </span>
             )}
           </div>
           <Link href={getTaskHref(task)}>
             <Button variant={task.is_completed ? "brutal-secondary" : "brutal"}>
-              {task.is_completed ? 'Review' : 'Start'}
+              {task.is_completed ? t('button.review') : t('button.start')}
             </Button>
           </Link>
         </div>

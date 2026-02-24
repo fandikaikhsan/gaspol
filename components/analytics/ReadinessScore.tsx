@@ -8,6 +8,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Target, TrendingUp, Clock, CheckCircle2 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 interface ReadinessScoreProps {
   score: number // 0-100
@@ -20,35 +21,37 @@ interface ReadinessScoreProps {
 }
 
 export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
+  const { t } = useTranslation('analytics')
+
   // Get status based on score
   const getStatus = (s: number) => {
     if (s >= 80) return {
-      label: "Excellent",
-      message: "You're well-prepared for the exam!",
+      label: t('readiness.excellent'),
+      message: t('readiness.excellentDesc'),
       color: "from-green-500 to-emerald-600",
       bgColor: "bg-green-500",
       textColor: "text-green-700",
       borderColor: "border-green-500"
     }
     if (s >= 60) return {
-      label: "Ready",
-      message: "Good foundation, keep refining!",
+      label: t('readiness.ready'),
+      message: t('readiness.readyDesc'),
       color: "from-blue-500 to-indigo-600",
       bgColor: "bg-blue-500",
       textColor: "text-blue-700",
       borderColor: "border-blue-500"
     }
     if (s >= 40) return {
-      label: "Developing",
-      message: "Making progress, more practice needed.",
+      label: t('readiness.developing'),
+      message: t('readiness.developingDesc'),
       color: "from-yellow-500 to-orange-500",
       bgColor: "bg-yellow-500",
       textColor: "text-yellow-700",
       borderColor: "border-yellow-500"
     }
     return {
-      label: "Not Ready",
-      message: "Focus on building fundamentals.",
+      label: t('readiness.notReady'),
+      message: t('readiness.notReadyDesc'),
       color: "from-red-500 to-rose-600",
       bgColor: "bg-red-500",
       textColor: "text-red-700",
@@ -108,7 +111,7 @@ export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <Target className="h-8 w-8 text-muted-foreground mb-2" />
                 <div className="text-5xl font-bold">{Math.round(score)}</div>
-                <div className="text-sm text-muted-foreground">/ 100</div>
+                <div className="text-sm text-muted-foreground">{t('readiness.outOf')}</div>
               </div>
             </div>
 
@@ -120,7 +123,7 @@ export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
           {/* Right: Details */}
           <div className="space-y-4">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Exam Readiness</h2>
+              <h2 className="text-2xl font-bold mb-2">{t('readiness.title')}</h2>
               <p className="text-muted-foreground">
                 {status.message}
               </p>
@@ -129,14 +132,14 @@ export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
             {/* Score Breakdown */}
             {breakdown && (
               <div className="space-y-3 pt-4 border-t-2 border-border">
-                <h3 className="font-semibold text-sm text-muted-foreground">Score Breakdown</h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">{t('readiness.breakdown')}</h3>
 
                 <div className="space-y-2">
                   {/* Mastery Average */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Average Mastery</span>
+                      <span className="text-sm">{t('readiness.avgMastery')}</span>
                     </div>
                     <span className="font-medium">{Math.round(breakdown.mastery_avg)}%</span>
                   </div>
@@ -145,7 +148,7 @@ export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm">Topic Coverage</span>
+                      <span className="text-sm">{t('readiness.topicCoverage')}</span>
                     </div>
                     <span className="font-medium">{Math.round(breakdown.coverage_pct)}%</span>
                   </div>
@@ -154,7 +157,7 @@ export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm">Consistency</span>
+                      <span className="text-sm">{t('readiness.consistency')}</span>
                     </div>
                     <span className="font-medium">{Math.round(breakdown.consistency)}%</span>
                   </div>
@@ -163,7 +166,7 @@ export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-yellow-500" />
-                      <span className="text-sm">Time Efficiency</span>
+                      <span className="text-sm">{t('readiness.timeEfficiency')}</span>
                     </div>
                     <span className="font-medium">{Math.round(breakdown.time_efficiency)}%</span>
                   </div>
@@ -174,7 +177,7 @@ export function ReadinessScore({ score, breakdown }: ReadinessScoreProps) {
             {/* Tips */}
             <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
               <p className="text-sm text-blue-900">
-                <strong>Tip:</strong> Focus on your weak skills and error patterns below to improve your readiness score.
+                <strong>{t('readiness.tip')}</strong>
               </p>
             </div>
           </div>

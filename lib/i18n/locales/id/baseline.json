@@ -1,0 +1,53 @@
+{
+  "title": "Baseline Assessment",
+  "subtitle": "Mari tentukan titik awal kamu dengan modul diagnostik singkat",
+  "progress": {
+    "title": "Progres Keseluruhan",
+    "subtitle": "Selesaikan semua modul untuk membuat rencana belajar personal kamu",
+    "modulesOf": "{{completed}} dari {{total}} modul",
+    "allComplete": "✓ Semua modul selesai!",
+    "viewAnalytics": "Lihat Analytics Lengkap & Buat Rencana"
+  },
+  "modules": {
+    "title": "Modul Assessment",
+    "moduleNumber": "Modul {{number}}",
+    "completed": "✓ Selesai",
+    "estimatedTime": "⏱️ ~{{minutes}} menit",
+    "score": "Skor: {{score}}%",
+    "retake": "Ulang",
+    "empty": "Tidak ada modul baseline tersedia. Silakan hubungi support."
+  },
+  "result": {
+    "title": "Modul Selesai!",
+    "subtitle": "Kerja bagus! Berikut performa kamu",
+    "yourScore": "Skor Kamu",
+    "correctOf": "{{correct}} dari {{total}} benar",
+    "avgTime": "Rata-rata Waktu/Soal",
+    "avgTimeValue": "{{seconds}}d",
+    "performance": "Snapshot Performa",
+    "performanceSubtitle": "Berdasarkan modul ini — analytics lengkap setelah semua modul selesai",
+    "readiness": "Skor Kesiapan",
+    "skillProfile": "Profil Kemampuan",
+    "teliti": "Teliti",
+    "speed": "Kecepatan",
+    "reasoning": "Penalaran",
+    "computation": "Komputasi",
+    "reading": "Membaca",
+    "allComplete": "🎉 Baseline Assessment Selesai!",
+    "allCompleteDesc": "Semua modul selesai. Siap membuat rencana belajar personal?",
+    "viewAnalytics": "Lihat Analytics Lengkap & Buat Rencana",
+    "backToHub": "Kembali ke Baseline Hub",
+    "continueNext": "Lanjut ke Modul Berikutnya"
+  },
+  "moduleRunner": {
+    "notFound": "Modul Tidak Ditemukan",
+    "notFoundDesc": "Tidak dapat menemukan modul dengan ID: {{id}}. Error: {{error}}",
+    "noQuestions": "Tidak ada soal dalam modul ini. Silakan tambahkan soal melalui admin Module Composer.",
+    "loadingAssessment": "Memuat assessment...",
+    "completeToast": "Modul Selesai! 🎉",
+    "completeToastDesc": "Skor kamu {{score}}%",
+    "noQuestionsAvailable": "Tidak ada soal tersedia",
+    "returnToHub": "Kembali ke baseline hub"
+  },
+  "loadingResults": "Memuat hasil..."
+}

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Target, TrendingDown, Zap } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n"
 
 interface WeakSkill {
   node_id: string
@@ -26,6 +27,7 @@ interface WeakSkillsListProps {
 
 export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
   const router = useRouter()
+  const { t } = useTranslation('analytics')
 
   const handlePracticeSkill = (skill: WeakSkill) => {
     // Navigate to practice page with this skill targeted
@@ -37,21 +39,21 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
   const getMasteryStatus = (mastery: number) => {
     const pct = Math.round(mastery * 100)
     if (pct < 30) return {
-      label: "Critical",
+      label: t('weakSkills.critical'),
       color: "bg-red-500",
       textColor: "text-red-700",
       bgColor: "bg-red-50",
       borderColor: "border-red-200"
     }
     if (pct < 50) return {
-      label: "Weak",
+      label: t('weakSkills.weak'),
       color: "bg-orange-500",
       textColor: "text-orange-700",
       bgColor: "bg-orange-50",
       borderColor: "border-orange-200"
     }
     return {
-      label: "Developing",
+      label: t('weakSkills.developing'),
       color: "bg-yellow-500",
       textColor: "text-yellow-700",
       bgColor: "bg-yellow-50",
@@ -72,10 +74,10 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
-          Skills Needing Focus
+          {t('weakSkills.title')}
         </CardTitle>
         <CardDescription>
-          Your weakest areas based on recent performance
+          {t('weakSkills.subtitle')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -96,7 +98,7 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
                       <div className="flex items-center gap-2 mb-2">
                         {getPriorityIcon(skill.mastery)}
                         <Badge variant="outline" className="text-xs">
-                          #{index + 1} Priority
+                          {t('weakSkills.priority', { index: index + 1 })}
                         </Badge>
                         <Badge className={`${status.color} text-white text-xs`}>
                           {status.label}
@@ -110,15 +112,15 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                         <span className="font-mono">{skill.code}</span>
                         <span>•</span>
-                        <span>Level {skill.level}</span>
+                        <span>{t('weakSkills.level', { level: skill.level })}</span>
                         <span>•</span>
-                        <span>{skill.attempt_count} attempts</span>
+                        <span>{t('weakSkills.attempts', { count: skill.attempt_count })}</span>
                       </div>
 
                       {/* Mastery Bar */}
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className={status.textColor}>Current Mastery</span>
+                          <span className={status.textColor}>{t('weakSkills.currentMastery')}</span>
                           <span className="font-bold">{masteryPct}%</span>
                         </div>
                         <div className="h-2 bg-white border-2 border-charcoal rounded-full overflow-hidden">
@@ -128,9 +130,9 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
                           />
                         </div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Goal: 70%+</span>
+                          <span>{t('weakSkills.goal')}</span>
                           <span className={masteryPct >= 70 ? "text-green-600 font-semibold" : ""}>
-                            {masteryPct >= 70 ? "✓ Achieved" : `${70 - masteryPct}% to go`}
+                            {masteryPct >= 70 ? t('weakSkills.achieved') : t('weakSkills.toGo', { percent: 70 - masteryPct })}
                           </span>
                         </div>
                       </div>
@@ -143,7 +145,7 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
                       onClick={() => handlePracticeSkill(skill)}
                     >
                       <Zap className="mr-2 h-4 w-4" />
-                      Practice Now
+                      {t('weakSkills.practiceNow')}
                     </Button>
                   </div>
                 </div>
@@ -152,21 +154,21 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
 
             {/* Recommendations */}
             <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">💡 Recommendations</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">{t('weakSkills.recommendations')}</h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Focus on your top 2-3 weak skills first for maximum impact</li>
-                <li>• Aim for 70%+ mastery before moving to the next skill</li>
-                <li>• Practice in short, focused sessions (15-20 minutes)</li>
-                <li>• Review explanations carefully when you get questions wrong</li>
+                <li>{t('weakSkills.rec1')}</li>
+                <li>{t('weakSkills.rec2')}</li>
+                <li>{t('weakSkills.rec3')}</li>
+                <li>{t('weakSkills.rec4')}</li>
               </ul>
             </div>
           </div>
         ) : (
           <div className="text-center py-8">
             <Target className="h-12 w-12 mx-auto text-green-500 mb-2" />
-            <p className="font-medium text-green-700 mb-1">Great job!</p>
+            <p className="font-medium text-green-700 mb-1">{t('weakSkills.greatJob')}</p>
             <p className="text-sm text-muted-foreground">
-              No significant weak areas detected. Keep up the practice!
+              {t('weakSkills.noWeakAreas')}
             </p>
           </div>
         )}

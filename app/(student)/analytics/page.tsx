@@ -18,6 +18,7 @@ import { ConstructRadarChart } from "@/components/analytics/ConstructRadarChart"
 import { CoverageMap } from "@/components/analytics/CoverageMap"
 import { WeakSkillsList } from "@/components/analytics/WeakSkillsList"
 import { ErrorPatternAnalysis } from "@/components/analytics/ErrorPatternAnalysis"
+import { useTranslation } from "@/lib/i18n"
 
 interface AnalyticsSnapshot {
   id: string
@@ -83,6 +84,7 @@ function computeBreakdown(snapshot: AnalyticsSnapshot) {
 
 export default function AnalyticsPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('analytics')
   const [snapshot, setSnapshot] = useState<AnalyticsSnapshot | null>(null)
   const [examConfig, setExamConfig] = useState<ExamConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -130,7 +132,7 @@ export default function AnalyticsPage() {
       console.error("Load snapshot error:", error)
       toast({
         variant: "destructive",
-        title: "Failed to Load Analytics",
+        title: t('toast.loadFailed'),
         description: error instanceof Error ? error.message : "Please try again"
       })
     } finally {
@@ -158,8 +160,8 @@ export default function AnalyticsPage() {
 
       if (data.success) {
         toast({
-          title: "Analytics Updated!",
-          description: "Your latest performance has been analyzed."
+          title: t('toast.updated'),
+          description: t('toast.updatedDesc'),
         })
         loadSnapshot()
       }
@@ -167,7 +169,7 @@ export default function AnalyticsPage() {
       console.error("Generate snapshot error:", error)
       toast({
         variant: "destructive",
-        title: "Failed to Update Analytics",
+        title: t('toast.updateFailed'),
         description: error instanceof Error ? error.message : "Please try again"
       })
     } finally {
@@ -201,19 +203,18 @@ export default function AnalyticsPage() {
       <div className="container mx-auto p-6">
         <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
           <AlertCircle className="h-16 w-16 text-muted-foreground" />
-          <h2 className="text-2xl font-bold">No Analytics Available Yet</h2>
+          <h2 className="text-2xl font-bold">{t('noData')}</h2>
           <p className="text-muted-foreground text-center max-w-md">
-            Start practicing questions to build your analytics. Your performance data will be
-            analyzed automatically as you complete practice sessions.
+            {t('noDataDesc')}
           </p>
           <Button onClick={generateSnapshot} disabled={isRefreshing}>
             {isRefreshing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                {t('generating')}
               </>
             ) : (
-              "Generate Analytics Now"
+              t('generateNow')
             )}
           </Button>
         </div>
@@ -226,14 +227,14 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Your Analytics</h1>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">
             {examConfig && (
               <span className="mr-2">
                 <Badge variant="outline">{examConfig.exam_type}</Badge>
               </span>
             )}
-            Last updated: {new Date(snapshot.created_at).toLocaleDateString()}
+            {t('lastUpdated', { date: new Date(snapshot.created_at).toLocaleDateString() })}
           </p>
         </div>
         <Button
@@ -244,12 +245,12 @@ export default function AnalyticsPage() {
           {isRefreshing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Updating...
+              {t('refreshing')}
             </>
           ) : (
             <>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Analytics
+              {t('refresh')}
             </>
           )}
         </Button>

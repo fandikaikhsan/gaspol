@@ -15,10 +15,12 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { getUserFriendlyError } from "@/lib/utils/error-messages"
+import { useTranslation } from "@/lib/i18n"
 
 export default function SignupPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation('auth')
 
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
@@ -33,8 +35,8 @@ export default function SignupPage() {
     if (password !== confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Password Mismatch",
-        description: "Passwords do not match. Please try again.",
+        title: t('signup.passwordMismatch'),
+        description: t('signup.passwordMismatchDesc'),
       })
       return
     }
@@ -42,8 +44,8 @@ export default function SignupPage() {
     if (password.length < 6) {
       toast({
         variant: "destructive",
-        title: "Weak Password",
-        description: "Password must be at least 6 characters long.",
+        title: t('signup.weakPassword'),
+        description: t('signup.weakPasswordDesc'),
       })
       return
     }
@@ -67,8 +69,8 @@ export default function SignupPage() {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Signup Failed",
-          description: getUserFriendlyError(error, "Unable to create account. Please try again."),
+          title: t('signup.failed'),
+          description: getUserFriendlyError(error, t('signup.failedDesc')),
         })
         return
       }
@@ -91,15 +93,15 @@ export default function SignupPage() {
         if (!session) {
           // Email confirmation required
           toast({
-            title: "Check Your Email! 📧",
-            description: "We've sent a confirmation link to your email. Click it to activate your account.",
+            title: t('signup.checkEmail'),
+            description: t('signup.checkEmailDesc'),
           })
           return
         }
 
         toast({
-          title: "Account Created! 🎉",
-          description: "Welcome to Gaspol. Let's set up your study plan.",
+          title: t('signup.created'),
+          description: t('signup.createdDesc'),
         })
 
         // Redirect to onboarding
@@ -110,8 +112,8 @@ export default function SignupPage() {
       console.error("Signup error:", error)
       toast({
         variant: "destructive",
-        title: "Signup Error",
-        description: getUserFriendlyError(error, "An unexpected error occurred. Please try again."),
+        title: t('signup.error'),
+        description: getUserFriendlyError(error, t('signup.failedDesc')),
       })
     } finally {
       setIsLoading(false)
@@ -122,21 +124,21 @@ export default function SignupPage() {
     <Card className="bg-background">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl mb-2">
-          Join Gaspol! 🚀
+          {t('signup.title')}
         </CardTitle>
         <CardDescription>
-          Create your account and start preparing for UTBK
+          {t('signup.subtitle')}
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSignup}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
+            <Label htmlFor="fullName">{t('signup.fullName')}</Label>
             <Input
               id="fullName"
               type="text"
-              placeholder="Nama Lengkap"
+              placeholder={t('signup.fullNamePlaceholder')}
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
@@ -145,11 +147,11 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('signup.email')}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="nama@email.com"
+              placeholder={t('signup.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -158,11 +160,11 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('signup.password')}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="Minimal 6 karakter"
+              placeholder={t('signup.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -171,11 +173,11 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">{t('signup.confirmPassword')}</Label>
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="Ulangi password"
+              placeholder={t('signup.confirmPasswordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -190,16 +192,16 @@ export default function SignupPage() {
             className="w-full"
             disabled={isLoading}
           >
-            {isLoading ? "Creating account..." : "Create Account"}
+            {isLoading ? t('signup.submitting') : t('signup.submit')}
           </Button>
 
           <div className="text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {t('signup.hasAccount')}{" "}
             <Link
               href="/login"
               className="font-semibold text-primary hover:underline"
             >
-              Sign in
+              {t('signup.loginLink')}
             </Link>
           </div>
         </CardFooter>

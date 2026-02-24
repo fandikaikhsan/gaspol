@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Target, BookOpen, Eye, Sparkles, Shuffle, Focus } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 interface UserAnalytics {
   weakSkillCount: number
@@ -26,6 +27,8 @@ interface UserAnalytics {
 
 export default function LockedInHubPage() {
   const router = useRouter()
+  const { t } = useTranslation('lockedIn')
+  const { t: tc } = useTranslation('common')
   const [analytics, setAnalytics] = useState<UserAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -76,37 +79,37 @@ export default function LockedInHubPage() {
   const modes = [
     {
       id: 'drills',
-      title: 'Practice Drills',
+      title: t('drills.title'),
       icon: Target,
-      description: 'Sharpen your skills with focused or mixed practice questions',
+      description: t('drills.subtitle'),
       color: 'bg-pastel-yellow',
       href: '/locked-in/drills',
       features: [
-        { icon: Shuffle, label: 'Mixed Questions', description: 'Random mix from all topics' },
-        { icon: Focus, label: 'Focused Practice', description: 'Target specific subtopics' },
+        { icon: Shuffle, label: t('drills.mixed'), description: t('drills.mixedDesc') },
+        { icon: Focus, label: t('drills.focused'), description: t('drills.focusedDesc') },
       ],
-      badge: analytics?.weakSkillCount ? `${analytics.weakSkillCount} weak skills` : null,
+      badge: analytics?.weakSkillCount ? t('drills.weakSkillsCount', { count: analytics.weakSkillCount }) : null,
       badgeVariant: 'destructive' as const,
     },
     {
       id: 'modules',
-      title: 'Study Modules',
+      title: t('modules.title'),
       icon: BookOpen,
-      description: 'Pre-made learning modules curated by experts',
+      description: t('modules.subtitle'),
       color: 'bg-pastel-lavender',
       href: '/locked-in/modules',
       features: [
-        { icon: Sparkles, label: 'Admin Curated', description: 'Expert-designed modules' },
-        { icon: Target, label: 'For Your Weak Areas', description: 'Based on your analytics' },
+        { icon: Sparkles, label: t('modules.adminCurated'), description: t('modules.adminCuratedDesc') },
+        { icon: Target, label: t('modules.forWeakAreas'), description: t('modules.forWeakAreasDesc') },
       ],
-      badge: analytics?.suggestedModuleCount ? `${analytics.suggestedModuleCount} available` : null,
+      badge: analytics?.suggestedModuleCount ? t('modules.available', { count: analytics.suggestedModuleCount }) : null,
       badgeVariant: 'secondary' as const,
     },
     {
       id: 'review',
-      title: 'Review Mistakes',
+      title: t('review.title'),
       icon: Eye,
-      description: 'Learn from your errors with detailed explanations',
+      description: t('review.subtitle', { count: 0 }),
       color: 'bg-pastel-peach',
       href: '/locked-in/review',
       features: null,
@@ -118,7 +121,7 @@ export default function LockedInHubPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading...</p>
+        <p className="text-lg text-muted-foreground">{tc('status.loading')}</p>
       </div>
     )
   }
@@ -128,14 +131,14 @@ export default function LockedInHubPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Locked-In Mode</h1>
+          <h1 className="text-4xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Structured learning with drills, modules, and review
+            {t('subtitle')}
           </p>
           {analytics && analytics.readinessScore > 0 && (
             <div className="flex justify-center">
               <Badge variant="outline" className="text-lg px-4 py-1">
-                Readiness: {analytics.readinessScore.toFixed(0)}%
+                {t('readiness', { score: analytics.readinessScore.toFixed(0) })}
               </Badge>
             </div>
           )}
@@ -172,7 +175,7 @@ export default function LockedInHubPage() {
                       </div>
                     </div>
                     <Button variant="brutal" size="sm">
-                      Start
+                      {tc('button.start')}
                     </Button>
                   </div>
                 </CardHeader>
@@ -208,17 +211,17 @@ export default function LockedInHubPage() {
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Based on your analytics, we recommend focusing on
+                  {t('recommendation')}
                 </p>
                 <div className="flex justify-center gap-4">
                   {analytics.weakSkillCount > 0 && (
                     <Badge variant="destructive" className="text-sm">
-                      {analytics.weakSkillCount} weak skills
+                      {t('drills.weakSkillsCount', { count: analytics.weakSkillCount })}
                     </Badge>
                   )}
                   {analytics.suggestedModuleCount > 0 && (
                     <Badge variant="secondary" className="text-sm">
-                      {analytics.suggestedModuleCount} modules available
+                      {t('modulesAvailable', { count: analytics.suggestedModuleCount })}
                     </Badge>
                   )}
                 </div>

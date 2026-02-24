@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "plan": "Plan",
+    "lockedIn": "Locked-In",
+    "taktis": "Taktis",
+    "analytics": "Analytics",
+    "menu": "Menu",
+    "profileSettings": "Profile Settings",
+    "logout": "Logout",
+    "user": "User",
+    "gaspol": "Gaspol"
+  },
+  "button": {
+    "start": "Start",
+    "continue": "Continue",
+    "back": "Back",
+    "finish": "Finish",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "save": "Save",
+    "saving": "Saving...",
+    "retry": "Retry",
+    "retake": "Retake",
+    "cancel": "Cancel",
+    "done": "Done",
+    "review": "Review",
+    "goBack": "Go Back",
+    "refreshPage": "Refresh Page"
+  },
+  "status": {
+    "loading": "Loading...",
+    "complete": "Complete",
+    "locked": "Locked",
+    "ready": "Ready",
+    "required": "Required",
+    "comingSoon": "Coming Soon",
+    "inProgress": "In Progress",
+    "done": "✓ Done"
+  },
+  "error": {
+    "title": "Error",
+    "unexpected": "An unexpected error occurred. Please try again.",
+    "somethingWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred. Please try refreshing the page.",
+    "submissionFailed": "Submission Failed",
+    "submissionFailedDesc": "Failed to submit your answers. Please try again."
+  },
+  "time": {
+    "minutes": "minutes",
+    "seconds": "seconds",
+    "daysLeft": "{{count}} days left",
+    "daysUntilExam": "Days Until Exam",
+    "estimated": "~{{minutes}} min",
+    "score": "Score: {{score}}%"
+  },
+  "question": {
+    "questionOf": "Question {{current}} of {{total}}",
+    "answered": "Answered",
+    "unanswered": "Unanswered",
+    "current": "Current",
+    "empty": "Empty",
+    "remaining": "{{count}} remaining",
+    "progress": "Progress: {{percent}}%",
+    "answeredOf": "{{answered}} of {{total}} answered",
+    "jumpToQuestion": "Jump to Question",
+    "quickNavigation": "Quick Navigation",
+    "jump": "Jump",
+    "unsupported": "Unsupported question format",
+    "unansweredWarning": "You have {{count}} unanswered question(s). Submit anyway?"
+  },
+  "assessment": {
+    "baseline": "Baseline Assessment",
+    "practiceDrill": "Practice Drill",
+    "mockTest": "Mock Test",
+    "recycleCheckpoint": "Re-cycle Checkpoint",
+    "timeRemaining": "Time Remaining",
+    "timeElapsed": "Time Elapsed",
+    "timesUp": "Time's Up!",
+    "timesUpDesc": "Submitting your answers automatically..."
+  }
+}

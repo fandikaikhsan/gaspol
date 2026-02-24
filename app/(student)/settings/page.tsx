@@ -2,7 +2,7 @@
 
 /**
  * Profile Settings Page
- * User can edit name, change password, and logout
+ * User can edit name, change password, switch language, and logout
  */
 
 import { useState, useEffect } from "react"
@@ -15,10 +15,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useTranslation, useLanguageStore } from "@/lib/i18n"
+import type { Locale } from "@/lib/i18n"
 
 export default function SettingsPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation('settings')
+  const { locale, setLocale } = useLanguageStore()
 
   const [profile, setProfile] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -69,16 +73,16 @@ export default function SettingsPage() {
       if (error) throw error
 
       toast({
-        title: "Name Updated ✅",
-        description: "Your profile has been updated successfully.",
+        title: t('name.success'),
+        description: t('name.successDesc'),
       })
 
-      loadProfile() // Reload profile
+      loadProfile()
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Update Failed",
-        description: "Failed to update your name. Please try again.",
+        title: t('name.error'),
+        description: t('name.errorDesc'),
       })
     } finally {
       setIsLoading(false)
@@ -91,8 +95,8 @@ export default function SettingsPage() {
     if (newPassword !== confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Password Mismatch",
-        description: "New passwords do not match.",
+        title: t('password.mismatch'),
+        description: t('password.mismatchDesc'),
       })
       return
     }
@@ -100,8 +104,8 @@ export default function SettingsPage() {
     if (newPassword.length < 6) {
       toast({
         variant: "destructive",
-        title: "Weak Password",
-        description: "Password must be at least 6 characters long.",
+        title: t('password.weak'),
+        description: t('password.weakDesc'),
       })
       return
     }
@@ -118,22 +122,35 @@ export default function SettingsPage() {
       if (error) throw error
 
       toast({
-        title: "Password Changed ✅",
-        description: "Your password has been updated successfully.",
+        title: t('password.success'),
+        description: t('password.successDesc'),
       })
 
-      // Clear password fields
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Password Change Failed",
-        description: "Failed to change password. Please try again.",
+        title: t('password.error'),
+        description: t('password.errorDesc'),
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleLanguageChange = async (newLocale: Locale) => {
+    setLocale(newLocale)
+
+    // Persist to DB
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ language: newLocale })
+        .eq("id", user.id)
     }
   }
 
@@ -154,23 +171,23 @@ export default function SettingsPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Profile Settings</h1>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
         </div>
 
         {/* Profile Info Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
-            <CardDescription>View your account details</CardDescription>
+            <CardTitle>{t('profile.title')}</CardTitle>
+            <CardDescription>{t('profile.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div>
-              <p className="text-sm text-muted-foreground">Email</p>
+              <p className="text-sm text-muted-foreground">{t('profile.email')}</p>
               <p className="font-semibold">{profile?.email}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Role</p>
-              <p className="font-semibold capitalize">{profile?.role || "Student"}</p>
+              <p className="text-sm text-muted-foreground">{t('profile.role')}</p>
+              <p className="font-semibold capitalize">{profile?.role || t('profile.student')}</p>
             </div>
           </CardContent>
         </Card>
@@ -178,17 +195,17 @@ export default function SettingsPage() {
         {/* Edit Name Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Edit Name</CardTitle>
-            <CardDescription>Update your display name</CardDescription>
+            <CardTitle>{t('name.title')}</CardTitle>
+            <CardDescription>{t('name.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateName} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">{t('name.label')}</Label>
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="Your full name"
+                  placeholder={t('name.placeholder')}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
@@ -196,26 +213,52 @@ export default function SettingsPage() {
                 />
               </div>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save Name"}
+                {isLoading ? t('name.saving') : t('name.save')}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Language Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('language.title')}</CardTitle>
+            <CardDescription>{t('language.subtitle')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              <Button
+                variant={locale === 'id' ? 'default' : 'outline'}
+                onClick={() => handleLanguageChange('id')}
+                className="flex-1"
+              >
+                {t('language.id')}
+              </Button>
+              <Button
+                variant={locale === 'en' ? 'default' : 'outline'}
+                onClick={() => handleLanguageChange('en')}
+                className="flex-1"
+              >
+                {t('language.en')}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* Change Password Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Change Password</CardTitle>
-            <CardDescription>Update your password</CardDescription>
+            <CardTitle>{t('password.title')}</CardTitle>
+            <CardDescription>{t('password.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">{t('password.newPassword')}</Label>
                 <Input
                   id="newPassword"
                   type="password"
-                  placeholder="Minimum 6 characters"
+                  placeholder={t('password.newPasswordPlaceholder')}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
@@ -223,11 +266,11 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword">{t('password.confirmPassword')}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="Repeat new password"
+                  placeholder={t('password.confirmPasswordPlaceholder')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -235,7 +278,7 @@ export default function SettingsPage() {
                 />
               </div>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Changing..." : "Change Password"}
+                {isLoading ? t('password.changing') : t('password.change')}
               </Button>
             </form>
           </CardContent>
@@ -244,12 +287,12 @@ export default function SettingsPage() {
         {/* Logout Card */}
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
-            <CardTitle className="text-red-600">Logout</CardTitle>
-            <CardDescription>Sign out from your account</CardDescription>
+            <CardTitle className="text-red-600">{t('logout.title')}</CardTitle>
+            <CardDescription>{t('logout.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="destructive" onClick={handleLogout} className="w-full md:w-auto">
-              Logout
+              {t('logout.button')}
             </Button>
           </CardContent>
         </Card>

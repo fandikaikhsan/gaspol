@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
 import { QuestionDisplay } from "./QuestionDisplay"
 import { AnswerOptions } from "./AnswerOptions"
@@ -56,6 +57,7 @@ export function QuestionRunner({
 }: QuestionRunnerProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation('common')
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, { answer: string; timeSpent: number; timestamp: Date }>>({})
@@ -85,8 +87,8 @@ export function QuestionRunner({
   useEffect(() => {
     if (timeLimit && autoSubmitOnTimeUp && timeElapsed >= timeLimit * 60) {
       toast({
-        title: "Time's Up!",
-        description: "Submitting your answers automatically...",
+        title: t('assessment.timesUp'),
+        description: t('assessment.timesUpDesc'),
       })
       handleFinish()
     }
@@ -148,7 +150,7 @@ export function QuestionRunner({
 
     if (unansweredCount > 0) {
       const confirmed = window.confirm(
-        `You have ${unansweredCount} unanswered question${unansweredCount > 1 ? 's' : ''}. Submit anyway?`
+        t('question.unansweredWarning', { count: unansweredCount })
       )
       if (!confirmed) return
     }
@@ -168,8 +170,8 @@ export function QuestionRunner({
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Submission Failed",
-        description: "Failed to submit your answers. Please try again.",
+        title: t('error.submissionFailed'),
+        description: t('error.submissionFailedDesc'),
       })
       setIsSubmitting(false)
     }
@@ -206,9 +208,11 @@ export function QuestionRunner({
           />
         )
       default:
-        return <div>Unsupported question format</div>
+        return <div>{t('question.unsupported')}</div>
     }
   }
+
+  const answered = Object.keys(answers).length
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -218,12 +222,12 @@ export function QuestionRunner({
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold">
-                Question {currentIndex + 1} of {totalQuestions}
+                {t('question.questionOf', { current: currentIndex + 1, total: totalQuestions })}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {contextType === 'baseline' ? 'Baseline Assessment' :
-                 contextType === 'drill' ? 'Practice Drill' :
-                 contextType === 'mock' ? 'Mock Test' : 'Re-cycle Checkpoint'}
+                {contextType === 'baseline' ? t('assessment.baseline') :
+                 contextType === 'drill' ? t('assessment.practiceDrill') :
+                 contextType === 'mock' ? t('assessment.mockTest') : t('assessment.recycleCheckpoint')}
               </p>
             </div>
 
@@ -233,7 +237,7 @@ export function QuestionRunner({
                   {timeRemaining !== null ? formatTime(timeRemaining) : formatTime(timeElapsed)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {timeRemaining !== null ? 'Time Remaining' : 'Time Elapsed'}
+                  {timeRemaining !== null ? t('assessment.timeRemaining') : t('assessment.timeElapsed')}
                 </p>
               </div>
             )}
@@ -274,7 +278,7 @@ export function QuestionRunner({
               onClick={handlePrevious}
               disabled={currentIndex === 0 || !allowNavigation || isSubmitting}
             >
-              Previous
+              {t('button.previous')}
             </Button>
 
             <div className="flex gap-2">
@@ -287,7 +291,7 @@ export function QuestionRunner({
                   className="md:hidden"
                 >
                   <Grid3X3 className="h-4 w-4 mr-2" />
-                  Jump
+                  {t('question.jump')}
                 </Button>
               )}
 
@@ -295,8 +299,8 @@ export function QuestionRunner({
                 onClick={handleNext}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Submitting..." :
-                 isLastQuestion ? "Finish" : "Next"}
+                {isSubmitting ? t('button.submitting') :
+                 isLastQuestion ? t('button.finish') : t('button.next')}
               </Button>
             </div>
           </CardFooter>
@@ -306,7 +310,7 @@ export function QuestionRunner({
         {allowNavigation && (
           <Card className="hidden md:block">
             <CardHeader>
-              <h3 className="font-semibold">Quick Navigation</h3>
+              <h3 className="font-semibold">{t('question.quickNavigation')}</h3>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-10 gap-2">
@@ -336,15 +340,15 @@ export function QuestionRunner({
               <div className="flex gap-4 mt-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-primary border-2 border-border rounded" />
-                  <span>Current</span>
+                  <span>{t('question.current')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-secondary border-2 border-border rounded" />
-                  <span>Answered</span>
+                  <span>{t('question.answered')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-background border-2 border-border rounded" />
-                  <span>Unanswered</span>
+                  <span>{t('question.unanswered')}</span>
                 </div>
               </div>
             </CardContent>
@@ -355,9 +359,9 @@ export function QuestionRunner({
         <Sheet open={isQuestionPaletteOpen} onOpenChange={setIsQuestionPaletteOpen}>
           <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl">
             <SheetHeader className="text-left mb-4">
-              <SheetTitle>Jump to Question</SheetTitle>
+              <SheetTitle>{t('question.jumpToQuestion')}</SheetTitle>
               <SheetDescription>
-                {Object.keys(answers).length} of {totalQuestions} answered
+                {t('question.answeredOf', { answered, total: totalQuestions })}
               </SheetDescription>
             </SheetHeader>
 
@@ -395,25 +399,25 @@ export function QuestionRunner({
               <div className="flex justify-center gap-6 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-primary border-2 border-border rounded-lg" />
-                  <span className="text-sm">Current</span>
+                  <span className="text-sm">{t('question.current')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-secondary border-2 border-border rounded-lg" />
-                  <span className="text-sm">Answered</span>
+                  <span className="text-sm">{t('question.answered')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-background border-2 border-border rounded-lg" />
-                  <span className="text-sm">Empty</span>
+                  <span className="text-sm">{t('question.empty')}</span>
                 </div>
               </div>
 
               {/* Quick stats */}
               <div className="flex justify-between items-center pt-4 px-2">
                 <div className="text-sm text-muted-foreground">
-                  Progress: {Math.round(progress)}%
+                  {t('question.progress', { percent: Math.round(progress) })}
                 </div>
                 <div className="text-sm font-medium">
-                  {totalQuestions - Object.keys(answers).length} remaining
+                  {t('question.remaining', { count: totalQuestions - answered })}
                 </div>
               </div>
             </div>

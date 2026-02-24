@@ -1,0 +1,23 @@
+{
+  "title": "Re-cycle Checkpoint 🔄",
+  "subtitle": "Targeted assessment of weak areas with delta analytics",
+  "locked": "🔒",
+  "lockedTitle": "Locked",
+  "lockedDesc": "Complete required tasks in your study plan to unlock re-cycle",
+  "goToPlan": "Go to Study Plan",
+  "createCheckpoint": "Create New Checkpoint",
+  "createCheckpointDesc": "Test your improvement in weak areas",
+  "creating": "Creating...",
+  "startCheckpoint": "Start New Checkpoint",
+  "pastCheckpoints": "Past Checkpoints",
+  "noCheckpoints": "No checkpoints yet. Create your first one above!",
+  "checkpointNumber": "Checkpoint #{{number}}",
+  "readinessChange": "Readiness change: {{delta}}",
+  "toast": {
+    "creating": "Creating checkpoint...",
+    "creatingDesc": "Analyzing weak areas",
+    "ready": "Checkpoint ready!",
+    "readyDesc": "{{questions}} questions targeting {{skills}} weak areas",
+    "error": "Error"
+  }
+}

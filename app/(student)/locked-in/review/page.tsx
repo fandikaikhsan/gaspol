@@ -14,11 +14,13 @@ import { Button } from "@/components/ui/button"
 import { QuestionDisplay } from "@/components/assessment/QuestionDisplay"
 import { AnswerOptions } from "@/components/assessment/AnswerOptions"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 
 function ReviewModeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { t } = useTranslation('lockedIn')
 
   const taskId = searchParams.get('taskId')
 
@@ -59,7 +61,7 @@ function ReviewModeContent() {
 
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
-      <p>Loading mistakes...</p>
+      <p>{t('review.loadingMistakes')}</p>
     </div>
   }
 
@@ -67,9 +69,9 @@ function ReviewModeContent() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Review Mistakes 👁️</h1>
+          <h1 className="text-4xl font-bold">{t('review.title')}</h1>
           <p className="text-muted-foreground">
-            Learn from {attempts.length} past incorrect answers
+            {t('review.subtitle', { count: attempts.length })}
           </p>
         </div>
 
@@ -77,9 +79,9 @@ function ReviewModeContent() {
           <Card>
             <CardContent className="text-center py-12">
               <p className="text-2xl mb-4">🎉</p>
-              <p className="text-lg font-semibold mb-2">No mistakes yet!</p>
+              <p className="text-lg font-semibold mb-2">{t('review.noMistakes')}</p>
               <p className="text-muted-foreground">
-                Complete some assessments to see your mistakes here
+                {t('review.noMistakesDesc')}
               </p>
             </CardContent>
           </Card>
@@ -91,9 +93,9 @@ function ReviewModeContent() {
             <Card key={attempt.id} className="border-destructive/30">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Question {idx + 1}</CardTitle>
+                  <CardTitle className="text-lg">{t('review.questionNumber', { number: idx + 1 })}</CardTitle>
                   <div className="flex gap-2">
-                    <Badge variant="destructive">Incorrect</Badge>
+                    <Badge variant="destructive">{t('review.incorrect')}</Badge>
                     {attempt.error_tags?.map((tag: string) => (
                       <Badge key={tag} variant="outline">{tag}</Badge>
                     ))}
@@ -123,7 +125,7 @@ function ReviewModeContent() {
 
                 {question.explanation && (
                   <div className="bg-muted p-4 rounded-lg border-2 border-border">
-                    <h4 className="font-semibold mb-2">Explanation:</h4>
+                    <h4 className="font-semibold mb-2">{t('review.explanation')}</h4>
                     <p className="text-sm leading-relaxed">{question.explanation}</p>
                   </div>
                 )}
@@ -150,13 +152,13 @@ function ReviewModeContent() {
                   .eq('user_id', user.id)
               }
               toast({
-                title: "Review complete!",
-                description: "Task marked as done",
+                title: t('review.reviewComplete'),
+                description: t('review.reviewCompleteDesc'),
               })
               router.push('/plan')
             }}
           >
-            Done Reviewing
+            {t('review.doneReviewing')}
           </Button>
         )}
       </div>
@@ -165,10 +167,12 @@ function ReviewModeContent() {
 }
 
 export default function ReviewModePage() {
+  const { t } = useTranslation('lockedIn')
+
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Loading mistakes...</p>
+        <p>{t('review.loadingMistakes')}</p>
       </div>
     }>
       <ReviewModeContent />

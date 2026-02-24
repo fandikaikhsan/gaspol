@@ -14,11 +14,14 @@ import { QuestionRunner } from "@/components/assessment/QuestionRunner"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
 import { useToast } from "@/hooks/use-toast"
 import { getUserFriendlyError } from "@/lib/utils/error-messages"
+import { useTranslation } from "@/lib/i18n"
 
 export default function BaselineRunnerPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
+  const { t } = useTranslation('baseline')
+  const { t: tc } = useTranslation('common')
   const moduleId = params.moduleId as string
 
   const [user, setUser] = useState<any>(null)
@@ -57,8 +60,8 @@ export default function BaselineRunnerPage() {
         console.error('[baseline] Module fetch failed:', moduleError?.message)
         toast({
           variant: "destructive",
-          title: "Module Not Found",
-          description: `Could not find module with ID: ${moduleId}. Error: ${moduleError?.message || 'Unknown'}`,
+          title: t('moduleRunner.notFound'),
+          description: t('moduleRunner.notFoundDesc', { id: moduleId, error: moduleError?.message || 'Unknown' }),
         })
         router.push('/baseline')
         return
@@ -72,8 +75,8 @@ export default function BaselineRunnerPage() {
       if (moduleQuestions.length === 0) {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "No questions in this module. Please add questions via the admin Module Composer.",
+          title: tc('error.title'),
+          description: t('moduleRunner.noQuestions'),
         })
         router.push('/baseline')
         return
@@ -206,8 +209,8 @@ export default function BaselineRunnerPage() {
       }
 
       toast({
-        title: "Module Complete! 🎉",
-        description: `You scored ${score.toFixed(0)}%`,
+        title: t('moduleRunner.completeToast'),
+        description: t('moduleRunner.completeToastDesc', { score: score.toFixed(0) }),
       })
 
       // Redirect to results
@@ -216,8 +219,8 @@ export default function BaselineRunnerPage() {
       console.error('Submission error:', error)
       toast({
         variant: "destructive",
-        title: "Submission Failed",
-        description: getUserFriendlyError(error, "Failed to submit your answers. Please try again."),
+        title: tc('error.submissionFailed'),
+        description: getUserFriendlyError(error, tc('error.submissionFailedDesc')),
       })
     }
   }
@@ -225,7 +228,7 @@ export default function BaselineRunnerPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading assessment...</p>
+        <p className="text-lg text-muted-foreground">{t('moduleRunner.loadingAssessment')}</p>
       </div>
     )
   }
@@ -234,12 +237,12 @@ export default function BaselineRunnerPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-lg font-semibold mb-2">No questions available</p>
+          <p className="text-lg font-semibold mb-2">{t('moduleRunner.noQuestionsAvailable')}</p>
           <button
             onClick={() => router.push('/baseline')}
             className="text-primary underline"
           >
-            Return to baseline hub
+            {t('moduleRunner.returnToHub')}
           </button>
         </div>
       </div>

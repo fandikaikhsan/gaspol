@@ -1,0 +1,33 @@
+{
+  "title": "Taktis",
+  "subtitle": "Quick study modes for rapid skill reinforcement",
+  "flashcards": {
+    "title": "Flashcards",
+    "desc": "Flip cards to test your memory and reinforce key concepts",
+    "pageTitle": "Flashcards 🗂️",
+    "pageSubtitle": "Quick review with flip cards",
+    "loading": "Loading flashcards...",
+    "noCards": "No flashcards available",
+    "noCardsDesc": "Flashcards will be added soon",
+    "backToPlan": "Back to Plan",
+    "cardOf": "Card {{current}} of {{total}}",
+    "tapToFlip": "Tap to flip",
+    "tapToFlipBack": "Tap to flip back",
+    "howWell": "How well did you know this?",
+    "forgot": "Forgot",
+    "hard": "Hard",
+    "good": "Good",
+    "easy": "Easy",
+    "complete": "Great work!",
+    "completeDesc": "Flashcard session complete"
+  },
+  "swipe": {
+    "title": "Quick Swipe",
+    "desc": "Tinder-style rapid answers for speed training",
+    "pageTitle": "Quick Swipe ⚡",
+    "pageSubtitle": "Swipe right for correct, left for skip",
+    "score": "Score: {{correct}}/{{total}}",
+    "comingSoon": "🚧 Swipe interface coming soon",
+    "comingSoonDesc": "Touch-based quick answer system for mobile"
+  }
+}

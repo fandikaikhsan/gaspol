@@ -1,0 +1,51 @@
+{
+  "title": "Profile Settings",
+  "profile": {
+    "title": "Profile Information",
+    "subtitle": "View your account details",
+    "email": "Email",
+    "role": "Role",
+    "student": "Student"
+  },
+  "name": {
+    "title": "Edit Name",
+    "subtitle": "Update your display name",
+    "label": "Full Name",
+    "placeholder": "Your full name",
+    "saving": "Saving...",
+    "save": "Save Name",
+    "success": "Name Updated ✅",
+    "successDesc": "Your profile has been updated successfully.",
+    "error": "Update Failed",
+    "errorDesc": "Failed to update your name. Please try again."
+  },
+  "password": {
+    "title": "Change Password",
+    "subtitle": "Update your password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Minimum 6 characters",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Repeat new password",
+    "changing": "Changing...",
+    "change": "Change Password",
+    "mismatch": "Password Mismatch",
+    "mismatchDesc": "New passwords do not match.",
+    "weak": "Weak Password",
+    "weakDesc": "Password must be at least 6 characters long.",
+    "success": "Password Changed ✅",
+    "successDesc": "Your password has been updated successfully.",
+    "error": "Password Change Failed",
+    "errorDesc": "Failed to change password. Please try again."
+  },
+  "language": {
+    "title": "Language",
+    "subtitle": "Choose your display language",
+    "id": "Bahasa Indonesia",
+    "en": "English"
+  },
+  "logout": {
+    "title": "Logout",
+    "subtitle": "Sign out from your account",
+    "button": "Logout"
+  }
+}

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 
 interface BaselineModule {
   id: string
@@ -32,6 +33,8 @@ interface BaselineModule {
 export default function BaselineHubPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation('baseline')
+  const { t: tc } = useTranslation('common')
   const [user, setUser] = useState<any>(null)
   const [modules, setModules] = useState<BaselineModule[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -60,7 +63,7 @@ export default function BaselineHubPage() {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Error",
+          title: tc('error.title'),
           description: "Failed to load baseline modules",
         })
         return
@@ -100,7 +103,7 @@ export default function BaselineHubPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-lg text-muted-foreground">Loading...</p>
+        <p className="text-lg text-muted-foreground">{tc('status.loading')}</p>
       </div>
     )
   }
@@ -110,24 +113,24 @@ export default function BaselineHubPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">Baseline Assessment</h1>
+          <h1 className="text-4xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Let's establish your starting point with quick diagnostic modules
+            {t('subtitle')}
           </p>
         </div>
 
         {/* Progress Card */}
         <Card className="bg-gradient-to-br from-primary/10 to-secondary/10">
           <CardHeader>
-            <CardTitle>Overall Progress</CardTitle>
+            <CardTitle>{t('progress.title')}</CardTitle>
             <CardDescription>
-              Complete all modules to generate your personalized study plan
+              {t('progress.subtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span className="font-semibold">{completedCount} of {totalCount} modules</span>
+                <span className="font-semibold">{t('progress.modulesOf', { completed: completedCount, total: totalCount })}</span>
                 <span className="text-muted-foreground">{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-3" />
@@ -136,13 +139,13 @@ export default function BaselineHubPage() {
             {completedCount === totalCount && (
               <div className="bg-background p-4 rounded-lg border-2 border-status-strong">
                 <p className="font-semibold text-status-strong mb-2">
-                  ✓ All modules complete!
+                  {t('progress.allComplete')}
                 </p>
                 <Button
                   onClick={() => router.push('/analytics')}
                   className="w-full"
                 >
-                  View Full Analytics & Generate Plan
+                  {t('progress.viewAnalytics')}
                 </Button>
               </div>
             )}
@@ -151,7 +154,7 @@ export default function BaselineHubPage() {
 
         {/* Module List */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">Assessment Modules</h2>
+          <h2 className="text-2xl font-bold">{t('modules.title')}</h2>
 
           {modules.map((module) => (
             <Card
@@ -163,11 +166,11 @@ export default function BaselineHubPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="outline">
-                        Module {module.checkpoint_order}
+                        {t('modules.moduleNumber', { number: module.checkpoint_order })}
                       </Badge>
                       {module.is_completed && (
                         <Badge variant="strong">
-                          ✓ Completed
+                          {t('modules.completed')}
                         </Badge>
                       )}
                     </div>
@@ -180,17 +183,17 @@ export default function BaselineHubPage() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    <span>⏱️ ~{module.estimated_duration_min} minutes</span>
+                    <span>{t('modules.estimatedTime', { minutes: module.estimated_duration_min })}</span>
                     {module.is_completed && module.score && (
                       <span className="ml-4 font-semibold text-foreground">
-                        Score: {module.score.toFixed(0)}%
+                        {t('modules.score', { score: module.score.toFixed(0) })}
                       </span>
                     )}
                   </div>
 
                   <Link href={`/baseline/${module.module_id}`}>
                     <Button variant={module.is_completed ? "brutal-secondary" : "brutal"}>
-                      {module.is_completed ? 'Retake' : 'Start'}
+                      {module.is_completed ? tc('button.retake') : tc('button.start')}
                     </Button>
                   </Link>
                 </div>
@@ -203,7 +206,7 @@ export default function BaselineHubPage() {
           <Card>
             <CardContent className="text-center py-12">
               <p className="text-muted-foreground">
-                No baseline modules available. Please contact support.
+                {t('modules.empty')}
               </p>
             </CardContent>
           </Card>

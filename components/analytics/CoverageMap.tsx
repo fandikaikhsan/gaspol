@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, AlertCircle, CheckCircle2, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useTranslation } from "@/lib/i18n"
 
 interface CoverageMapProps {
   coverage: Record<string, number> // e.g., { "TPS": 0.85, "TKA": 0.45 }
@@ -16,6 +17,8 @@ interface CoverageMapProps {
 }
 
 export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
+  const { t } = useTranslation('analytics')
+
   // Sort subjects by coverage (lowest first to highlight what needs work)
   const sortedCoverage = Object.entries(coverage).sort((a, b) => a[1] - b[1])
 
@@ -28,21 +31,21 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
   // Get status for a coverage percentage
   const getStatus = (pct: number) => {
     if (pct >= 70) return {
-      label: "Strong",
+      label: t('coverage.strong'),
       color: "bg-green-500",
       textColor: "text-green-700",
       bgColor: "bg-green-50",
       icon: CheckCircle2
     }
     if (pct >= 30) return {
-      label: "Developing",
+      label: t('coverage.developing'),
       color: "bg-yellow-500",
       textColor: "text-yellow-700",
       bgColor: "bg-yellow-50",
       icon: Target
     }
     return {
-      label: "Needs Focus",
+      label: t('coverage.needsFocus'),
       color: "bg-red-500",
       textColor: "text-red-700",
       bgColor: "bg-red-50",
@@ -59,16 +62,16 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Coverage Map
+              {t('coverage.title')}
             </CardTitle>
             <CardDescription>
-              Topics you've practiced by subject area
+              {t('coverage.subtitle')}
             </CardDescription>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold">{overallPct}%</div>
             <Badge className={`${overallStatus.color} text-white text-xs`}>
-              Overall
+              {t('coverage.overall')}
             </Badge>
           </div>
         </div>
@@ -78,7 +81,7 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
           <div className="text-center py-8">
             <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">
-              No coverage data yet. Start practicing to see your progress!
+              {t('coverage.noData')}
             </p>
           </div>
         ) : (
@@ -106,7 +109,7 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
                           variant="outline"
                           onClick={() => onPracticeSubject(subject)}
                         >
-                          Practice
+                          {t('coverage.practice')}
                         </Button>
                       )}
                     </div>
@@ -137,10 +140,10 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
             <div className="pt-4 border-t-2 border-border">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {sortedCoverage.filter(([_, pct]) => pct >= 0.7).length} of {sortedCoverage.length} subjects strong
+                  {t('coverage.subjectsStrong', { strong: sortedCoverage.filter(([_, pct]) => pct >= 0.7).length, total: sortedCoverage.length })}
                 </span>
                 <span className="text-muted-foreground">
-                  {sortedCoverage.filter(([_, pct]) => pct < 0.3).length} need focus
+                  {t('coverage.needFocus', { count: sortedCoverage.filter(([_, pct]) => pct < 0.3).length })}
                 </span>
               </div>
             </div>

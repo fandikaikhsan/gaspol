@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react"
+import { useTranslation } from "@/lib/i18n"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
@@ -23,20 +24,22 @@ interface FlashcardStackProps {
   onReview?: (flashcardId: string, confidence: string) => void
 }
 
-const confidenceLevels = [
-  { value: 'forgot', label: 'Forgot', className: 'bg-destructive text-destructive-foreground' },
-  { value: 'hard', label: 'Hard', className: 'bg-orange-500 text-white' },
-  { value: 'medium', label: 'Good', className: 'bg-blue-500 text-white' },
-  { value: 'easy', label: 'Easy', className: 'bg-green-600 text-white' },
-]
-
 export function FlashcardStack({ flashcards, onComplete, onReview }: FlashcardStackProps) {
+  const { t } = useTranslation('taktis')
+  const { t: tc } = useTranslation('common')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [hasRated, setHasRated] = useState(false)
 
   const currentCard = flashcards[currentIndex]
   const progress = ((currentIndex + 1) / flashcards.length) * 100
+
+  const confidenceLevels = [
+    { value: 'forgot', label: t('flashcards.forgot'), className: 'bg-destructive text-destructive-foreground' },
+    { value: 'hard', label: t('flashcards.hard'), className: 'bg-orange-500 text-white' },
+    { value: 'medium', label: t('flashcards.good'), className: 'bg-blue-500 text-white' },
+    { value: 'easy', label: t('flashcards.easy'), className: 'bg-green-600 text-white' },
+  ]
 
   const handleRate = (confidence: string) => {
     if (hasRated) return
@@ -79,7 +82,7 @@ export function FlashcardStack({ flashcards, onComplete, onReview }: FlashcardSt
       {/* Progress */}
       <div>
         <div className="flex justify-between text-sm mb-2">
-          <span className="font-semibold">Card {currentIndex + 1} of {flashcards.length}</span>
+          <span className="font-semibold">{t('flashcards.cardOf', { current: currentIndex + 1, total: flashcards.length })}</span>
           <span className="text-muted-foreground">{Math.round(progress)}%</span>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden border-2 border-border">
@@ -105,7 +108,7 @@ export function FlashcardStack({ flashcards, onComplete, onReview }: FlashcardSt
           <Card className="absolute inset-0 backface-hidden">
             <CardContent className="h-full flex flex-col items-center justify-center p-8 text-center">
               <p className="text-2xl font-bold mb-4">{currentCard.front_text}</p>
-              <p className="text-sm text-muted-foreground">Tap to flip</p>
+              <p className="text-sm text-muted-foreground">{t('flashcards.tapToFlip')}</p>
             </CardContent>
           </Card>
 
@@ -113,7 +116,7 @@ export function FlashcardStack({ flashcards, onComplete, onReview }: FlashcardSt
           <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-primary/10">
             <CardContent className="h-full flex flex-col items-center justify-center p-8 text-center">
               <p className="text-xl leading-relaxed">{currentCard.back_text}</p>
-              <p className="text-sm text-muted-foreground mt-4">Tap to flip back</p>
+              <p className="text-sm text-muted-foreground mt-4">{t('flashcards.tapToFlipBack')}</p>
             </CardContent>
           </Card>
         </div>
@@ -122,7 +125,7 @@ export function FlashcardStack({ flashcards, onComplete, onReview }: FlashcardSt
       {/* Confidence Rating (shown after flip) */}
       {isFlipped && onReview && !hasRated && (
         <div className="space-y-2">
-          <p className="text-sm text-center text-muted-foreground font-medium">How well did you know this?</p>
+          <p className="text-sm text-center text-muted-foreground font-medium">{t('flashcards.howWell')}</p>
           <div className="flex gap-2">
             {confidenceLevels.map((level) => (
               <Button
@@ -145,14 +148,14 @@ export function FlashcardStack({ flashcards, onComplete, onReview }: FlashcardSt
           disabled={currentIndex === 0}
           className="flex-1"
         >
-          ← Previous
+          {tc('button.previous')}
         </Button>
         <Button
           variant="brutal"
           onClick={handleNext}
           className="flex-1"
         >
-          {currentIndex === flashcards.length - 1 ? 'Finish' : 'Next →'}
+          {currentIndex === flashcards.length - 1 ? tc('button.finish') : tc('button.next')}
         </Button>
       </div>
     </div>

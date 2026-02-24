@@ -1,6 +1,7 @@
 "use client"
 
 import { Component, ReactNode } from "react"
+import { useLanguageStore } from "@/lib/i18n/store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertTriangle } from "lucide-react"
@@ -13,6 +14,11 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean
   error: Error | null
+}
+
+const errorStrings = {
+  id: { title: "Terjadi Kesalahan", desc: "Terjadi kesalahan tak terduga. Silakan muat ulang halaman.", button: "Muat Ulang Halaman" },
+  en: { title: "Something went wrong", desc: "An unexpected error occurred. Please try refreshing the page.", button: "Refresh Page" },
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -35,13 +41,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback
       }
 
+      const locale = useLanguageStore.getState().locale
+      const s = errorStrings[locale] || errorStrings.id
+
       return (
         <Card className="border-2 border-destructive m-4">
           <CardContent className="py-12 text-center space-y-4">
             <AlertTriangle className="h-12 w-12 mx-auto text-destructive" />
-            <h2 className="text-xl font-bold">Something went wrong</h2>
+            <h2 className="text-xl font-bold">{s.title}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              An unexpected error occurred. Please try refreshing the page.
+              {s.desc}
             </p>
             {process.env.NODE_ENV === "development" && this.state.error && (
               <pre className="text-left text-xs bg-muted p-4 rounded-lg overflow-auto max-w-lg mx-auto">
@@ -54,7 +63,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 window.location.reload()
               }}
             >
-              Refresh Page
+              {s.button}
             </Button>
           </CardContent>
         </Card>
