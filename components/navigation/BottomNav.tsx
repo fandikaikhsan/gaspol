@@ -8,7 +8,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Menu } from "lucide-react"
+import { Menu, Target, Lock, Zap, BarChart2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,10 +21,10 @@ import {
 import { createClient } from "@/lib/supabase/client"
 
 const navigation = [
-  { name: 'Plan', href: '/plan', icon: '🎯' },
-  { name: 'Locked-In', href: '/locked-in', icon: '🔒' },
-  { name: 'Taktis', href: '/taktis/flashcards', icon: '⚡' },
-  { name: 'Analytics', href: '/analytics', icon: '📊' },
+  { name: "Plan", href: "/plan", icon: Target },
+  { name: "Locked-In", href: "/locked-in", icon: Lock },
+  { name: "Taktis", href: "/taktis", icon: Zap },
+  { name: "Analytics", href: "/analytics", icon: BarChart2 },
 ]
 
 export function BottomNav() {
@@ -39,7 +39,9 @@ export function BottomNav() {
 
   const loadProfile = async () => {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     if (user) {
       const { data } = await supabase
@@ -61,24 +63,41 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t-2 border-border md:hidden">
-      <div className="flex items-center justify-around h-16">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t-4 border-border md:hidden z-50">
+      <div className="flex items-center justify-around h-16 px-2">
         {navigation.map((item) => {
           const isActive = pathname.startsWith(item.href)
+          const Icon = item.icon
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full transition-colors",
+                "flex flex-col items-center justify-center flex-1 h-full transition-all",
                 isActive
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <span className="text-2xl mb-1">{item.icon}</span>
-              <span className="text-xs font-semibold">{item.name}</span>
+              <div
+                className={cn(
+                  "flex items-center justify-center px-4 py-1 rounded-full transition-all",
+                  isActive
+                    ? "bg-primary border-2 border-border shadow-brutal-sm"
+                    : "border-2 border-transparent",
+                )}
+              >
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+              </div>
+              <span
+                className={cn(
+                  "text-[10px] mt-1",
+                  isActive ? "font-bold" : "font-medium",
+                )}
+              >
+                {item.name}
+              </span>
             </Link>
           )
         })}
@@ -86,9 +105,11 @@ export function BottomNav() {
         {/* Mobile Menu */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <button className="flex flex-col items-center justify-center flex-1 h-full text-muted-foreground hover:text-foreground transition-colors">
-              <Menu className="h-6 w-6 mb-1" />
-              <span className="text-xs font-semibold">Menu</span>
+            <button className="flex flex-col items-center justify-center flex-1 h-full text-muted-foreground hover:text-foreground transition-all">
+              <div className="flex items-center justify-center px-4 py-1 rounded-full border-2 border-transparent">
+                <Menu className="h-5 w-5" strokeWidth={2} />
+              </div>
+              <span className="text-[10px] font-medium mt-1">Menu</span>
             </button>
           </SheetTrigger>
           <SheetContent side="bottom" className="h-[400px]">
@@ -96,9 +117,13 @@ export function BottomNav() {
               <SheetTitle>Profile & Settings</SheetTitle>
             </SheetHeader>
             <div className="mt-6 space-y-4">
-              <div className="p-4 bg-pastel-sky rounded-lg border-2 border-charcoal">
-                <p className="font-bold text-lg">{profile?.full_name || "User"}</p>
-                <p className="text-sm text-muted-foreground">{profile?.email}</p>
+              <div className="p-4 bg-construct-speed rounded-lg border-2 border-border shadow-brutal-sm">
+                <p className="font-bold text-lg">
+                  {profile?.full_name || "User"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.email}
+                </p>
               </div>
 
               <Button

@@ -38,18 +38,27 @@ export default function BaselineRunnerPage() {
 
       setUser(currentUser)
 
-      // Fetch module
+      // Fetch module with questions using JOIN
       const { data: moduleData, error: moduleError } = await supabase
         .from('modules')
-        .select('*')
+        .select(`
+          *,
+          module_questions(
+            id,
+            question_id,
+            order_index,
+            question:questions(*)
+          )
+        `)
         .eq('id', moduleId)
         .single()
 
       if (moduleError || !moduleData) {
+        console.error('[baseline] Module fetch failed:', moduleError?.message)
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Module not found",
+          title: "Module Not Found",
+          description: `Could not find module with ID: ${moduleId}. Error: ${moduleError?.message || 'Unknown'}`,
         })
         router.push('/baseline')
         return
@@ -57,39 +66,55 @@ export default function BaselineRunnerPage() {
 
       setModule(moduleData)
 
-      // Fetch questions based on question_ids
-      const questionIds = moduleData.question_ids as string[]
+      // Extract and sort questions from module_questions
+      const moduleQuestions = moduleData.module_questions || []
 
-      if (!questionIds || questionIds.length === 0) {
+      if (moduleQuestions.length === 0) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "No questions in this module",
+          description: "No questions in this module. Please add questions via the admin Module Composer.",
         })
         router.push('/baseline')
         return
       }
 
-      const { data: questionsData, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .in('id', questionIds)
+      // Sort by order_index and extract question data
+      const rawQuestions = moduleQuestions
+        .sort((a: any, b: any) => a.order_index - b.order_index)
+        .map((mq: any) => mq.question)
+        .filter(Boolean)
 
-      if (questionsError || !questionsData) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load questions",
-        })
-        return
-      }
+      // Transform database format to Question type
+      const transformedQuestions = rawQuestions.map((q: any) => {
+        // Map database fields to expected Question interface
+        return {
+          id: q.id,
+          micro_skill_id: q.micro_skill_id || q.taxonomy_node_id || '',
+          difficulty: q.difficulty || 'medium',
+          cognitive_level: q.cognitive_level || 'L2',
+          // Map question_type to question_format
+          question_format: q.question_format || q.question_type || 'MCQ5',
+          // Map question_text to stem
+          stem: q.stem || q.question_text || '',
+          stem_images: q.stem_images || [],
+          options: q.options || {},
+          correct_answer: q.correct_answer || '',
+          explanation: q.explanation || '',
+          explanation_images: q.explanation_images || [],
+          construct_weights: (q.construct_weights && Object.keys(q.construct_weights).length > 0)
+            ? q.construct_weights
+            : {
+              teliti: 0.2,
+              speed: 0.2,
+              reasoning: 0.2,
+              computation: 0.2,
+              reading: 0.2,
+            },
+        }
+      }) as Question[]
 
-      // Sort questions by order in question_ids array
-      const sortedQuestions = questionIds
-        .map(id => questionsData.find(q => q.id === id))
-        .filter(Boolean) as Question[]
-
-      setQuestions(sortedQuestions)
+      setQuestions(transformedQuestions)
       setIsLoading(false)
     }
 
@@ -102,6 +127,28 @@ export default function BaselineRunnerPage() {
     const supabase = createClient()
 
     try {
+      // Get and refresh session token once before submitting
+      const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession()
+
+      let accessToken = authSession?.access_token
+
+      if (sessionError || !accessToken) {
+        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
+
+        if (refreshError || !refreshedSession?.access_token) {
+          toast({
+            variant: "destructive",
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again.",
+          })
+          router.push('/login')
+          return
+        }
+
+        // Use refreshed token
+        accessToken = refreshedSession.access_token
+      }
+
       // Submit all attempts
       const attemptPromises = Object.entries(session.answers).map(
         async ([questionId, data]) => {
@@ -109,11 +156,11 @@ export default function BaselineRunnerPage() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+              'Authorization': `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
               question_id: questionId,
-              user_answer: data.answer,
+              selected_answer: data.answer,
               time_spent_sec: data.timeSpent,
               context_type: 'baseline',
               context_id: moduleId,
@@ -122,7 +169,9 @@ export default function BaselineRunnerPage() {
           })
 
           if (!response.ok) {
-            throw new Error(`Failed to submit attempt for question ${questionId}`)
+            const errorData = await response.json().catch(() => ({}))
+            console.error('Submit attempt failed:', errorData)
+            throw new Error(`Failed to submit attempt for question ${questionId}: ${errorData.error || errorData.message || 'Unknown error'}`)
           }
 
           return response.json()
@@ -141,7 +190,7 @@ export default function BaselineRunnerPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           module_id: moduleId,

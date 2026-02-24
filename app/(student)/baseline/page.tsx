@@ -85,6 +85,7 @@ export default function BaselineHubPage() {
         })
       )
 
+
       setModules(modulesWithStatus)
       setIsLoading(false)
     }

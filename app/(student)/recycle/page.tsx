@@ -64,12 +64,40 @@ export default function RecycleHubPage() {
       description: "Analyzing weak areas",
     })
 
-    // TODO: Call create_recycle_checkpoint Edge Function
-    // For now, just navigate
-    setIsCreating(false)
-    toast({
-      title: "Checkpoint ready!",
-    })
+    try {
+      const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
+
+      const response = await fetch('/api/create-recycle-checkpoint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || 'Failed to create checkpoint')
+      if (!data?.success) throw new Error(data?.error || 'Failed to create checkpoint')
+
+      toast({
+        title: "Checkpoint ready!",
+        description: `${data.question_count} questions targeting ${data.weak_skills_targeted} weak areas`,
+      })
+
+      router.push(
+        `/locked-in/drills/practice?module=${data.module_id}&checkpointId=${data.checkpoint_id}`
+      )
+    } catch (err: any) {
+      console.error('Failed to create checkpoint:', err)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "Failed to create checkpoint",
+      })
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   if (isLoading) {

@@ -65,8 +65,8 @@ export default function OnboardingPage() {
         throw new Error("User not authenticated")
       }
 
-      // Update profile
-      await supabase
+      // Update profile — must succeed before transitioning phase
+      const { error: profileError } = await supabase
         .from("profiles")
         .update({
           package_days: packageDays,
@@ -75,6 +75,21 @@ export default function OnboardingPage() {
           target_major: targetMajor || null,
         })
         .eq("id", user.id)
+
+      if (profileError) {
+        throw new Error("Failed to save profile: " + profileError.message)
+      }
+
+      // Verify the data was actually written
+      const { data: verifyProfile } = await supabase
+        .from("profiles")
+        .select("package_days, time_budget_min")
+        .eq("id", user.id)
+        .single()
+
+      if (!verifyProfile?.package_days || !verifyProfile?.time_budget_min) {
+        throw new Error("Profile save verification failed. Please try again.")
+      }
 
       // Update user state - transition to baseline assessment
       await updateUserState(user.id, {

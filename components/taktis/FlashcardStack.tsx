@@ -20,19 +20,45 @@ interface Flashcard {
 interface FlashcardStackProps {
   flashcards: Flashcard[]
   onComplete?: () => void
+  onReview?: (flashcardId: string, confidence: string) => void
 }
 
-export function FlashcardStack({ flashcards, onComplete }: FlashcardStackProps) {
+const confidenceLevels = [
+  { value: 'forgot', label: 'Forgot', className: 'bg-destructive text-destructive-foreground' },
+  { value: 'hard', label: 'Hard', className: 'bg-orange-500 text-white' },
+  { value: 'medium', label: 'Good', className: 'bg-blue-500 text-white' },
+  { value: 'easy', label: 'Easy', className: 'bg-green-600 text-white' },
+]
+
+export function FlashcardStack({ flashcards, onComplete, onReview }: FlashcardStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [hasRated, setHasRated] = useState(false)
 
   const currentCard = flashcards[currentIndex]
   const progress = ((currentIndex + 1) / flashcards.length) * 100
+
+  const handleRate = (confidence: string) => {
+    if (hasRated) return
+    setHasRated(true)
+    onReview?.(currentCard.id, confidence)
+    // Auto-advance after rating
+    setTimeout(() => {
+      if (currentIndex < flashcards.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+        setIsFlipped(false)
+        setHasRated(false)
+      } else {
+        onComplete?.()
+      }
+    }, 300)
+  }
 
   const handleNext = () => {
     if (currentIndex < flashcards.length - 1) {
       setCurrentIndex(currentIndex + 1)
       setIsFlipped(false)
+      setHasRated(false)
     } else {
       onComplete?.()
     }
@@ -42,6 +68,7 @@ export function FlashcardStack({ flashcards, onComplete }: FlashcardStackProps) 
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
       setIsFlipped(false)
+      setHasRated(false)
     }
   }
 
@@ -75,10 +102,7 @@ export function FlashcardStack({ flashcards, onComplete }: FlashcardStackProps) 
           `}
         >
           {/* Front */}
-          <Card className={`
-            absolute inset-0 backface-hidden
-            ${!isFlipped ? '' : 'invisible'}
-          `}>
+          <Card className="absolute inset-0 backface-hidden">
             <CardContent className="h-full flex flex-col items-center justify-center p-8 text-center">
               <p className="text-2xl font-bold mb-4">{currentCard.front_text}</p>
               <p className="text-sm text-muted-foreground">Tap to flip</p>
@@ -86,10 +110,7 @@ export function FlashcardStack({ flashcards, onComplete }: FlashcardStackProps) 
           </Card>
 
           {/* Back */}
-          <Card className={`
-            absolute inset-0 backface-hidden rotate-y-180 bg-primary/10
-            ${isFlipped ? '' : 'invisible'}
-          `}>
+          <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-primary/10">
             <CardContent className="h-full flex flex-col items-center justify-center p-8 text-center">
               <p className="text-xl leading-relaxed">{currentCard.back_text}</p>
               <p className="text-sm text-muted-foreground mt-4">Tap to flip back</p>
@@ -97,6 +118,24 @@ export function FlashcardStack({ flashcards, onComplete }: FlashcardStackProps) 
           </Card>
         </div>
       </div>
+
+      {/* Confidence Rating (shown after flip) */}
+      {isFlipped && onReview && !hasRated && (
+        <div className="space-y-2">
+          <p className="text-sm text-center text-muted-foreground font-medium">How well did you know this?</p>
+          <div className="flex gap-2">
+            {confidenceLevels.map((level) => (
+              <Button
+                key={level.value}
+                className={`flex-1 ${level.className}`}
+                onClick={() => handleRate(level.value)}
+              >
+                {level.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex gap-4">
