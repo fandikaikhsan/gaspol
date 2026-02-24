@@ -5,28 +5,35 @@
  * Phase 6: Taktis Learning Mode
  */
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { FlashcardStack } from "@/components/taktis/FlashcardStack"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 
-export default function FlashcardsPage() {
+function FlashcardsContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+
+  const taskId = searchParams.get('taskId')
+
+  const [user, setUser] = useState<any>(null)
   const [flashcards, setFlashcards] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchFlashcards = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
 
-      if (!user) {
+      if (!currentUser) {
         router.push('/login')
         return
       }
+
+      setUser(currentUser)
 
       // Fetch published flashcards
       const { data } = await supabase
@@ -42,9 +49,32 @@ export default function FlashcardsPage() {
     fetchFlashcards()
   }, [router])
 
-  const handleComplete = () => {
+  const handleReview = async (flashcardId: string, confidence: string) => {
+    if (!user) return
+
+    const supabase = createClient()
+    await supabase.from('flashcard_reviews').insert({
+      user_id: user.id,
+      flashcard_id: flashcardId,
+      confidence_level: confidence,
+    })
+  }
+
+  const handleComplete = async () => {
+    if (taskId && user) {
+      const supabase = createClient()
+      await supabase
+        .from('plan_tasks')
+        .update({
+          is_completed: true,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', taskId)
+        .eq('user_id', user.id)
+    }
+
     toast({
-      title: "Great work! 🎉",
+      title: "Great work!",
       description: "Flashcard session complete",
     })
     router.push('/plan')
@@ -82,8 +112,21 @@ export default function FlashcardsPage() {
         <FlashcardStack
           flashcards={flashcards}
           onComplete={handleComplete}
+          onReview={handleReview}
         />
       </div>
     </div>
+  )
+}
+
+export default function FlashcardsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Loading flashcards...</p>
+      </div>
+    }>
+      <FlashcardsContent />
+    </Suspense>
   )
 }

@@ -99,15 +99,19 @@ export function ConstructWeightsEditor({
     setIsLoadingSuggestions(true)
     try {
       const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
 
-      const { data, error } = await supabase.functions.invoke("suggest_metadata", {
-        body: {
-          question_id: questionId,
-          use_ai: true
-        }
+      const response = await fetch('/api/admin/suggest-metadata', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ question_id: questionId, use_ai: true }),
       })
 
-      if (error) throw error
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to get suggestions')
 
       if (data.success && data.suggestions) {
         setSuggestions(data.suggestions)

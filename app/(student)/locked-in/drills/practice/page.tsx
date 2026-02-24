@@ -31,6 +31,8 @@ function DrillPracticeContent() {
   const nodeId = searchParams.get('node')
   const nodeIds = searchParams.get('nodes')?.split(',') || []
   const questionCount = parseInt(searchParams.get('count') || '10')
+  const taskId = searchParams.get('taskId')
+  const checkpointId = searchParams.get('checkpointId')
 
   const [user, setUser] = useState<any>(null)
   const [questions, setQuestions] = useState<Question[]>([])
@@ -197,7 +199,7 @@ function DrillPracticeContent() {
             },
             body: JSON.stringify({
               question_id: questionId,
-              user_answer: data.answer,
+              selected_answer: data.answer,
               time_spent_sec: data.timeSpent,
               context_type: 'drill',
               context_id: sessionId,
@@ -234,6 +236,47 @@ function DrillPracticeContent() {
             started_at: session.startedAt.toISOString(),
             completed_at: new Date().toISOString(),
           })
+      }
+
+      // Mark plan task as completed if taskId exists
+      if (taskId) {
+        await supabase
+          .from('plan_tasks')
+          .update({
+            is_completed: true,
+            completion_score: score,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', taskId)
+          .eq('user_id', user.id)
+      }
+
+      // Mark recycle checkpoint as completed if checkpointId exists
+      if (checkpointId) {
+        await supabase
+          .from('recycle_checkpoints')
+          .update({
+            is_completed: true,
+            score,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', checkpointId)
+          .eq('user_id', user.id)
+      }
+
+      // Refresh analytics snapshot via API route (ES256 JWT workaround)
+      try {
+        const accessToken = (await supabase.auth.getSession()).data.session?.access_token
+        await fetch('/api/generate-snapshot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ scope: 'checkpoint' }),
+        })
+      } catch (e) {
+        console.warn('Snapshot refresh failed (non-critical):', e)
       }
 
       toast({

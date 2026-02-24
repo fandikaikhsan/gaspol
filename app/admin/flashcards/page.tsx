@@ -316,12 +316,19 @@ export default function AdminFlashcardsPage() {
 
     try {
       const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
 
-      const { data, error } = await supabase.functions.invoke("generate_flashcards", {
-        body: generationParams,
+      const response = await fetch('/api/admin/generate-flashcards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(generationParams),
       })
 
-      if (error) throw error
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to generate flashcards')
 
       if (data.success && data.flashcards) {
         setGeneratedFlashcards(data.flashcards)

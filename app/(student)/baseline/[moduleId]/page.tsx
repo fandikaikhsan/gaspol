@@ -38,11 +38,6 @@ export default function BaselineRunnerPage() {
 
       setUser(currentUser)
 
-      console.log('=== BASELINE RUNNER DEBUG ===')
-      console.log('Attempting to fetch module with ID:', moduleId)
-      console.log('Module ID type:', typeof moduleId)
-      console.log('Module ID length:', moduleId?.length)
-
       // Fetch module with questions using JOIN
       const { data: moduleData, error: moduleError } = await supabase
         .from('modules')
@@ -58,16 +53,8 @@ export default function BaselineRunnerPage() {
         .eq('id', moduleId)
         .single()
 
-      console.log('Query result - data:', moduleData)
-      console.log('Query result - error:', moduleError)
-
       if (moduleError || !moduleData) {
-        console.error('=== MODULE FETCH FAILED ===')
-        console.error('Error:', moduleError)
-        console.error('Module ID that failed:', moduleId)
-        console.error('Error code:', moduleError?.code)
-        console.error('Error message:', moduleError?.message)
-
+        console.error('[baseline] Module fetch failed:', moduleError?.message)
         toast({
           variant: "destructive",
           title: "Module Not Found",
@@ -76,11 +63,6 @@ export default function BaselineRunnerPage() {
         router.push('/baseline')
         return
       }
-
-      console.log('=== MODULE FOUND ===')
-      console.log('Module name:', moduleData.name)
-      console.log('Module type:', moduleData.module_type)
-      console.log('Module questions:', moduleData.module_questions)
 
       setModule(moduleData)
 
@@ -103,12 +85,8 @@ export default function BaselineRunnerPage() {
         .map((mq: any) => mq.question)
         .filter(Boolean)
 
-      console.log('Raw questions from DB:', rawQuestions)
-
       // Transform database format to Question type
       const transformedQuestions = rawQuestions.map((q: any) => {
-        console.log('Transforming question:', q)
-
         // Map database fields to expected Question interface
         return {
           id: q.id,
@@ -124,17 +102,18 @@ export default function BaselineRunnerPage() {
           correct_answer: q.correct_answer || '',
           explanation: q.explanation || '',
           explanation_images: q.explanation_images || [],
-          construct_weights: q.construct_weights || {
-            teliti: 0.2,
-            speed: 0.2,
-            reasoning: 0.2,
-            computation: 0.2,
-            reading: 0.2,
-          },
+          construct_weights: (q.construct_weights && Object.keys(q.construct_weights).length > 0)
+            ? q.construct_weights
+            : {
+              teliti: 0.2,
+              speed: 0.2,
+              reasoning: 0.2,
+              computation: 0.2,
+              reading: 0.2,
+            },
         }
       }) as Question[]
 
-      console.log('Transformed questions:', transformedQuestions)
       setQuestions(transformedQuestions)
       setIsLoading(false)
     }
@@ -151,24 +130,10 @@ export default function BaselineRunnerPage() {
       // Get and refresh session token once before submitting
       const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession()
 
-      console.log('=== SESSION DEBUG ===')
-      console.log('Session error:', sessionError)
-      console.log('Has session:', !!authSession)
-      console.log('Access token present:', !!authSession?.access_token)
-      console.log('Access token length:', authSession?.access_token?.length)
-
       let accessToken = authSession?.access_token
 
       if (sessionError || !accessToken) {
-        console.error('Session error or no token, attempting refresh...')
-        // Try to refresh the session
         const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
-
-        console.log('Refresh result:', {
-          hasRefreshedSession: !!refreshedSession,
-          refreshError: refreshError,
-          hasRefreshedToken: !!refreshedSession?.access_token
-        })
 
         if (refreshError || !refreshedSession?.access_token) {
           toast({
@@ -183,8 +148,6 @@ export default function BaselineRunnerPage() {
         // Use refreshed token
         accessToken = refreshedSession.access_token
       }
-
-      console.log('Using access token:', accessToken?.substring(0, 20) + '...')
 
       // Submit all attempts
       const attemptPromises = Object.entries(session.answers).map(

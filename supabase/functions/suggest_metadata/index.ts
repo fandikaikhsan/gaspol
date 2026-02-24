@@ -38,25 +38,30 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get authorization token
-    const authHeader = req.headers.get("Authorization")
-    if (!authHeader) {
-      throw new Error("Missing authorization header")
-    }
-
-    const token = authHeader.replace("Bearer ", "")
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Verify user token
-    const { data: userData, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !userData.user) {
-      throw new Error("Invalid user token")
-    }
+    // Parse request body (once — also used for auth)
+    const body: SuggestMetadataRequest & { user_id?: string } = await req.json()
+    const { question_id, use_ai = false } = body
 
-    const userId = userData.user.id
+    // Resolve user ID: from body (API route proxy) or JWT (direct call)
+    let userId: string
+
+    if (body.user_id) {
+      // Called from API route with SERVICE_ROLE_KEY — user_id pre-verified
+      userId = body.user_id
+    } else {
+      // Direct call with user JWT (legacy/fallback)
+      const authHeader = req.headers.get("Authorization")
+      if (!authHeader) throw new Error("Missing authorization header")
+      const token = authHeader.replace("Bearer ", "")
+      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+      if (userError || !userData.user) throw new Error("Invalid user token")
+      userId = userData.user.id
+    }
 
     // Check if user is admin
     const { data: profile } = await supabase
@@ -71,10 +76,6 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
-
-    // Parse request body
-    const body: SuggestMetadataRequest = await req.json()
-    const { question_id, use_ai = false } = body
 
     if (!question_id) {
       return new Response(

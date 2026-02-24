@@ -77,13 +77,6 @@ export default function BaselineHubPage() {
             .eq('context_type', 'baseline')
             .single()
 
-          console.log('Baseline module:', {
-            title: module.title,
-            module_id: module.module_id,
-            checkpoint_order: module.checkpoint_order,
-            is_active: module.is_active
-          })
-
           return {
             ...module,
             is_completed: !!completion,
@@ -92,15 +85,6 @@ export default function BaselineHubPage() {
         })
       )
 
-      console.log('=== BASELINE HUB - Modules loaded ===')
-      console.log('Total modules:', modulesWithStatus.length)
-      modulesWithStatus.forEach((m, i) => {
-        console.log(`Module ${i + 1}:`, {
-          title: m.title,
-          module_id: m.module_id,
-          link_will_be: `/baseline/${m.module_id}`
-        })
-      })
 
       setModules(modulesWithStatus)
       setIsLoading(false)

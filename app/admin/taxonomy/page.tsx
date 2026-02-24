@@ -211,16 +211,23 @@ export default function AdminTaxonomyPage() {
 
     try {
       const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
 
-      const { data, error } = await supabase.functions.invoke("suggest_taxonomy_node", {
-        body: {
+      const response = await fetch('/api/admin/suggest-taxonomy-node', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
           exam_id: formData.exam_id,
           parent_id: formData.parent_id,
           level: formData.level,
-        },
+        }),
       })
 
-      if (error) throw error
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to suggest taxonomy node')
 
       if (data.success && data.suggestions) {
         setSuggestions(data.suggestions)
@@ -276,14 +283,19 @@ export default function AdminTaxonomyPage() {
 
     try {
       const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
 
-      const { data, error } = await supabase.functions.invoke("generate_taxonomy_tree", {
-        body: {
-          exam_id: primaryExam.id,
+      const response = await fetch('/api/admin/generate-taxonomy-tree', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
         },
+        body: JSON.stringify({ exam_id: primaryExam.id }),
       })
 
-      if (error) throw error
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to generate taxonomy tree')
 
       if (data.success && data.tree) {
         setGeneratedTree(data.tree)

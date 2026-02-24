@@ -5,16 +5,23 @@
  * Phase 5: Locked-In Learning Mode
  */
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { QuestionDisplay } from "@/components/assessment/QuestionDisplay"
 import { AnswerOptions } from "@/components/assessment/AnswerOptions"
+import { useToast } from "@/hooks/use-toast"
 
-export default function ReviewModePage() {
+function ReviewModeContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+
+  const taskId = searchParams.get('taskId')
+
   const [user, setUser] = useState<any>(null)
   const [attempts, setAttempts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -124,7 +131,47 @@ export default function ReviewModePage() {
             </Card>
           )
         })}
+
+        {/* Done reviewing button — marks plan task complete if taskId present */}
+        {taskId && (
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={async () => {
+              if (user) {
+                const supabase = createClient()
+                await supabase
+                  .from('plan_tasks')
+                  .update({
+                    is_completed: true,
+                    completed_at: new Date().toISOString(),
+                  })
+                  .eq('id', taskId)
+                  .eq('user_id', user.id)
+              }
+              toast({
+                title: "Review complete!",
+                description: "Task marked as done",
+              })
+              router.push('/plan')
+            }}
+          >
+            Done Reviewing
+          </Button>
+        )}
       </div>
     </div>
+  )
+}
+
+export default function ReviewModePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Loading mistakes...</p>
+      </div>
+    }>
+      <ReviewModeContent />
+    </Suspense>
   )
 }

@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, TrendingUp, Target, Brain, AlertCircle, RefreshCw } from "lucide-react"
+import { SkeletonCard, SkeletonRing, SkeletonBar } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { ReadinessScore } from "@/components/analytics/ReadinessScore"
 import { ConstructRadarChart } from "@/components/analytics/ConstructRadarChart"
@@ -141,14 +142,19 @@ export default function AnalyticsPage() {
     setIsRefreshing(true)
     try {
       const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
 
-      const { data, error } = await supabase.functions.invoke("generate_snapshot", {
-        body: {
-          scope: "checkpoint"
-        }
+      const response = await fetch('/api/generate-snapshot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ scope: 'checkpoint' }),
       })
 
-      if (error) throw error
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to generate snapshot')
 
       if (data.success) {
         toast({
@@ -171,8 +177,20 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <SkeletonBar className="h-8 w-48" />
+            <SkeletonBar className="h-4 w-32" />
+          </div>
+          <SkeletonBar className="h-10 w-36" />
+        </div>
+        <SkeletonRing className="py-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <SkeletonCard />
       </div>
     )
   }

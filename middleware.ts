@@ -43,12 +43,11 @@ export async function middleware(request: NextRequest) {
 
   // If user is authenticated
   if (user) {
-    // Get user profile and role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    // Get user profile and state
+    const [{ data: profile }, { data: userState }] = await Promise.all([
+      supabase.from('profiles').select('role').eq('id', user.id).single(),
+      supabase.from('user_state').select('current_phase').eq('user_id', user.id).single(),
+    ])
 
     // Redirect to login if profile not found (shouldn't happen)
     if (!profile) {
@@ -57,16 +56,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
+    const isAdmin = profile.role === 'admin'
+
     // Admin role check
-    if (isAdminRoute && profile.role !== 'admin') {
-      // Non-admin trying to access admin routes
+    if (isAdminRoute && !isAdmin) {
       const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/plan' // Redirect to student dashboard
+      redirectUrl.pathname = '/plan'
       return NextResponse.redirect(redirectUrl)
     }
 
     // Student trying to access admin routes (but allow shared routes)
-    if (isStudentRoute && profile.role === 'admin' && !isSharedRoute) {
+    if (isStudentRoute && isAdmin && !isSharedRoute) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/admin'
       return NextResponse.redirect(redirectUrl)
@@ -75,15 +75,43 @@ export async function middleware(request: NextRequest) {
     // Redirect authenticated users away from login/signup
     if (path === '/login' || path === '/signup') {
       const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = profile.role === 'admin' ? '/admin' : '/plan'
+      redirectUrl.pathname = isAdmin ? '/admin' : '/plan'
       return NextResponse.redirect(redirectUrl)
     }
 
     // Redirect from root to appropriate dashboard
     if (path === '/') {
       const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = profile.role === 'admin' ? '/admin' : '/plan'
+      redirectUrl.pathname = isAdmin ? '/admin' : '/plan'
       return NextResponse.redirect(redirectUrl)
+    }
+
+    // PHASE-BASED ROUTING GUARD (students only)
+    // Ensure students can't skip onboarding or access features they haven't unlocked
+    if (!isAdmin && isStudentRoute && userState?.current_phase) {
+      const phase = userState.current_phase
+
+      // Users in ONBOARDING must complete onboarding first
+      if (phase === 'ONBOARDING' && !path.startsWith('/onboarding')) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/onboarding'
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      // Users who completed onboarding should not go back to it
+      if (phase !== 'ONBOARDING' && path.startsWith('/onboarding')) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/plan'
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      // Users in BASELINE phase can only access baseline + analytics
+      if (phase === 'BASELINE_ASSESSMENT_IN_PROGRESS' &&
+          !path.startsWith('/baseline') && !path.startsWith('/analytics')) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/baseline'
+        return NextResponse.redirect(redirectUrl)
+      }
     }
   }
 

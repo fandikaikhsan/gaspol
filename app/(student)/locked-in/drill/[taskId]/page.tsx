@@ -116,7 +116,7 @@ export default function DrillRunnerPage() {
             },
             body: JSON.stringify({
               question_id: questionId,
-              user_answer: data.answer,
+              selected_answer: data.answer,
               time_spent_sec: data.timeSpent,
               context_type: 'drill',
               context_id: taskId,

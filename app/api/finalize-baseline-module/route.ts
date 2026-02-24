@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString()
     const totalTimeSec = started_at
-      ? Math.floor((new Date().getTime() - new Date(started_at).getTime()) / 1000)
+      ? Math.max(0, Math.floor((new Date().getTime() - new Date(started_at).getTime()) / 1000))
       : 0
 
     // 4. RECORD MODULE COMPLETION
@@ -134,12 +134,23 @@ export async function POST(request: NextRequest) {
       // Create baseline_complete snapshot
       await supabase.from('analytics_snapshots').insert({
         user_id: user.id,
+        // Legacy columns
         snapshot_type: 'baseline_complete',
         readiness_score: readinessScore,
         ...constructProfile,
         skills_tested: 0,
         skills_strong: 0,
         skills_weak: 0,
+        // New JSONB columns
+        scope: 'full_baseline',
+        readiness: readinessScore,
+        constructs: {
+          'C.ATTENTION': constructProfile.teliti_score || 50,
+          'C.SPEED': constructProfile.speed_score || 50,
+          'C.REASONING': constructProfile.reasoning_score || 50,
+          'C.COMPUTATION': constructProfile.computation_score || 50,
+          'C.READING': constructProfile.reading_score || 50,
+        },
       })
 
       // Update user phase

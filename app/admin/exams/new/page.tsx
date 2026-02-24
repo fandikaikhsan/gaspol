@@ -65,10 +65,8 @@ export default function NewExamPage() {
     setIsResearching(true)
 
     try {
-      console.log("Calling research API...")
-
       // Call API route instead of edge function directly
-      const response = await fetch("/api/research-exam", {
+      const response = await fetch("/api/admin/research-exam", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,15 +78,12 @@ export default function NewExamPage() {
         }),
       })
 
-      console.log("API response status:", response.status)
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || "Failed to research exam")
       }
 
       const data = await response.json()
-      console.log("Response data:", data)
 
       if (!data || !data.success) {
         throw new Error(data?.error || "Failed to research exam")

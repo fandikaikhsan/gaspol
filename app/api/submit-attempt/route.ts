@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
         message: isCorrect
           ? 'Correct! Great job!'
           : 'Incorrect. Review the explanation to understand why.',
-        error_tags: errorTags.map(t => t.tag_id),
+        error_tags: potentialTags.map(t => t.tag_id),
         difficulty: question.difficulty
       }
     })

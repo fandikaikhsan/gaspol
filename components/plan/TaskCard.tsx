@@ -20,6 +20,7 @@ interface TaskCardProps {
     estimated_duration_min: number
     is_completed: boolean
     completion_score?: number
+    target_node_id?: string
   }
 }
 
@@ -37,6 +38,23 @@ const taskColors = {
   mock: 'bg-construct-speed',
   flashcard: 'bg-construct-computation',
   review: 'bg-construct-reading',
+}
+
+function getTaskHref(task: TaskCardProps['task']): string {
+  switch (task.task_type) {
+    case 'drill_focus':
+      return `/locked-in/drills/practice?mode=focused&node=${task.target_node_id || ''}&count=10&taskId=${task.id}`
+    case 'drill_mixed':
+      return `/locked-in/drills/practice?mode=mixed&count=10&taskId=${task.id}`
+    case 'mock':
+      return `/locked-in/mock?taskId=${task.id}`
+    case 'flashcard':
+      return `/taktis/flashcards?taskId=${task.id}`
+    case 'review':
+      return `/locked-in/review?taskId=${task.id}`
+    default:
+      return `/locked-in/drills/practice?mode=mixed&count=10&taskId=${task.id}`
+  }
 }
 
 export function TaskCard({ task }: TaskCardProps) {
@@ -74,7 +92,7 @@ export function TaskCard({ task }: TaskCardProps) {
               </span>
             )}
           </div>
-          <Link href={`/locked-in/${task.task_type}/${task.id}`}>
+          <Link href={getTaskHref(task)}>
             <Button variant={task.is_completed ? "brutal-secondary" : "brutal"}>
               {task.is_completed ? 'Review' : 'Start'}
             </Button>

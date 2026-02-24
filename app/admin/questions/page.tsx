@@ -451,12 +451,19 @@ export default function AdminQuestionsPage() {
 
     try {
       const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
 
-      const { data, error } = await supabase.functions.invoke("generate_questions", {
-        body: generationParams,
+      const response = await fetch('/api/admin/generate-questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(generationParams),
       })
 
-      if (error) throw error
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to generate questions')
 
       if (data.success && data.questions) {
         setGeneratedQuestions(data.questions)

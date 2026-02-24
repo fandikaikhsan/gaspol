@@ -128,11 +128,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log("=== Generate Questions Function Started ===")
-
-    const authHeader = req.headers.get("Authorization")
-    const token = authHeader?.replace("Bearer ", "")
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 
@@ -142,21 +137,37 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Verify user
-    let user
-    if (token) {
-      const { data: userData, error: userError } = await supabase.auth.getUser(token)
-      if (userError) throw new Error(`Auth error: ${userError.message}`)
-      user = userData.user
+    // Parse request body (once — also used for auth)
+    const body = await req.json()
+    const {
+      taxonomy_node_id,
+      count = 5,
+      difficulty = "medium",
+      cognitive_level = "L2",
+      question_type = "MCQ5",
+    } = body
+
+    // Resolve user ID: from body (API route proxy) or JWT (direct call)
+    let userId: string
+
+    if (body.user_id) {
+      // Called from API route with SERVICE_ROLE_KEY — user_id pre-verified
+      userId = body.user_id
     } else {
-      throw new Error("No authorization token provided")
+      // Direct call with user JWT (legacy/fallback)
+      const authHeader = req.headers.get("Authorization")
+      if (!authHeader) throw new Error("Missing authorization header")
+      const token = authHeader.replace("Bearer ", "")
+      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+      if (userError || !userData.user) throw new Error("Invalid user token")
+      userId = userData.user.id
     }
 
     // Check admin role
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single()
 
     if (profile?.role !== "admin") {
@@ -173,18 +184,6 @@ serve(async (req) => {
     if (!aiSettings) {
       throw new Error("No active AI provider configured. Please configure in Admin > AI Runs > Settings.")
     }
-
-    console.log(`Using AI provider: ${aiSettings.provider}, model: ${aiSettings.model}`)
-
-    // Get request body
-    const body = await req.json()
-    const {
-      taxonomy_node_id,
-      count = 5,
-      difficulty = "medium",
-      cognitive_level = "L2",
-      question_type = "MCQ5",
-    } = body
 
     if (!taxonomy_node_id) {
       throw new Error("taxonomy_node_id is required")
@@ -226,7 +225,7 @@ serve(async (req) => {
     const systemPrompt = "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure."
     const userPrompt = buildGenerationPrompt(taxonomyNode, parentNodes, count, difficulty, cognitive_level, question_type, researchProfile)
 
-    console.log(`Calling ${aiSettings.provider} API...`)
+    console.log(`Calling ${aiSettings.provider} API for question generation`)
 
     // Call AI
     const { content: aiOutput, tokensUsed } = await callAI(
@@ -234,8 +233,6 @@ serve(async (req) => {
       systemPrompt,
       userPrompt
     )
-
-    console.log("AI output length:", aiOutput.length)
 
     // Parse JSON output
     let generatedQuestions
@@ -260,7 +257,7 @@ serve(async (req) => {
     await supabase.from("ai_runs").insert({
       job_type: "item_generation",
       prompt_version: researchProfile ? "v2.0-research" : "v1.0",
-      initiated_by: user.id,
+      initiated_by: userId,
       prompt: userPrompt.substring(0, 1000),
       input_params: {
         taxonomy_node_id, count, difficulty, cognitive_level, question_type,

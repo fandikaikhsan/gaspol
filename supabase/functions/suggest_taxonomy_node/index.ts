@@ -17,21 +17,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log("=== Suggest Taxonomy Node Function Started ===")
-
-    // Get the authorization header
-    const authHeader = req.headers.get("Authorization")
-    console.log("Has auth header:", !!authHeader)
-
-    // Parse the JWT token from the authorization header
-    const token = authHeader?.replace("Bearer ", "")
-
     // Create Supabase client with SERVICE ROLE KEY
     const supabaseUrl = Deno.env.get("SUPABASE_URL")
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-
-    console.log("Supabase URL:", supabaseUrl)
-    console.log("Has service key:", !!supabaseServiceKey)
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase configuration")
@@ -39,38 +27,36 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Verify the user's JWT token manually
-    let user
-    if (token) {
-      console.log("Verifying token...")
-      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+    // Parse request body (once — also used for auth)
+    const body = await req.json()
+    const { exam_id, parent_id, level } = body
 
-      if (userError) {
-        console.error("User verification error:", userError.message)
-        throw new Error(`Auth error: ${userError.message}`)
-      }
+    // Resolve user ID: from body (API route proxy) or JWT (direct call)
+    let userId: string
 
-      user = userData.user
-      console.log("User verified:", user?.id)
+    if (body.user_id) {
+      // Called from API route with SERVICE_ROLE_KEY — user_id pre-verified
+      userId = body.user_id
     } else {
-      throw new Error("No authorization token provided")
+      // Direct call with user JWT (legacy/fallback)
+      const authHeader = req.headers.get("Authorization")
+      if (!authHeader) throw new Error("Missing authorization header")
+      const token = authHeader.replace("Bearer ", "")
+      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+      if (userError || !userData.user) throw new Error("Invalid user token")
+      userId = userData.user.id
     }
 
     // Check admin role
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single()
 
     if (profile?.role !== "admin") {
       throw new Error("Admin access required")
     }
-
-    // Get request body
-    const { exam_id, parent_id, level } = await req.json()
-
-    console.log("Request params:", { exam_id, parent_id, level })
 
     // Get exam research data
     const { data: exam } = await supabase
@@ -115,7 +101,7 @@ serve(async (req) => {
       throw new Error("ANTHROPIC_API_KEY not configured")
     }
 
-    console.log("Calling Anthropic API for suggestions...")
+    console.log("Calling Anthropic API for taxonomy suggestions")
 
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

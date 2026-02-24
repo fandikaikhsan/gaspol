@@ -27,38 +27,48 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get authorization token
-    const authHeader = req.headers.get("Authorization")
-    if (!authHeader) {
-      throw new Error("Missing authorization header")
-    }
-
-    const token = authHeader.replace("Bearer ", "")
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Verify user token
-    const { data: userData, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !userData.user) {
-      throw new Error("Invalid user token")
-    }
-
-    const requestingUserId = userData.user.id
-
-    // Check if user is admin for bulk operations
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", requestingUserId)
-      .single()
-
-    const isAdmin = profile?.role === "admin"
 
     // Parse request body
     const body: GenerateSnapshotRequest = await req.json()
     const { user_id, scope, generate_all } = body
+
+    let requestingUserId: string
+    let isAdmin = false
+
+    if (user_id) {
+      // Called from API route with SERVICE_ROLE_KEY — user_id pre-verified
+      requestingUserId = user_id
+
+      // Check admin status for the provided user
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", requestingUserId)
+        .single()
+      isAdmin = profile?.role === "admin"
+    } else {
+      // Direct call with user JWT (legacy/fallback)
+      const authHeader = req.headers.get("Authorization")
+      if (!authHeader) {
+        throw new Error("Missing authorization header")
+      }
+      const token = authHeader.replace("Bearer ", "")
+      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+      if (userError || !userData.user) {
+        throw new Error("Invalid user token")
+      }
+      requestingUserId = userData.user.id
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", requestingUserId)
+        .single()
+      isAdmin = profile?.role === "admin"
+    }
 
     // Validate scope
     const validScopes = ["partial_baseline", "full_baseline", "cycle_end", "checkpoint", "daily"]

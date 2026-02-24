@@ -18,21 +18,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log("=== Function called ===")
-
-    // Get the authorization header
-    const authHeader = req.headers.get("Authorization")
-    console.log("Has auth header:", !!authHeader)
-
-    // Parse the JWT token from the authorization header
-    const token = authHeader?.replace("Bearer ", "")
-
     // Create Supabase client with SERVICE ROLE KEY
     const supabaseUrl = Deno.env.get("SUPABASE_URL")
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-
-    console.log("Supabase URL:", supabaseUrl)
-    console.log("Has service key:", !!supabaseServiceKey)
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase configuration")
@@ -40,29 +28,31 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Verify the user's JWT token manually
-    let user
-    if (token) {
-      console.log("Verifying token...")
-      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+    // Parse request body (once — also used for auth)
+    const body = await req.json()
+    const { exam_type, year, additional_info } = body
 
-      if (userError) {
-        console.error("User verification error:", userError.message)
-        throw new Error(`Auth error: ${userError.message}`)
-      }
+    // Resolve user ID: from body (API route proxy) or JWT (direct call)
+    let userId: string
 
-      user = userData.user
-      console.log("User verified:", user?.id)
+    if (body.user_id) {
+      // Called from API route with SERVICE_ROLE_KEY — user_id pre-verified
+      userId = body.user_id
     } else {
-      throw new Error("No authorization token provided")
+      // Direct call with user JWT (legacy/fallback)
+      const authHeader = req.headers.get("Authorization")
+      if (!authHeader) throw new Error("Missing authorization header")
+      const token = authHeader.replace("Bearer ", "")
+      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+      if (userError || !userData.user) throw new Error("Invalid user token")
+      userId = userData.user.id
     }
 
     // Check if user is admin
-    console.log("Checking admin role...")
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single()
 
     if (profileError) {
@@ -70,17 +60,9 @@ serve(async (req) => {
       throw new Error(`Profile error: ${profileError.message}`)
     }
 
-    console.log("User role:", profile?.role)
-
     if (profile?.role !== "admin") {
       throw new Error("Admin access required")
     }
-
-    // Get request body
-    const body = await req.json()
-    const { exam_type, year, additional_info } = body
-
-    console.log("Request params:", { exam_type, year })
 
     if (!exam_type || !year) {
       throw new Error("exam_type and year are required")
@@ -92,36 +74,29 @@ serve(async (req) => {
       throw new Error("ANTHROPIC_API_KEY not configured")
     }
 
-    console.log("Starting 4-batch research process...")
     const startTime = Date.now()
 
     // PART 1: Basic exam structure, timing, and scoring
-    console.log("Part 1: Fetching exam structure...")
     const part1Prompt = buildStructurePrompt(exam_type, year, additional_info)
     const part1Response = await callAnthropicAPI(anthropicKey, part1Prompt, 4000)
     const part1Data = parseJSONOutput(part1Response)
-    console.log("Part 1 complete")
 
     // PART 2: Detailed content areas and taxonomy
-    console.log("Part 2: Fetching content taxonomy...")
     const part2Prompt = buildContentPrompt(exam_type, year, additional_info, part1Data)
     const part2Response = await callAnthropicAPI(anthropicKey, part2Prompt, 8000)
     const part2Data = parseJSONOutput(part2Response)
-    console.log("Part 2 complete")
 
     // PART 3: Construct profiling per taxonomy node
-    console.log("Part 3: Profiling constructs and cognitive patterns...")
     const part3Prompt = buildConstructPrompt(exam_type, year, part1Data, part2Data)
     const part3Response = await callAnthropicAPI(anthropicKey, part3Prompt, 8000)
     const part3Data = parseJSONOutput(part3Response)
-    console.log("Part 3 complete")
 
     // PART 4: Error pattern profiling
-    console.log("Part 4: Profiling error patterns and common mistakes...")
     const part4Prompt = buildErrorPatternPrompt(exam_type, year, part1Data, part2Data, part3Data)
     const part4Response = await callAnthropicAPI(anthropicKey, part4Prompt, 8000)
     const part4Data = parseJSONOutput(part4Response)
-    console.log("Part 4 complete")
+
+    console.log("Completed 4-batch research via Anthropic API")
 
     // Combine results
     const parsedOutput = {
@@ -217,7 +192,7 @@ serve(async (req) => {
     await supabase.from("ai_runs").insert({
       job_type: "exam_research",
       prompt_version: "v4.0-batch",
-      initiated_by: user.id,
+      initiated_by: userId,
       prompt: "Batch processing: Part 1 (Structure) + Part 2 (Content) + Part 3 (Constructs) + Part 4 (Error Patterns)",
       input_params: { exam_type, year, additional_info },
       output_result: parsedOutput,
@@ -291,7 +266,6 @@ async function callAnthropicAPI(apiKey: string, prompt: string, maxTokens: numbe
   }
 
   const data = await response.json()
-  console.log("API response length:", data.content[0].text.length)
   return data
 }
 
