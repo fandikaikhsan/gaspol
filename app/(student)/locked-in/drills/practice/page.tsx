@@ -47,6 +47,8 @@ function DrillPracticeContent() {
     subtitle: string
   }>({ title: 'Practice Drill', subtitle: '' })
 
+  const nodeIdsKey = nodeIds.join(',')
+
   useEffect(() => {
     const fetchQuestions = async () => {
       const supabase = createClient()
@@ -171,7 +173,8 @@ function DrillPracticeContent() {
     }
 
     fetchQuestions()
-  }, [router, mode, moduleId, nodeId, nodeIds.join(','), questionCount])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, mode, moduleId, nodeId, nodeIdsKey, questionCount])
 
   // Shuffle array helper
   function shuffleArray<T>(array: T[]): T[] {

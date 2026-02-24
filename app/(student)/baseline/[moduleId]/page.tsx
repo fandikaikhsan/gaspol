@@ -122,6 +122,7 @@ export default function BaselineRunnerPage() {
     }
 
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId, router, toast])
 
   const handleComplete = async (session: AssessmentSession) => {

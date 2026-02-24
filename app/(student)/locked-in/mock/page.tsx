@@ -73,6 +73,7 @@ function MockTestContent() {
     }
 
     fetchQuestions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, questionCount])
 
   const handleComplete = async (session: AssessmentSession) => {

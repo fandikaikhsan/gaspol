@@ -5,7 +5,7 @@
  * Phase 1: Authentication & State Machine
  */
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast"
 import { getUserFriendlyError, getDevMessage } from "@/lib/utils/error-messages"
 import { useTranslation } from "@/lib/i18n"
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/plan"
@@ -140,5 +140,13 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   )
 }

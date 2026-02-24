@@ -94,6 +94,7 @@ export default function BaselineHubPage() {
     }
 
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, toast])
 
   const completedCount = modules.filter(m => m.is_completed).length

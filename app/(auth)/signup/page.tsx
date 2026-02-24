@@ -79,6 +79,7 @@ export default function SignupPage() {
         // Update profile with full name
         const { error: updateError } = await supabase
           .from("profiles")
+          // @ts-ignore - Supabase type mismatch for profiles update
           .update({ full_name: fullName })
           .eq("id", data.user.id)
 

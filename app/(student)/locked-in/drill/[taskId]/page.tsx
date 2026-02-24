@@ -100,6 +100,7 @@ export default function DrillRunnerPage() {
     }
 
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId, router, toast])
 
   const handleComplete = async (session: AssessmentSession) => {

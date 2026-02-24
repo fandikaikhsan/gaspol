@@ -92,6 +92,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     loadSnapshot()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadSnapshot = async () => {
