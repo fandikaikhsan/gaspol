@@ -13,7 +13,13 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -33,9 +39,13 @@ import {
   ArrowRight,
   Sparkles,
   RefreshCw,
-  Loader2
+  Loader2,
 } from "lucide-react"
-import { SkeletonCard, SkeletonRing, SkeletonBar } from "@/components/ui/skeleton"
+import {
+  SkeletonCard,
+  SkeletonRing,
+  SkeletonBar,
+} from "@/components/ui/skeleton"
 
 interface BaselineModule {
   id: string
@@ -61,8 +71,8 @@ interface PlanTask {
 export default function PlanDashboardPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { t } = useTranslation('plan')
-  const { t: tc } = useTranslation('common')
+  const { t } = useTranslation("plan")
+  const { t: tc } = useTranslation("common")
 
   const [user, setUser] = useState<any>(null)
   const [userState, setUserState] = useState<any>(null)
@@ -76,10 +86,12 @@ export default function PlanDashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser()
 
       if (!currentUser) {
-        router.push('/login')
+        router.push("/login")
         return
       }
 
@@ -87,28 +99,28 @@ export default function PlanDashboardPage() {
 
       // Fetch user state
       const { data: state } = await supabase
-        .from('user_state')
-        .select('*')
-        .eq('user_id', currentUser.id)
+        .from("user_state")
+        .select("*")
+        .eq("user_id", currentUser.id)
         .single()
 
       setUserState(state)
 
       // Fetch baseline modules and their completion status
       const { data: baselineData } = await supabase
-        .from('baseline_modules')
-        .select('id, title, module_id')
-        .eq('is_active', true)
-        .order('checkpoint_order')
+        .from("baseline_modules")
+        .select("id, title, module_id")
+        .eq("is_active", true)
+        .order("checkpoint_order")
 
       const modulesWithStatus = await Promise.all(
         (baselineData || []).map(async (module) => {
           const { data: completion } = await supabase
-            .from('module_completions')
-            .select('score')
-            .eq('user_id', currentUser.id)
-            .eq('module_id', module.module_id)
-            .eq('context_type', 'baseline')
+            .from("module_completions")
+            .select("score")
+            .eq("user_id", currentUser.id)
+            .eq("module_id", module.module_id)
+            .eq("context_type", "baseline")
             .single()
 
           return {
@@ -117,7 +129,7 @@ export default function PlanDashboardPage() {
             is_completed: !!completion,
             score: completion?.score,
           }
-        })
+        }),
       )
 
       setBaselineModules(modulesWithStatus)
@@ -125,39 +137,41 @@ export default function PlanDashboardPage() {
       // Fetch current cycle if exists
       if (state?.current_cycle_id) {
         const { data: cycle } = await supabase
-          .from('plan_cycles')
-          .select('*')
-          .eq('id', state.current_cycle_id)
+          .from("plan_cycles")
+          .select("*")
+          .eq("id", state.current_cycle_id)
           .single()
 
         setCurrentCycle(cycle)
 
         // Fetch tasks
         const { data: cycleTasks } = await supabase
-          .from('plan_tasks')
-          .select('*')
-          .eq('cycle_id', cycle?.id)
-          .order('task_order')
+          .from("plan_tasks")
+          .select("*")
+          .eq("cycle_id", cycle?.id)
+          .order("task_order")
 
-        const sortedTasks = [...(cycleTasks || [])].sort((a: PlanTask, b: PlanTask) => {
-          // 1) Required + incomplete first
-          const aPriority = a.is_required && !a.is_completed ? 0 : 1
-          const bPriority = b.is_required && !b.is_completed ? 0 : 1
-          if (aPriority !== bPriority) return aPriority - bPriority
+        const sortedTasks = [...(cycleTasks || [])].sort(
+          (a: PlanTask, b: PlanTask) => {
+            // 1) Required + incomplete first
+            const aPriority = a.is_required && !a.is_completed ? 0 : 1
+            const bPriority = b.is_required && !b.is_completed ? 0 : 1
+            if (aPriority !== bPriority) return aPriority - bPriority
 
-          // 2) Keep stable logical order
-          return a.task_order - b.task_order
-        })
+            // 2) Keep stable logical order
+            return a.task_order - b.task_order
+          },
+        )
 
         setTasks(sortedTasks)
       }
 
       // Fetch latest readiness
       const { data: snapshot } = await supabase
-        .from('analytics_snapshots')
-        .select('readiness_score')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false })
+        .from("analytics_snapshots")
+        .select("readiness_score")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false })
         .limit(1)
         .single()
 
@@ -175,11 +189,11 @@ export default function PlanDashboardPage() {
 
     try {
       const supabase = createClient()
-      const response = await fetch('/api/generate-plan', {
-        method: 'POST',
+      const response = await fetch("/api/generate-plan", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
       })
 
@@ -187,18 +201,18 @@ export default function PlanDashboardPage() {
 
       if (result.success) {
         toast({
-          title: t('toast.planGenerated'),
-          description: t('toast.planGeneratedDesc'),
+          title: t("toast.planGenerated"),
+          description: t("toast.planGeneratedDesc"),
         })
         // Refresh the page data
         window.location.reload()
       } else {
-        throw new Error(result.error || 'Failed to generate plan')
+        throw new Error(result.error || "Failed to generate plan")
       }
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: t('toast.error'),
+        title: t("toast.error"),
         description: error.message || "Failed to generate plan",
       })
     } finally {
@@ -231,11 +245,14 @@ export default function PlanDashboardPage() {
   }
 
   // Check baseline completion
-  const baselineCompleted = baselineModules.length > 0 &&
-    baselineModules.every(m => m.is_completed)
-  const baselineProgress = baselineModules.length > 0
-    ? (baselineModules.filter(m => m.is_completed).length / baselineModules.length) * 100
-    : 0
+  const baselineCompleted =
+    baselineModules.length > 0 && baselineModules.every((m) => m.is_completed)
+  const baselineProgress =
+    baselineModules.length > 0
+      ? (baselineModules.filter((m) => m.is_completed).length /
+          baselineModules.length) *
+        100
+      : 0
 
   // If no baseline completed, show baseline prompt
   if (!baselineCompleted) {
@@ -243,9 +260,9 @@ export default function PlanDashboardPage() {
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold">{t('title')}</h1>
+            <h1 className="text-4xl font-bold">{t("title")}</h1>
             <p className="text-muted-foreground">
-              {t('baselineIncomplete.subtitle')}
+              {t("baselineIncomplete.subtitle")}
             </p>
           </div>
 
@@ -258,15 +275,19 @@ export default function PlanDashboardPage() {
                     1
                   </div>
                   <div>
-                    <CardTitle>{t('baselineIncomplete.completeBaseline')}</CardTitle>
+                    <CardTitle>
+                      {t("baselineIncomplete.completeBaseline")}
+                    </CardTitle>
                     <CardDescription>
-                      {t('baselineIncomplete.baselineDesc')}
+                      {t("baselineIncomplete.baselineDesc")}
                     </CardDescription>
                   </div>
                 </div>
                 {baselineProgress > 0 && (
                   <Badge variant="secondary">
-                    {t('baselineIncomplete.progressPercent', { percent: Math.round(baselineProgress) })}
+                    {t("baselineIncomplete.progressPercent", {
+                      percent: Math.round(baselineProgress),
+                    })}
                   </Badge>
                 )}
               </div>
@@ -275,9 +296,13 @@ export default function PlanDashboardPage() {
               {/* Progress */}
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>{t('baselineIncomplete.progress')}</span>
+                  <span>{t("baselineIncomplete.progress")}</span>
                   <span className="font-medium">
-                    {t('baselineIncomplete.modulesCount', { completed: baselineModules.filter(m => m.is_completed).length, total: baselineModules.length })}
+                    {t("baselineIncomplete.modulesCount", {
+                      completed: baselineModules.filter((m) => m.is_completed)
+                        .length,
+                      total: baselineModules.length,
+                    })}
                   </span>
                 </div>
                 <Progress value={baselineProgress} className="h-3" />
@@ -296,12 +321,18 @@ export default function PlanDashboardPage() {
                       ) : (
                         <Circle className="h-5 w-5 text-muted-foreground" />
                       )}
-                      <span className={module.is_completed ? 'text-muted-foreground' : ''}>
+                      <span
+                        className={
+                          module.is_completed ? "text-muted-foreground" : ""
+                        }
+                      >
                         {module.title}
                       </span>
                     </div>
                     {module.is_completed && module.score && (
-                      <Badge variant="outline">{module.score.toFixed(0)}%</Badge>
+                      <Badge variant="outline">
+                        {module.score.toFixed(0)}%
+                      </Badge>
                     )}
                   </div>
                 ))}
@@ -309,9 +340,11 @@ export default function PlanDashboardPage() {
 
               <Button
                 className="w-full"
-                onClick={() => router.push('/baseline')}
+                onClick={() => router.push("/baseline")}
               >
-                {baselineProgress > 0 ? t('baselineIncomplete.continueAssessment') : t('baselineIncomplete.startAssessment')}
+                {baselineProgress > 0
+                  ? t("baselineIncomplete.continueAssessment")
+                  : t("baselineIncomplete.startAssessment")}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>
@@ -325,9 +358,11 @@ export default function PlanDashboardPage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-muted-foreground">{t('baselineIncomplete.completeTasks')}</CardTitle>
+                  <CardTitle className="text-muted-foreground">
+                    {t("baselineIncomplete.completeTasks")}
+                  </CardTitle>
                   <CardDescription>
-                    {t('baselineIncomplete.completeTasksDesc')}
+                    {t("baselineIncomplete.completeTasksDesc")}
                   </CardDescription>
                 </div>
               </div>
@@ -341,9 +376,11 @@ export default function PlanDashboardPage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-muted-foreground">{t('baselineIncomplete.recycleAssessment')}</CardTitle>
+                  <CardTitle className="text-muted-foreground">
+                    {t("baselineIncomplete.recycleAssessment")}
+                  </CardTitle>
                   <CardDescription>
-                    {t('baselineIncomplete.recycleAssessmentDesc')}
+                    {t("baselineIncomplete.recycleAssessmentDesc")}
                   </CardDescription>
                 </div>
               </div>
@@ -360,9 +397,9 @@ export default function PlanDashboardPage() {
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold">{t('title')}</h1>
+            <h1 className="text-4xl font-bold">{t("title")}</h1>
             <p className="text-muted-foreground">
-              {t('baselineComplete.subtitle')}
+              {t("baselineComplete.subtitle")}
             </p>
           </div>
 
@@ -372,9 +409,18 @@ export default function PlanDashboardPage() {
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
                 <div>
-                  <CardTitle className="text-green-800">{t('baselineComplete.assessmentComplete')}</CardTitle>
+                  <CardTitle className="text-green-800">
+                    {t("baselineComplete.assessmentComplete")}
+                  </CardTitle>
                   <CardDescription className="text-green-700">
-                    {t('baselineComplete.avgScore', { score: (baselineModules.reduce((acc, m) => acc + (m.score || 0), 0) / baselineModules.length).toFixed(0) })}
+                    {t("baselineComplete.avgScore", {
+                      score: (
+                        baselineModules.reduce(
+                          (acc, m) => acc + (m.score || 0),
+                          0,
+                        ) / baselineModules.length
+                      ).toFixed(0),
+                    })}
                   </CardDescription>
                 </div>
               </div>
@@ -389,9 +435,9 @@ export default function PlanDashboardPage() {
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle>{t('baselineComplete.generatePlan')}</CardTitle>
+                  <CardTitle>{t("baselineComplete.generatePlan")}</CardTitle>
                   <CardDescription>
-                    {t('baselineComplete.generatePlanDesc')}
+                    {t("baselineComplete.generatePlanDesc")}
                   </CardDescription>
                 </div>
               </div>
@@ -405,12 +451,12 @@ export default function PlanDashboardPage() {
                 {isGeneratingPlan ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t('baselineComplete.generating')}
+                    {t("baselineComplete.generating")}
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
-                    {t('baselineComplete.generateButton')}
+                    {t("baselineComplete.generateButton")}
                   </>
                 )}
               </Button>
@@ -425,9 +471,11 @@ export default function PlanDashboardPage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-muted-foreground">{t('baselineComplete.recycleAssessment')}</CardTitle>
+                  <CardTitle className="text-muted-foreground">
+                    {t("baselineComplete.recycleAssessment")}
+                  </CardTitle>
                   <CardDescription>
-                    {t('baselineComplete.recycleLockedDesc')}
+                    {t("baselineComplete.recycleLockedDesc")}
                   </CardDescription>
                 </div>
               </div>
@@ -442,25 +490,38 @@ export default function PlanDashboardPage() {
   const completedTasks = tasks.filter((task) => task.is_completed).length
   const requiredTasks = tasks.filter((task) => task.is_required)
   const requiredTaskCount = requiredTasks.length
-  const completedRequired = requiredTasks.filter((task) => task.is_completed).length
+  const completedRequired = requiredTasks.filter(
+    (task) => task.is_completed,
+  ).length
   const canUnlockRecycle = completedRequired >= requiredTaskCount
-  const requiredProgressPct = requiredTaskCount > 0 ? (completedRequired / requiredTaskCount) * 100 : 0
-  const allTasksProgressPct = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0
-  const isRecycleUnlocked = userState?.current_phase === 'RECYCLE_UNLOCKED'
+  const requiredProgressPct =
+    requiredTaskCount > 0 ? (completedRequired / requiredTaskCount) * 100 : 0
+  const allTasksProgressPct =
+    tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0
+  const isRecycleUnlocked = userState?.current_phase === "RECYCLE_UNLOCKED"
 
   const cycleStartDate = new Date(currentCycle.start_date)
   const today = new Date()
-  const daysSinceStart = Math.floor((today.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24))
-  const currentDay = Math.min(daysSinceStart + 1, currentCycle.target_days_remaining)
+  const daysSinceStart = Math.floor(
+    (today.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24),
+  )
+  const currentDay = Math.min(
+    daysSinceStart + 1,
+    currentCycle.target_days_remaining,
+  )
 
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">{t('title')}</h1>
+          <h1 className="text-4xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
-            {t('cycleInfo', { cycle: currentCycle.cycle_number, completed: completedTasks, total: tasks.length })}
+            {t("cycleInfo", {
+              cycle: currentCycle.cycle_number,
+              completed: completedTasks,
+              total: tasks.length,
+            })}
           </p>
         </div>
 
@@ -469,62 +530,35 @@ export default function PlanDashboardPage() {
           daysUntilExam={currentCycle.target_days_remaining - currentDay}
         />
 
-        {/* Status Cards */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Baseline Status */}
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
-                <div>
-                  <p className="font-semibold text-green-800">{t('active.firstAssessment')}</p>
-                  <p className="text-sm text-green-600">{tc('status.complete')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recycle Status */}
-          <Card className={canUnlockRecycle ? 'border-primary' : 'opacity-60'}>
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                {canUnlockRecycle ? (
-                  <RefreshCw className="h-8 w-8 text-primary" />
-                ) : (
-                  <Lock className="h-8 w-8 text-muted-foreground" />
-                )}
-                <div>
-                  <p className="font-semibold">{t('active.secondAssessment')}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {canUnlockRecycle ? tc('status.ready') : tc('status.locked')}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Readiness & Progress */}
         <div className="grid md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>{t('active.currentReadiness')}</CardTitle>
-              <CardDescription>{t('active.currentReadinessDesc')}</CardDescription>
+              <CardTitle>{t("active.currentReadiness")}</CardTitle>
+              <CardDescription>
+                {t("active.currentReadinessDesc")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <ReadinessRing score={readinessScore} size="md" showDelta={false} />
+              <ReadinessRing
+                score={readinessScore}
+                size="md"
+                showDelta={false}
+              />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>{t('active.taskProgress')}</CardTitle>
-              <CardDescription>{t('active.completeToUnlockRule')}</CardDescription>
+              <CardTitle>{t("active.taskProgress")}</CardTitle>
+              <CardDescription>
+                {t("active.completeToUnlockRule")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>{t('active.requiredTasks')}</span>
+                  <span>{t("active.requiredTasks")}</span>
                   <span className="font-semibold">
                     {completedRequired}/{requiredTaskCount}
                   </span>
@@ -539,7 +573,7 @@ export default function PlanDashboardPage() {
 
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>{t('active.allTasks')}</span>
+                  <span>{t("active.allTasks")}</span>
                   <span className="font-semibold">
                     {completedTasks}/{tasks.length}
                   </span>
@@ -555,22 +589,30 @@ export default function PlanDashboardPage() {
               <div
                 className={`rounded-lg border p-3 text-sm ${
                   canUnlockRecycle
-                    ? 'border-green-200 bg-green-50'
-                    : 'border-amber-200 bg-amber-50'
+                    ? "border-green-200 bg-green-50"
+                    : "border-amber-200 bg-amber-50"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className={canUnlockRecycle ? 'text-green-800' : 'text-amber-900'}>
-                    {t('active.nextAssessmentStatus')}
+                  <span
+                    className={
+                      canUnlockRecycle ? "text-green-800" : "text-amber-900"
+                    }
+                  >
+                    {t("active.nextAssessmentStatus")}
                   </span>
-                  <Badge variant={canUnlockRecycle ? 'strong' : 'secondary'}>
-                    {canUnlockRecycle ? tc('status.ready') : tc('status.locked')}
+                  <Badge variant={canUnlockRecycle ? "strong" : "secondary"}>
+                    {canUnlockRecycle
+                      ? tc("status.ready")
+                      : tc("status.locked")}
                   </Badge>
                 </div>
-                <p className={`mt-2 text-xs ${canUnlockRecycle ? 'text-green-700' : 'text-amber-800'}`}>
+                <p
+                  className={`mt-2 text-xs ${canUnlockRecycle ? "text-green-700" : "text-amber-800"}`}
+                >
                   {canUnlockRecycle
-                    ? t('active.recycleReadyMessage')
-                    : t('active.completeToUnlockRule')}
+                    ? t("active.recycleReadyMessage")
+                    : t("active.completeToUnlockRule")}
                 </p>
               </div>
             </CardContent>
@@ -580,14 +622,14 @@ export default function PlanDashboardPage() {
         {/* Tasks List */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">{t('active.yourTasks')}</h2>
+            <h2 className="text-2xl font-bold">{t("active.yourTasks")}</h2>
             <Button
               variant="brutal-outline"
               size="sm"
-              onClick={() => router.push('/locked-in')}
+              onClick={() => router.push("/locked-in")}
             >
               <BookOpen className="h-4 w-4 mr-2" />
-              {t('active.browseAllPractice')}
+              {t("active.browseAllPractice")}
             </Button>
           </div>
 
@@ -601,11 +643,16 @@ export default function PlanDashboardPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-green-900">Assessment 1</p>
-                    <p className="text-sm text-green-700">{tc('status.complete')}</p>
+                    <p className="text-sm text-green-700">
+                      {tc("status.complete")}
+                    </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="border-green-300 text-green-700">
-                  {tc('status.complete')}
+                <Badge
+                  variant="outline"
+                  className="border-green-300 text-green-700"
+                >
+                  {tc("status.complete")}
                 </Badge>
               </div>
             </CardContent>
@@ -615,52 +662,57 @@ export default function PlanDashboardPage() {
             <Card>
               <CardContent className="py-8 text-center">
                 <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">{t('active.noTasks')}</p>
+                <p className="text-lg font-medium">{t("active.noTasks")}</p>
                 <p className="text-muted-foreground">
-                  {t('active.noTasksDesc')}
+                  {t("active.noTasksDesc")}
                 </p>
               </CardContent>
             </Card>
           ) : (
-            tasks.map(task => (
-              <TaskCard key={task.id} task={task} />
-            ))
+            tasks.map((task) => <TaskCard key={task.id} task={task} />)
           )}
 
           {/* Timeline End: Assessment 2 */}
-          <Card className={canUnlockRecycle ? 'border-primary bg-primary/5' : 'opacity-90 border-amber-200 bg-amber-50'}>
+          <Card
+            className={
+              canUnlockRecycle
+                ? "border-primary bg-primary/5"
+                : "opacity-90 border-amber-200 bg-amber-50"
+            }
+          >
             <CardContent className="py-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-full ${
                       canUnlockRecycle
-                        ? 'bg-primary/15 text-primary'
-                        : 'bg-amber-100 text-amber-700'
+                        ? "bg-primary/15 text-primary"
+                        : "bg-amber-100 text-amber-700"
                     }`}
                   >
-                    {canUnlockRecycle ? <RefreshCw className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                    {canUnlockRecycle ? (
+                      <RefreshCw className="h-5 w-5" />
+                    ) : (
+                      <Lock className="h-5 w-5" />
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold">Assessment 2</p>
                     <p className="text-sm text-muted-foreground">
                       {canUnlockRecycle
-                        ? t('active.recycleReadyMessage')
-                        : t('active.completeToUnlockRule')}
+                        ? t("active.recycleReadyMessage")
+                        : t("active.completeToUnlockRule")}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Badge variant={canUnlockRecycle ? 'strong' : 'secondary'}>
-                    {canUnlockRecycle ? tc('status.ready') : tc('status.locked')}
-                  </Badge>
                   <Button
                     size="sm"
                     disabled={!canUnlockRecycle && !isRecycleUnlocked}
-                    onClick={() => router.push('/recycle')}
+                    onClick={() => router.push("/recycle")}
                   >
-                    {t('active.startRecycle')}
+                    {t("active.startRecycle")}
                   </Button>
                 </div>
               </div>
