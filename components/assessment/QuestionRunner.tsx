@@ -30,14 +30,35 @@ import {
   SheetClose,
 } from "@/components/ui/sheet"
 import { useToast } from "@/hooks/use-toast"
-import { Grid3X3 } from "lucide-react"
+import { Grid3X3, CheckCircle2, XCircle, BookOpen, RotateCcw, ArrowRight } from "lucide-react"
+
+// Result data returned by the parent after submission
+export interface ModuleResult {
+  passed: boolean
+  score: number // percentage 0-100
+  correctCount: number
+  totalQuestions: number
+  passingThreshold: number // 0-1
+  weakMaterialCards?: Array<{
+    id: string
+    skill_id: string
+    title: string
+    core_idea: string
+    key_facts?: unknown
+    common_mistakes?: unknown
+    examples?: unknown
+  }>
+}
 
 interface QuestionRunnerProps {
   questions: Question[]
   moduleId: string
   contextType: 'baseline' | 'drill' | 'mock' | 'recycle'
   contextId: string
-  onComplete: (session: AssessmentSession) => void
+  onComplete: (session: AssessmentSession) => void | Promise<void>
+  onCompleteWithResult?: (session: AssessmentSession) => Promise<ModuleResult>
+  onRetry?: () => void
+  onContinue?: () => void
   timeLimit?: number // in minutes, null = untimed
   showTimer?: boolean
   allowNavigation?: boolean
@@ -50,6 +71,9 @@ export function QuestionRunner({
   contextType,
   contextId,
   onComplete,
+  onCompleteWithResult,
+  onRetry,
+  onContinue,
   timeLimit,
   showTimer = true,
   allowNavigation = true,
@@ -58,6 +82,9 @@ export function QuestionRunner({
   const router = useRouter()
   const { toast } = useToast()
   const { t } = useTranslation('common')
+
+  // Result state for pass/fail screen (T-021)
+  const [moduleResult, setModuleResult] = useState<ModuleResult | null>(null)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, { answer: string; timeSpent: number; timestamp: Date }>>({})
@@ -192,7 +219,14 @@ export function QuestionRunner({
     }
 
     try {
-      await onComplete(session)
+      if (onCompleteWithResult) {
+        // Use result-returning callback for pass/fail UI
+        const result = await onCompleteWithResult(session)
+        setModuleResult(result)
+        setIsSubmitting(false)
+      } else {
+        await onComplete(session)
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -243,6 +277,103 @@ export function QuestionRunner({
   }
 
   const answered = questions.filter((q) => isValidAnswer(answers[q.id]?.answer, q.question_format)).length
+
+  // T-021: PASS/FAIL RESULTS SCREEN
+  if (moduleResult) {
+    const scorePercent = Math.round(moduleResult.score)
+    const thresholdPercent = Math.round(moduleResult.passingThreshold * 100)
+
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-2xl mx-auto pt-8">
+          {/* Result Header */}
+          <div className="text-center mb-8">
+            {moduleResult.passed ? (
+              <>
+                <div className="mx-auto w-20 h-20 rounded-full bg-status-strong/20 flex items-center justify-center mb-4">
+                  <CheckCircle2 className="w-12 h-12 text-status-strong" />
+                </div>
+                <h1 className="text-3xl font-bold mb-2">🎉 {t('result.passed', { fallback: 'Module Passed!' })}</h1>
+                <p className="text-muted-foreground text-lg">
+                  {t('result.passedDesc', { fallback: 'Great job! You met the passing threshold.' })}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center mb-4">
+                  <XCircle className="w-12 h-12 text-destructive" />
+                </div>
+                <h1 className="text-3xl font-bold mb-2">{t('result.failed', { fallback: 'Not Quite There' })}</h1>
+                <p className="text-muted-foreground text-lg">
+                  {t('result.failedDesc', { fallback: 'Review the material below and try again.' })}
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Score Card */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-lg font-semibold">{t('result.yourScore', { fallback: 'Your Score' })}</span>
+                <span className={`text-3xl font-bold ${moduleResult.passed ? 'text-status-strong' : 'text-destructive'}`}>
+                  {scorePercent}%
+                </span>
+              </div>
+              <Progress value={scorePercent} className="h-3 mb-2" />
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{moduleResult.correctCount}/{moduleResult.totalQuestions} {t('result.correct', { fallback: 'correct' })}</span>
+                <span>{t('result.passingScore', { fallback: 'Passing' })}: {thresholdPercent}%</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Weak Material Cards (on fail) */}
+          {!moduleResult.passed && moduleResult.weakMaterialCards && moduleResult.weakMaterialCards.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-semibold">{t('result.reviewMaterials', { fallback: 'Review These Topics' })}</h2>
+              </div>
+              <div className="space-y-3">
+                {moduleResult.weakMaterialCards.map((card) => (
+                  <Card key={card.id} className="hover:shadow-brutal-sm transition-shadow">
+                    <CardContent className="pt-4 pb-4">
+                      <h3 className="font-semibold mb-1">{card.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{card.core_idea}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            {!moduleResult.passed && onRetry && (
+              <Button
+                variant="brutal-outline"
+                onClick={onRetry}
+                className="flex-1"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {t('result.retry', { fallback: 'Try Again' })}
+              </Button>
+            )}
+            <Button
+              onClick={onContinue || (() => router.back())}
+              className="flex-1"
+            >
+              <ArrowRight className="w-4 h-4 mr-2" />
+              {moduleResult.passed
+                ? t('result.continue', { fallback: 'Continue' })
+                : t('result.backToModules', { fallback: 'Back to Modules' })}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">
