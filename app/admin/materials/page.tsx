@@ -42,6 +42,7 @@ import {
   FileEdit,
   ArrowRight,
 } from "lucide-react"
+import { Sparkles } from "lucide-react"
 
 // Types
 interface MaterialCard {
@@ -103,6 +104,12 @@ export default function AdminMaterialsPage() {
 
   // Delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+
+  // AI Generation state (T-038)
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
+  const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([])
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generateResults, setGenerateResults] = useState<any>(null)
 
   // Fetch materials
   const fetchMaterials = useCallback(async () => {
@@ -285,6 +292,40 @@ export default function AdminMaterialsPage() {
   // Filtered + searched materials
   const filteredMaterials = materials
 
+  // AI Batch Generation (T-038)
+  const handleGenerate = async () => {
+    if (selectedSkillIds.length === 0) {
+      toast({ variant: 'destructive', title: 'Select at least one micro-skill' })
+      return
+    }
+    setIsGenerating(true)
+    setGenerateResults(null)
+    try {
+      const res = await fetch('/api/admin/generate-material-cards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taxonomy_node_ids: selectedSkillIds, auto_save: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Generation failed')
+      setGenerateResults(data)
+      toast({ title: `Generated ${data.summary?.saved || 0} material cards` })
+      fetchMaterials()
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: error.message || 'Generation failed' })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const toggleSkillSelection = (skillId: string) => {
+    setSelectedSkillIds(prev =>
+      prev.includes(skillId)
+        ? prev.filter(id => id !== skillId)
+        : [...prev, skillId]
+    )
+  }
+
   // Stats
   const stats = {
     total: materials.length,
@@ -306,6 +347,14 @@ export default function AdminMaterialsPage() {
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
           New Material Card
+        </Button>
+        <Button variant="brutal-outline" onClick={() => {
+          setIsGenerateDialogOpen(true)
+          setSelectedSkillIds([])
+          setGenerateResults(null)
+        }}>
+          <Sparkles className="h-4 w-4 mr-2" />
+          Generate with AI
         </Button>
       </div>
 
@@ -664,6 +713,81 @@ export default function AdminMaterialsPage() {
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generation Dialog (T-038) */}
+      <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              <Sparkles className="h-5 w-5 inline mr-2" />
+              Generate Material Cards with AI
+            </DialogTitle>
+            <DialogDescription>
+              Select micro-skills to generate material cards for. Cards will be created as drafts.
+            </DialogDescription>
+          </DialogHeader>
+
+          {generateResults ? (
+            <div className="space-y-3">
+              <div className="text-sm font-medium">
+                Results: {generateResults.summary?.saved || 0} saved,{' '}
+                {generateResults.summary?.errors || 0} errors
+              </div>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {generateResults.results?.map((r: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    {r.saved ? (
+                      <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <span className="h-4 w-4 rounded-full bg-red-500 flex-shrink-0" />
+                    )}
+                    <span className="truncate">{r.skill_name || r.skill_id}</span>
+                    {r.error && <span className="text-destructive text-xs">({r.error})</span>}
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setIsGenerateDialogOpen(false)}>Done</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-2">
+                {skills.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-2">No micro-skills found</p>
+                ) : (
+                  skills.map((skill) => (
+                    <label
+                      key={skill.id}
+                      className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSkillIds.includes(skill.id)}
+                        onChange={() => toggleSkillSelection(skill.id)}
+                        className="rounded"
+                      />
+                      <span className="text-sm">{skill.name}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {selectedSkillIds.length} skill(s) selected
+              </p>
+              <DialogFooter>
+                <Button variant="brutal-outline" onClick={() => setIsGenerateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleGenerate} disabled={isGenerating || selectedSkillIds.length === 0}>
+                  {isGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {isGenerating ? 'Generating...' : `Generate ${selectedSkillIds.length} Card(s)`}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
