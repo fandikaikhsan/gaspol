@@ -7,7 +7,7 @@
  * Collects: exam_date (T-025), time_budget_min (T-026), target_university, target_major
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { updateUserState } from "@/hooks/useUserPhase"
@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
-import { Check, Calendar, Clock, AlertCircle } from "lucide-react"
+import { Check, Calendar, Clock, AlertCircle, Search, X, GraduationCap, Loader2 } from "lucide-react"
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -36,6 +36,57 @@ export default function OnboardingPage() {
   const [useCustomTime, setUseCustomTime] = useState(false)
   const [targetUniversity, setTargetUniversity] = useState("")
   const [targetMajor, setTargetMajor] = useState("")
+
+  // T-027: Campus searchable dropdown state
+  const [campusQuery, setCampusQuery] = useState("")
+  const [campusResults, setCampusResults] = useState<Array<{
+    id: string; university_name: string; major: string; min_score: number
+  }>>([])
+  const [isCampusSearching, setIsCampusSearching] = useState(false)
+  const [showCampusDropdown, setShowCampusDropdown] = useState(false)
+  const [selectedCampus, setSelectedCampus] = useState<{
+    id: string; university_name: string; major: string; min_score: number
+  } | null>(null)
+  const campusRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (campusRef.current && !campusRef.current.contains(e.target as Node)) {
+        setShowCampusDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // T-027: Debounced campus search
+  useEffect(() => {
+    if (campusQuery.length < 2) {
+      setCampusResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      setIsCampusSearching(true)
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('campus_scores')
+          .select('id, university_name, major, min_score')
+          .or(`university_name.ilike.%${campusQuery}%,major.ilike.%${campusQuery}%`)
+          .eq('verified', true)
+          .order('university_name')
+          .limit(20)
+        setCampusResults(data || [])
+        setShowCampusDropdown(true)
+      } catch {
+        setCampusResults([])
+      } finally {
+        setIsCampusSearching(false)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [campusQuery])
 
   // T-025: Calculate days remaining from exam date
   const daysRemaining = useMemo(() => {
@@ -107,6 +158,7 @@ export default function OnboardingPage() {
       }
 
       // T-025: Save exam_date + auto-computed package_days
+      // T-027: Save campus_score_id if selected from dropdown
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -115,6 +167,7 @@ export default function OnboardingPage() {
           time_budget_min: effectiveTimeBudget,
           target_university: targetUniversity,
           target_major: targetMajor || null,
+          ...(selectedCampus ? { campus_score_id: selectedCampus.id } : {}),
         })
         .eq("id", user.id)
 
@@ -368,41 +421,118 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 3: Target University */}
+        {/* Step 3: Target University (T-027 — searchable campus dropdown) */}
         {step === 3 && (
           <Card>
             <CardHeader>
-              <CardTitle>{t('target.title')}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5" />
+                {t('target.title')}
+              </CardTitle>
               <CardDescription>
                 {t('target.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="university">
+              {/* Searchable campus dropdown */}
+              <div className="space-y-2" ref={campusRef}>
+                <Label htmlFor="campus-search">
                   {t('target.universityLabel')}
                 </Label>
-                <Input
-                  id="university"
-                  placeholder={t('target.universityPlaceholder')}
-                  value={targetUniversity}
-                  onChange={(e) => setTargetUniversity(e.target.value)}
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="campus-search"
+                    placeholder={t('target.universityPlaceholder', { fallback: 'Search university or major...' })}
+                    value={campusQuery}
+                    onChange={(e) => {
+                      setCampusQuery(e.target.value)
+                      setSelectedCampus(null)
+                      setTargetUniversity(e.target.value)
+                      setTargetMajor('')
+                    }}
+                    onFocus={() => campusResults.length > 0 && setShowCampusDropdown(true)}
+                    className="pl-10 pr-10 h-12"
+                    disabled={isLoading}
+                  />
+                  {isCampusSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                  {selectedCampus && (
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 touch-target"
+                      onClick={() => {
+                        setSelectedCampus(null)
+                        setCampusQuery('')
+                        setTargetUniversity('')
+                        setTargetMajor('')
+                      }}
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown results */}
+                {showCampusDropdown && campusResults.length > 0 && (
+                  <div className="border-2 border-border rounded-lg max-h-60 overflow-y-auto bg-background shadow-brutal-sm">
+                    {campusResults.map((campus) => (
+                      <button
+                        key={campus.id}
+                        type="button"
+                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0 touch-target"
+                        onClick={() => {
+                          setSelectedCampus(campus)
+                          setCampusQuery(`${campus.university_name} — ${campus.major}`)
+                          setTargetUniversity(campus.university_name)
+                          setTargetMajor(campus.major)
+                          setShowCampusDropdown(false)
+                        }}
+                      >
+                        <div className="font-semibold text-sm">{campus.university_name}</div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">{campus.major}</span>
+                          <span className="text-xs font-medium text-primary">Target: {campus.min_score}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showCampusDropdown && campusQuery.length >= 2 && campusResults.length === 0 && !isCampusSearching && (
+                  <div className="border-2 border-border rounded-lg p-4 bg-muted/50 text-sm text-muted-foreground text-center">
+                    {t('target.noResults', { fallback: 'No campus found. You can still type your university name manually.' })}
+                  </div>
+                )}
+
+                {/* Selected campus badge */}
+                {selectedCampus && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-surface-plan/30 border-2 border-primary/20">
+                    <GraduationCap className="w-4 h-4 text-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">{selectedCampus.university_name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedCampus.major} · Target score: {selectedCampus.min_score}</p>
+                    </div>
+                    <Check className="w-4 h-4 text-status-strong" />
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="major">
-                  {t('target.majorLabel')}
-                </Label>
-                <Input
-                  id="major"
-                  placeholder={t('target.majorPlaceholder')}
-                  value={targetMajor}
-                  onChange={(e) => setTargetMajor(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
+              {/* Manual major input (when no campus selected) */}
+              {!selectedCampus && (
+                <div className="space-y-2">
+                  <Label htmlFor="major">
+                    {t('target.majorLabel')}
+                  </Label>
+                  <Input
+                    id="major"
+                    placeholder={t('target.majorPlaceholder')}
+                    value={targetMajor}
+                    onChange={(e) => setTargetMajor(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
 
               {/* Summary */}
               <div className="bg-muted p-4 rounded-lg mt-6 space-y-2">
@@ -411,6 +541,7 @@ export default function OnboardingPage() {
                   <li>📅 {t('summary.examDate', { fallback: 'Exam date' })}: {examDate ? new Date(examDate).toLocaleDateString() : '—'} ({daysRemaining} {t('examDate.daysLeft', { fallback: 'days remaining' })})</li>
                   <li>⏱️ {t('summary.dailyStudy', { minutes: useCustomTime ? Number(customTimeBudget) : timeBudget })}</li>
                   <li>🎯 {t('summary.targetUni', { university: targetUniversity || "Not specified" })}</li>
+                  {selectedCampus && <li>📊 {t('summary.targetScore', { fallback: 'Target score' })}: {selectedCampus.min_score}</li>}
                 </ul>
               </div>
 

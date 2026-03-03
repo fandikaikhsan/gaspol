@@ -10,6 +10,7 @@ import { getReadinessColor, calculateReadinessDelta } from "@/lib/analytics/read
 interface ReadinessRingProps {
   score: number // 0-100
   previousScore?: number
+  campusTarget?: number // T-052: campus target score (0-100 scale)
   size?: 'sm' | 'md' | 'lg'
   showDelta?: boolean
 }
@@ -17,6 +18,7 @@ interface ReadinessRingProps {
 export function ReadinessRing({
   score,
   previousScore,
+  campusTarget,
   size = 'lg',
   showDelta = true,
 }: ReadinessRingProps) {
@@ -49,6 +51,12 @@ export function ReadinessRing({
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference - (score / 100) * circumference
 
+  // T-052: Campus target marker angle on the ring
+  const targetAngle = campusTarget ? (campusTarget / 100) * 360 : null
+  const targetRad = targetAngle ? ((targetAngle - 90) * Math.PI) / 180 : null
+  const svgSize = radius * 2 + config.strokeWidth * 2
+  const center = radius + config.strokeWidth
+
   const delta = previousScore !== undefined
     ? calculateReadinessDelta(previousScore, score)
     : null
@@ -59,13 +67,13 @@ export function ReadinessRing({
       <div className={`relative ${config.container}`}>
         <svg
           className="transform -rotate-90"
-          width={radius * 2 + config.strokeWidth * 2}
-          height={radius * 2 + config.strokeWidth * 2}
+          width={svgSize}
+          height={svgSize}
         >
           {/* Background circle */}
           <circle
-            cx={radius + config.strokeWidth}
-            cy={radius + config.strokeWidth}
+            cx={center}
+            cy={center}
             r={radius}
             fill="none"
             stroke="hsl(var(--muted))"
@@ -74,8 +82,8 @@ export function ReadinessRing({
 
           {/* Progress circle */}
           <circle
-            cx={radius + config.strokeWidth}
-            cy={radius + config.strokeWidth}
+            cx={center}
+            cy={center}
             r={radius}
             fill="none"
             stroke="hsl(var(--primary))"
@@ -85,6 +93,20 @@ export function ReadinessRing({
             strokeLinecap="round"
             className="transition-all duration-1000 ease-out"
           />
+
+          {/* T-052: Campus target marker */}
+          {targetRad !== null && (
+            <>
+              <circle
+                cx={center + radius * Math.cos(targetRad)}
+                cy={center + radius * Math.sin(targetRad)}
+                r={config.strokeWidth / 2 + 2}
+                fill="hsl(var(--destructive))"
+                stroke="white"
+                strokeWidth={2}
+              />
+            </>
+          )}
         </svg>
 
         {/* Center content */}
@@ -97,6 +119,13 @@ export function ReadinessRing({
           </div>
         </div>
       </div>
+
+      {/* T-052: Campus target label */}
+      {campusTarget !== undefined && campusTarget > 0 && (
+        <div className="mt-1 text-xs text-muted-foreground font-medium">
+          🎯 Target: {campusTarget}%
+        </div>
+      )}
 
       {/* Delta indicator */}
       {showDelta && delta && (

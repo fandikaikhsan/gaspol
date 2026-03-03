@@ -1,11 +1,13 @@
 /**
  * QuestionDisplay Component
  * Phase 2: Question Runner & Assessment Engine
+ * T-036: KaTeX math rendering for inline + block math
  *
- * Displays question stem with optional images
+ * Displays question stem with optional images and math
  */
 
 import Image from "next/image"
+import { MathRenderer } from "./MathRenderer"
 
 interface QuestionDisplayProps {
   stem: string
@@ -22,7 +24,7 @@ export function QuestionDisplay({
     <div className="space-y-4">
       <div className="prose prose-lg max-w-none">
         <div className="whitespace-pre-wrap leading-relaxed">
-          {stem}
+          <MathRenderer text={stem} />
         </div>
       </div>
 

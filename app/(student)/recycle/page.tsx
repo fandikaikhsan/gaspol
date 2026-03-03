@@ -161,9 +161,19 @@ export default function RecycleHubPage() {
   }
 
   if (isLoading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
-      <p>{tc('status.loading')}</p>
-    </div>
+    return (
+      <div className="min-h-screen bg-surface-recycle/10 p-4">
+        <div className="max-w-4xl mx-auto space-y-6 pt-4">
+          <div className="text-center space-y-2">
+            <div className="h-10 w-48 mx-auto rounded-lg bg-muted animate-skeleton-pulse" />
+            <div className="h-4 w-72 mx-auto rounded bg-muted animate-skeleton-pulse" />
+          </div>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-28 rounded-xl border-2 border-border bg-muted/50 animate-skeleton-pulse" style={{ animationDelay: `${i * 120}ms` }} />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   const hasCompletedAllRequiredTasks =

@@ -31,7 +31,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet"
 import { useToast } from "@/hooks/use-toast"
-import { Grid3X3, CheckCircle2, XCircle, BookOpen, RotateCcw, ArrowRight } from "lucide-react"
+import { Grid3X3, CheckCircle2, XCircle, BookOpen, RotateCcw, ArrowRight, Flag } from "lucide-react"
 
 // Result data returned by the parent after submission
 export interface ModuleResult {
@@ -94,11 +94,54 @@ export function QuestionRunner({
   const [timeElapsed, setTimeElapsed] = useState(0) // in seconds
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isQuestionPaletteOpen, setIsQuestionPaletteOpen] = useState(false)
+  // T-034: Review-later flagged questions
+  const [flagged, setFlagged] = useState<Set<string>>(new Set())
+  // T-069: Points fly-up animation
+  const [pointsFlyUp, setPointsFlyUp] = useState<{ pts: number; key: number } | null>(null)
+
+  // T-035: Restore answers from localStorage on mount
+  const storageKey = `qr-session-${moduleId}`
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.answers) {
+          const restored: Record<string, { answer: string; timeSpent: number; timestamp: Date }> = {}
+          for (const [k, v] of Object.entries(parsed.answers as Record<string, any>)) {
+            restored[k] = { answer: v.answer, timeSpent: v.timeSpent, timestamp: new Date(v.timestamp) }
+          }
+          setAnswers(restored)
+        }
+        if (typeof parsed.currentIndex === 'number') setCurrentIndex(parsed.currentIndex)
+        if (parsed.flagged) setFlagged(new Set(parsed.flagged))
+      }
+    } catch { /* ignore corrupt data */ }
+  }, [storageKey])
+
+  // T-035: Persist answers to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        answers,
+        currentIndex,
+        flagged: Array.from(flagged),
+      }))
+    } catch { /* storage full */ }
+  }, [answers, currentIndex, flagged, storageKey])
 
   const currentQuestion = questions[currentIndex]
   const totalQuestions = questions.length
   const progress = ((currentIndex + 1) / totalQuestions) * 100
   const isLastQuestion = currentIndex === totalQuestions - 1
+
+  // T-033: Per-question timer — time spent on current question
+  const [perQuestionElapsed, setPerQuestionElapsed] = useState(0)
+  useEffect(() => {
+    setPerQuestionElapsed(0)
+    const timer = setInterval(() => setPerQuestionElapsed(prev => prev + 1), 1000)
+    return () => clearInterval(timer)
+  }, [currentIndex])
 
   const normalizeFormat = (format?: string) => (format || '').toLowerCase().replace(/[_\s-]/g, '')
 
@@ -174,9 +217,15 @@ export function QuestionRunner({
     setQuestionStartTime(new Date())
   }, [allowNavigation, totalQuestions])
 
-  // Next question
+  // Next question — T-069: trigger points fly-up
   const handleNext = () => {
     if (!hasCurrentAnswer) return
+
+    // T-069: Show points fly-up (contextual points based on difficulty)
+    const diffMap: Record<string, number> = { easy: 1, medium: 2, hard: 5, L1: 1, L2: 2, L3: 5 }
+    const pts = diffMap[currentQuestion.difficulty] || 1
+    setPointsFlyUp({ pts, key: Date.now() })
+    setTimeout(() => setPointsFlyUp(null), 700)
 
     if (isLastQuestion) {
       handleFinish()
@@ -223,9 +272,13 @@ export function QuestionRunner({
       if (onCompleteWithResult) {
         // Use result-returning callback for pass/fail UI
         const result = await onCompleteWithResult(session)
+        // T-035: Clear persisted session on completion
+        try { localStorage.removeItem(storageKey) } catch {}
         setModuleResult(result)
         setIsSubmitting(false)
       } else {
+        // T-035: Clear persisted session on completion
+        try { localStorage.removeItem(storageKey) } catch {}
         await onComplete(session)
       }
     } catch (error) {
@@ -302,7 +355,36 @@ export function QuestionRunner({
     const thresholdPercent = Math.round(moduleResult.passingThreshold * 100)
 
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-background p-4 relative overflow-hidden">
+        {/* T-068: Confetti animation on pass — 50 particles */}
+        {moduleResult.passed && (
+          <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">
+            {Array.from({ length: 50 }).map((_, i) => {
+              const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8']
+              const color = colors[i % colors.length]
+              const left = Math.random() * 100
+              const delay = Math.random() * 2
+              const size = 6 + Math.random() * 8
+              return (
+                <div
+                  key={i}
+                  className="absolute animate-confetti-fall"
+                  style={{
+                    left: `${left}%`,
+                    top: -20,
+                    width: size,
+                    height: size,
+                    backgroundColor: color,
+                    borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${2 + Math.random() * 2}s`,
+                  }}
+                />
+              )
+            })}
+          </div>
+        )}
+
         <div className="max-w-2xl mx-auto pt-8">
           {/* Result Header */}
           <div className="text-center mb-8">
@@ -424,7 +506,7 @@ export function QuestionRunner({
 
           <Progress value={progress} className="h-2" />
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Badge variant="outline">
               {currentQuestion.difficulty.toUpperCase()}
             </Badge>
@@ -434,11 +516,24 @@ export function QuestionRunner({
             <Badge variant="outline">
               {currentQuestion.question_format}
             </Badge>
+            {/* T-033: Per-question elapsed time */}
+            <Badge variant="outline" className="ml-auto">
+              ⏱ {formatTime(perQuestionElapsed)}
+            </Badge>
           </div>
         </div>
 
         {/* Question Card */}
-        <Card className="mb-6">
+        <Card className="mb-6 relative">
+          {/* T-069: Points fly-up animation */}
+          {pointsFlyUp && (
+            <div
+              key={pointsFlyUp.key}
+              className="absolute -top-2 right-4 text-lg font-bold text-primary animate-points-fly pointer-events-none z-10"
+            >
+              +{pointsFlyUp.pts} pts
+            </div>
+          )}
           <CardHeader>
             <QuestionDisplay
               stem={currentQuestion.stem}
@@ -452,13 +547,32 @@ export function QuestionRunner({
           </CardContent>
 
           <CardFooter className="flex justify-between">
-            <Button
-              variant="brutal-outline"
-              onClick={handlePrevious}
-              disabled={currentIndex === 0 || !allowNavigation || isSubmitting}
-            >
-              {t('button.previous')}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="brutal-outline"
+                onClick={handlePrevious}
+                disabled={currentIndex === 0 || !allowNavigation || isSubmitting}
+              >
+                {t('button.previous')}
+              </Button>
+              {/* T-034: Review-later flag */}
+              <Button
+                variant={flagged.has(currentQuestion.id) ? 'brutal-secondary' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setFlagged(prev => {
+                    const next = new Set(prev)
+                    if (next.has(currentQuestion.id)) next.delete(currentQuestion.id)
+                    else next.add(currentQuestion.id)
+                    return next
+                  })
+                }}
+                className="gap-1"
+              >
+                <Flag className={`w-4 h-4 ${flagged.has(currentQuestion.id) ? 'fill-current text-orange-500' : ''}`} />
+                {t('question.reviewLater', { fallback: 'Review Later' })}
+              </Button>
+            </div>
 
             <div className="flex gap-2">
               {/* Mobile-only: Jump to Question button opens bottom sheet */}
@@ -496,6 +610,7 @@ export function QuestionRunner({
                 {questions.map((q, idx) => {
                   const isAnswered = isValidAnswer(answers[q.id]?.answer, q.question_format)
                   const isCurrent = idx === currentIndex
+                  const isFlagged = flagged.has(q.id)
 
                   return (
                     <button
@@ -503,20 +618,22 @@ export function QuestionRunner({
                       onClick={() => goToQuestion(idx)}
                       disabled={isSubmitting}
                       className={`
-                        aspect-square rounded-lg border-2 border-border font-semibold text-sm
-                        transition-all hover:scale-105
-                        ${isCurrent ? 'bg-primary text-primary-foreground shadow-brutal-sm' : ''}
+                        aspect-square rounded-lg border-2 font-semibold text-sm
+                        transition-all hover:scale-105 relative
+                        ${isCurrent ? 'bg-primary text-primary-foreground shadow-brutal-sm border-primary' : 'border-border'}
                         ${!isCurrent && isAnswered ? 'bg-secondary' : ''}
                         ${!isCurrent && !isAnswered ? 'bg-background' : ''}
+                        ${isFlagged ? 'ring-2 ring-orange-400' : ''}
                       `}
                     >
                       {idx + 1}
+                      {isFlagged && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-400 rounded-full" />}
                     </button>
                   )
                 })}
               </div>
 
-              <div className="flex gap-4 mt-4 text-sm">
+              <div className="flex gap-4 mt-4 text-sm flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-primary border-2 border-border rounded" />
                   <span>{t('question.current')}</span>
@@ -528,6 +645,10 @@ export function QuestionRunner({
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-background border-2 border-border rounded" />
                   <span>{t('question.unanswered')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-background border-2 border-border rounded ring-2 ring-orange-400" />
+                  <span>{t('question.flagged', { fallback: 'Flagged' })}</span>
                 </div>
               </div>
             </CardContent>
@@ -550,6 +671,7 @@ export function QuestionRunner({
                 {questions.map((q, idx) => {
                   const isAnswered = isValidAnswer(answers[q.id]?.answer, q.question_format)
                   const isCurrent = idx === currentIndex
+                  const isFlagged = flagged.has(q.id)
 
                   return (
                     <SheetClose asChild key={q.id}>
@@ -561,13 +683,15 @@ export function QuestionRunner({
                         disabled={isSubmitting}
                         className={`
                           aspect-square rounded-xl border-2 border-border font-bold text-lg
-                          transition-all active:scale-95
+                          transition-all active:scale-95 relative
                           ${isCurrent ? 'bg-primary text-primary-foreground shadow-brutal' : ''}
                           ${!isCurrent && isAnswered ? 'bg-secondary' : ''}
                           ${!isCurrent && !isAnswered ? 'bg-background' : ''}
+                          ${isFlagged ? 'ring-2 ring-orange-400' : ''}
                         `}
                       >
                         {idx + 1}
+                        {isFlagged && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-400 rounded-full" />}
                       </button>
                     </SheetClose>
                   )

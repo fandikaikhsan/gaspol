@@ -20,6 +20,7 @@ import {
   Sliders,
   Activity,
   BookOpen,
+  GraduationCap,
 } from "lucide-react"
 
 const navigation = [
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Taxonomy', href: '/admin/taxonomy', icon: Network },
   { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
   { name: 'Materials', href: '/admin/materials', icon: BookOpen },
+  { name: 'Campus', href: '/admin/campus', icon: GraduationCap },
   { name: 'Flashcards', href: '/admin/flashcards', icon: Layers },
   { name: 'Metadata', href: '/admin/metadata', icon: Sliders },
   { name: 'Modules', href: '/admin/modules', icon: Package },
