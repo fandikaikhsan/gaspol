@@ -4,10 +4,10 @@
  * Onboarding Flow
  * Phase 1: Authentication & State Machine
  *
- * Collects: package_days, time_budget_min, target_university, target_major
+ * Collects: exam_date (T-025), time_budget_min (T-026), target_university, target_major
  */
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { updateUserState } from "@/hooks/useUserPhase"
@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
-import { Check } from "lucide-react"
+import { Check, Calendar, Clock, AlertCircle } from "lucide-react"
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -30,17 +30,35 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   // Form data
-  const [packageDays, setPackageDays] = useState<number>(14)
+  const [examDate, setExamDate] = useState<string>("") // ISO date string YYYY-MM-DD
   const [timeBudget, setTimeBudget] = useState<number>(60)
+  const [customTimeBudget, setCustomTimeBudget] = useState<string>("")
+  const [useCustomTime, setUseCustomTime] = useState(false)
   const [targetUniversity, setTargetUniversity] = useState("")
   const [targetMajor, setTargetMajor] = useState("")
 
-  const PACKAGE_OPTIONS = [
-    { value: 7, label: t('package.7days'), subtitle: t('package.7daysDesc'), color: "bg-construct-teliti" },
-    { value: 14, label: t('package.14days'), subtitle: t('package.14daysDesc'), color: "bg-construct-speed" },
-    { value: 21, label: t('package.21days'), subtitle: t('package.21daysDesc'), color: "bg-construct-reasoning" },
-    { value: 30, label: t('package.30days'), subtitle: t('package.30daysDesc'), color: "bg-construct-computation" },
-  ]
+  // T-025: Calculate days remaining from exam date
+  const daysRemaining = useMemo(() => {
+    if (!examDate) return null
+    const exam = new Date(examDate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    exam.setHours(0, 0, 0, 0)
+    return Math.ceil((exam.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  }, [examDate])
+
+  // Min date = tomorrow, max date = 1 year from now
+  const minDate = useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().split('T')[0]
+  }, [])
+
+  const maxDate = useMemo(() => {
+    const d = new Date()
+    d.setFullYear(d.getFullYear() + 1)
+    return d.toISOString().split('T')[0]
+  }, [])
 
   const TIME_BUDGET_OPTIONS = [
     { value: 30, label: t('time.30min'), subtitle: t('time.30minDesc') },
@@ -59,6 +77,25 @@ export default function OnboardingPage() {
       return
     }
 
+    if (!examDate || !daysRemaining || daysRemaining < 1) {
+      toast({
+        variant: "destructive",
+        title: t('toast.missingInfo', { fallback: 'Missing Information' }),
+        description: t('toast.examDateRequired', { fallback: 'Please select a valid exam date.' }),
+      })
+      return
+    }
+
+    const effectiveTimeBudget = useCustomTime ? Number(customTimeBudget) : timeBudget
+    if (!effectiveTimeBudget || effectiveTimeBudget < 10 || effectiveTimeBudget > 480) {
+      toast({
+        variant: "destructive",
+        title: t('toast.missingInfo', { fallback: 'Missing Information' }),
+        description: t('toast.timeBudgetInvalid', { fallback: 'Please enter a valid study time (10–480 minutes).' }),
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -69,12 +106,13 @@ export default function OnboardingPage() {
         throw new Error("User not authenticated")
       }
 
-      // Update profile — must succeed before transitioning phase
+      // T-025: Save exam_date + auto-computed package_days
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
-          package_days: packageDays,
-          time_budget_min: timeBudget,
+          exam_date: examDate,
+          package_days: Math.min(daysRemaining, 365),
+          time_budget_min: effectiveTimeBudget,
           target_university: targetUniversity,
           target_major: targetMajor || null,
         })
@@ -142,59 +180,64 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        {/* Step 1: Package Selection */}
+        {/* Step 1: Exam Date (T-025) */}
         {step === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle>{t('package.title')}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                {t('examDate.title', { fallback: 'When is your exam?' })}
+              </CardTitle>
               <CardDescription>
-                {t('package.subtitle')}
+                {t('examDate.subtitle', { fallback: 'Select your UTBK exam date. We\'ll create a study plan that counts down to the big day.' })}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <RadioGroup
-                value={packageDays.toString()}
-                onValueChange={(value) => setPackageDays(Number(value))}
-              >
-                {PACKAGE_OPTIONS.map((option) => (
-                  <div key={option.value}>
-                    <RadioGroupItem
-                      value={option.value.toString()}
-                      id={`package-${option.value}`}
-                      className="peer sr-only"
-                    />
-                    <Label
-                      htmlFor={`package-${option.value}`}
-                      className={`flex items-center justify-between p-4 rounded-lg border-2 border-border cursor-pointer transition-all ${option.color} ${
-                        packageDays === option.value
-                          ? "ring-2 ring-primary border-primary shadow-md"
-                          : "hover:border-primary/50"
-                      }`}
-                    >
-                      <div>
-                        <p className="font-bold text-lg">{option.label}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {option.subtitle}
-                        </p>
-                      </div>
-                      <div
-                        className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
-                          packageDays === option.value
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-background"
-                        }`}
-                      >
-                        {packageDays === option.value && <Check className="h-4 w-4" />}
-                      </div>
-                    </Label>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="exam-date" className="text-base font-semibold">
+                  {t('examDate.label', { fallback: 'Exam Date' })}
+                </Label>
+                <Input
+                  id="exam-date"
+                  type="date"
+                  value={examDate}
+                  onChange={(e) => setExamDate(e.target.value)}
+                  min={minDate}
+                  max={maxDate}
+                  className="text-lg h-12"
+                />
+              </div>
+
+              {/* Days remaining countdown */}
+              {daysRemaining !== null && (
+                <div className={`p-4 rounded-lg border-2 ${
+                  daysRemaining < 7 ? 'border-destructive bg-destructive/10' :
+                  daysRemaining < 14 ? 'border-orange-400 bg-orange-50' :
+                  'border-status-strong bg-status-strong/10'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {daysRemaining < 7 && <AlertCircle className="w-5 h-5 text-destructive" />}
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {daysRemaining} {t('examDate.daysLeft', { fallback: 'days remaining' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {daysRemaining < 7
+                          ? t('examDate.urgentMsg', { fallback: 'Time is short — we\'ll optimize for high-impact practice!' })
+                          : daysRemaining < 14
+                          ? t('examDate.moderateMsg', { fallback: 'Good amount of time for focused preparation.' })
+                          : t('examDate.comfortMsg', { fallback: 'Great! Plenty of time to build a solid foundation.' })}
+                      </p>
+                    </div>
                   </div>
-                ))}
-              </RadioGroup>
+                </div>
+              )}
 
               <Button
                 onClick={() => setStep(2)}
                 className="w-full mt-6"
                 size="lg"
+                disabled={!examDate || !daysRemaining || daysRemaining < 1}
               >
                 {tc('button.continue')}
               </Button>
@@ -202,19 +245,29 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 2: Time Budget */}
+        {/* Step 2: Time Budget (T-026) */}
         {step === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle>{t('time.title')}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                {t('time.title')}
+              </CardTitle>
               <CardDescription>
                 {t('time.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <RadioGroup
-                value={timeBudget.toString()}
-                onValueChange={(value) => setTimeBudget(Number(value))}
+                value={useCustomTime ? 'custom' : timeBudget.toString()}
+                onValueChange={(value) => {
+                  if (value === 'custom') {
+                    setUseCustomTime(true)
+                  } else {
+                    setUseCustomTime(false)
+                    setTimeBudget(Number(value))
+                  }
+                }}
               >
                 {TIME_BUDGET_OPTIONS.map((option) => (
                   <div key={option.value}>
@@ -226,7 +279,7 @@ export default function OnboardingPage() {
                     <Label
                       htmlFor={`time-${option.value}`}
                       className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all bg-background ${
-                        timeBudget === option.value
+                        !useCustomTime && timeBudget === option.value
                           ? "ring-2 ring-primary border-primary shadow-md"
                           : "border-border hover:border-primary/50"
                       }`}
@@ -239,16 +292,63 @@ export default function OnboardingPage() {
                       </div>
                       <div
                         className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
-                          timeBudget === option.value
+                          !useCustomTime && timeBudget === option.value
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-border bg-background"
                         }`}
                       >
-                        {timeBudget === option.value && <Check className="h-4 w-4" />}
+                        {!useCustomTime && timeBudget === option.value && <Check className="h-4 w-4" />}
                       </div>
                     </Label>
                   </div>
                 ))}
+
+                {/* Custom time input */}
+                <div>
+                  <RadioGroupItem
+                    value="custom"
+                    id="time-custom"
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor="time-custom"
+                    className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all bg-background ${
+                      useCustomTime
+                        ? "ring-2 ring-primary border-primary shadow-md"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <p className="font-bold text-lg">{t('time.custom', { fallback: 'Custom' })}</p>
+                      {useCustomTime && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={10}
+                            max={480}
+                            value={customTimeBudget}
+                            onChange={(e) => setCustomTimeBudget(e.target.value)}
+                            placeholder="45"
+                            className="w-24 h-9"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {t('time.minutesPerDay', { fallback: 'minutes/day' })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+                        useCustomTime
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background"
+                      }`}
+                    >
+                      {useCustomTime && <Check className="h-4 w-4" />}
+                    </div>
+                  </Label>
+                </div>
               </RadioGroup>
 
               <div className="flex gap-3 mt-6">
@@ -308,9 +408,9 @@ export default function OnboardingPage() {
               <div className="bg-muted p-4 rounded-lg mt-6 space-y-2">
                 <p className="font-semibold text-sm">{t('summary.title')}</p>
                 <ul className="text-sm space-y-1">
-                  <li>{t('summary.duration', { days: packageDays })}</li>
-                  <li>{t('summary.dailyStudy', { minutes: timeBudget })}</li>
-                  <li>{t('summary.targetUni', { university: targetUniversity || "Not specified" })}</li>
+                  <li>📅 {t('summary.examDate', { fallback: 'Exam date' })}: {examDate ? new Date(examDate).toLocaleDateString() : '—'} ({daysRemaining} {t('examDate.daysLeft', { fallback: 'days remaining' })})</li>
+                  <li>⏱️ {t('summary.dailyStudy', { minutes: useCustomTime ? Number(customTimeBudget) : timeBudget })}</li>
+                  <li>🎯 {t('summary.targetUni', { university: targetUniversity || "Not specified" })}</li>
                 </ul>
               </div>
 
