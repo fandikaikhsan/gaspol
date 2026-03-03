@@ -336,6 +336,85 @@ Remote database is up to date.
 ```
 No-op — confirmed fully consistent.
 
+> **⚠️ Post-mortem correction:** This initial repair was over-broad. Migrations 001–029 were genuinely already on the remote DB, but migrations 030, 031, 032 had **never been executed** — they were only added locally. Marking them as "applied" hid the fact that the tables/columns they create didn't exist on remote. See fix below.
+
+---
+
+## Supabase Migration Drift Fix #2: material_cards missing (2026-03-03)
+
+### Problem
+App fetched `GET /rest/v1/material_cards?...` → **404** with PostgREST error:
+```
+PGRST205: Could not find the table 'public.material_cards' in the schema cache
+hint: Perhaps you meant the table 'public.flashcards'
+```
+
+### Root Cause
+During drift repair #1, we marked ALL 31 migrations (001–032) as "applied" without executing them.
+- Migrations 001–029 were already on the remote DB (genuinely applied via Supabase dashboard/seed).
+- Migrations 030, 031, 032 were **new** (added locally in Milestone A) and had **never been executed** on remote.
+
+This meant:
+- `material_cards` table (migration 031) didn't exist
+- `campus_scores` table (migration 031) didn't exist
+- `difficulty_level`, `point_value`, `points_awarded`, `exam_date` columns (migration 030) didn't exist
+- RLS policies for material_cards/campus_scores (migration 032) didn't exist
+
+### Diagnosis
+
+REST endpoint checks confirmed the tables/columns were missing:
+```bash
+# material_cards → 404 PGRST205
+curl .../rest/v1/material_cards?select=id&limit=1  # ❌ 404
+
+# campus_scores → 404 PGRST205
+curl .../rest/v1/campus_scores?select=id&limit=1   # ❌ 404
+
+# questions.difficulty_level → 42703 column not found
+curl .../rest/v1/questions?select=id,difficulty_level&limit=1  # ❌ 42703
+
+# profiles.language (migration 028) → ✅ works
+curl .../rest/v1/profiles?select=id,language&limit=1  # ✅ [{"id":"...","language":"id"}]
+```
+
+This confirmed the boundary: migrations 001–029 were real, 030–032 were phantom.
+
+### Fix
+
+1. Reverted phantom "applied" status for 030–032:
+```bash
+supabase migration repair --linked --status reverted 030 031 032
+# Output: Repaired migration history: [030 031 032] => reverted
+```
+
+2. Re-pushed to actually execute them on remote:
+```bash
+supabase db push
+# Applying migration 030_point_based_coverage_schema.sql...
+# Applying migration 031_material_cards_campus_scores.sql...
+# Applying migration 032_rls_material_cards_campus_scores.sql...
+# Finished supabase db push.
+```
+
+### Verification
+
+**`supabase migration list --linked`** — all 31 show Local = Remote ✅
+
+**`supabase db push --dry-run`** — "Remote database is up to date." ✅
+
+**REST endpoint checks:**
+```bash
+# material_cards → ✅ empty array (table exists, no data yet)
+curl .../rest/v1/material_cards?select=id&limit=1  # []
+
+# campus_scores → ✅ empty array
+curl .../rest/v1/campus_scores?select=id&limit=1   # []
+
+# questions columns → ✅ returning data
+curl .../rest/v1/questions?select=id,difficulty_level,point_value&limit=1
+# [{"id":"...","difficulty_level":"L2","point_value":2}]
+```
+
 ---
 
 ## Commands Run
