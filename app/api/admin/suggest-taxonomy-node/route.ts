@@ -3,15 +3,12 @@
  * @see /docs/TROUBLESHOOTING-JWT-ES256.md
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-admin'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+    const { user, errorResponse } = await requireAdmin()
+    if (errorResponse) return errorResponse
 
     const body = await request.json()
 

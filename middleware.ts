@@ -17,8 +17,8 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/signup', '/', '/auth/callback']
   const isPublicRoute = publicRoutes.includes(path) || path.startsWith('/auth/')
 
-  // Admin routes
-  const isAdminRoute = path.startsWith('/admin')
+  // Admin routes (pages + API)
+  const isAdminRoute = path.startsWith('/admin') || path.startsWith('/api/admin')
 
   // Shared routes (both student and admin)
   const isSharedRoute = path.startsWith('/settings')
@@ -87,29 +87,46 @@ export async function middleware(request: NextRequest) {
     }
 
     // PHASE-BASED ROUTING GUARD (students only)
-    // Ensure students can't skip onboarding or access features they haven't unlocked
+    // Ensure students can't skip phases or access features they haven't unlocked
     if (!isAdmin && isStudentRoute && userState?.current_phase) {
       const phase = userState.current_phase
 
-      // Users in ONBOARDING must complete onboarding first
-      if (phase === 'ONBOARDING' && !path.startsWith('/onboarding')) {
-        const redirectUrl = request.nextUrl.clone()
-        redirectUrl.pathname = '/onboarding'
-        return NextResponse.redirect(redirectUrl)
+      // Settings is always accessible
+      if (!path.startsWith('/settings')) {
+        // Map each phase to its allowed route prefixes
+        const phaseAllowedRoutes: Record<string, string[]> = {
+          ONBOARDING: ['/onboarding'],
+          BASELINE_ASSESSMENT_IN_PROGRESS: ['/baseline', '/analytics'],
+          BASELINE_COMPLETE: ['/analytics', '/plan'],
+          PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics'],
+          RECYCLE_UNLOCKED: ['/plan', '/drill', '/review', '/analytics', '/recycle'],
+          RECYCLE_ASSESSMENT_IN_PROGRESS: ['/recycle', '/analytics'],
+        }
+
+        const allowed = phaseAllowedRoutes[phase] || ['/onboarding']
+        const isAllowed = allowed.some((route) => path.startsWith(route))
+
+        if (!isAllowed) {
+          // Redirect to the canonical route for this phase
+          const phaseDefaultRoute: Record<string, string> = {
+            ONBOARDING: '/onboarding',
+            BASELINE_ASSESSMENT_IN_PROGRESS: '/baseline',
+            BASELINE_COMPLETE: '/analytics',
+            PLAN_ACTIVE: '/plan',
+            RECYCLE_UNLOCKED: '/plan',
+            RECYCLE_ASSESSMENT_IN_PROGRESS: '/recycle',
+          }
+
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = phaseDefaultRoute[phase] || '/onboarding'
+          return NextResponse.redirect(redirectUrl)
+        }
       }
 
       // Users who completed onboarding should not go back to it
       if (phase !== 'ONBOARDING' && path.startsWith('/onboarding')) {
         const redirectUrl = request.nextUrl.clone()
         redirectUrl.pathname = '/plan'
-        return NextResponse.redirect(redirectUrl)
-      }
-
-      // Users in BASELINE phase can only access baseline + analytics
-      if (phase === 'BASELINE_ASSESSMENT_IN_PROGRESS' &&
-          !path.startsWith('/baseline') && !path.startsWith('/analytics')) {
-        const redirectUrl = request.nextUrl.clone()
-        redirectUrl.pathname = '/baseline'
         return NextResponse.redirect(redirectUrl)
       }
     }
