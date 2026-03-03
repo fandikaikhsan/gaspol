@@ -108,11 +108,11 @@ export default function AnalyticsPage() {
 
       // Fetch snapshot and exam config in parallel
       const [snapshotResult, examConfigResult] = await Promise.all([
-        supabase.rpc("get_latest_snapshot", {
+        (supabase.rpc as any)("get_latest_snapshot", {
           p_user_id: user.id,
           p_scope: null // Get most recent of any type
         }),
-        supabase.rpc("get_user_exam_config", {
+        (supabase.rpc as any)("get_user_exam_config", {
           p_user_id: user.id
         })
       ])

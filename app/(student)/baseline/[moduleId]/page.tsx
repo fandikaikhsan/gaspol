@@ -16,6 +16,19 @@ import { useToast } from "@/hooks/use-toast"
 import { getUserFriendlyError } from "@/lib/utils/error-messages"
 import { useTranslation } from "@/lib/i18n"
 
+type ModuleQuestionRow = {
+  id: string
+  question_id: string
+  order_index: number
+  question: any
+}
+
+type ModuleWithQuestions = {
+  id: string
+  name?: string
+  module_questions?: ModuleQuestionRow[]
+}
+
 export default function BaselineRunnerPage() {
   const router = useRouter()
   const params = useParams()
@@ -56,7 +69,9 @@ export default function BaselineRunnerPage() {
         .eq('id', moduleId)
         .single()
 
-      if (moduleError || !moduleData) {
+      const typedModuleData = moduleData as ModuleWithQuestions | null
+
+      if (moduleError || !typedModuleData) {
         console.error('[baseline] Module fetch failed:', moduleError?.message)
         toast({
           variant: "destructive",
@@ -67,10 +82,10 @@ export default function BaselineRunnerPage() {
         return
       }
 
-      setModule(moduleData)
+      setModule(typedModuleData)
 
       // Extract and sort questions from module_questions
-      const moduleQuestions = moduleData.module_questions || []
+      const moduleQuestions = typedModuleData.module_questions || []
 
       if (moduleQuestions.length === 0) {
         toast({
