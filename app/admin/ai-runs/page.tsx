@@ -5,7 +5,7 @@
  * Phase 8: Admin Console
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -102,12 +102,7 @@ export default function AdminAIRunsPage() {
     model: "claude-sonnet-4-6",
   })
 
-  useEffect(() => {
-    loadAIRuns()
-    loadSettings()
-  }, [])
-
-  const loadAIRuns = async () => {
+  const loadAIRuns = useCallback(async () => {
     setIsLoading(true)
     try {
       const supabase = createClient()
@@ -130,7 +125,12 @@ export default function AdminAIRunsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadAIRuns()
+    loadSettings()
+  }, [loadAIRuns])
 
   const loadSettings = async () => {
     try {

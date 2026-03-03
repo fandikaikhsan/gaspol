@@ -159,7 +159,7 @@ export default function AdminDebugPage() {
                 ) : (
                   <Badge variant="destructive">
                     <XCircle className="h-3 w-3 mr-1" />
-                    No - Run: UPDATE profiles SET role = 'admin' WHERE email = '{user?.email}'
+                    No - Run: UPDATE profiles SET role = &apos;admin&apos; WHERE email = &apos;{user?.email}&apos;
                   </Badge>
                 )}
               </div>
@@ -202,7 +202,7 @@ export default function AdminDebugPage() {
             <div>
               <p className="font-semibold mb-2">1. Make yourself admin:</p>
               <pre className="bg-white p-3 rounded border text-xs overflow-x-auto">
-                UPDATE profiles SET role = 'admin' WHERE email = '{user?.email}';
+                UPDATE profiles SET role = &apos;admin&apos; WHERE email = &apos;{user?.email}&apos;;
               </pre>
             </div>
             {Object.values(counts).every((c) => c === 0) && (

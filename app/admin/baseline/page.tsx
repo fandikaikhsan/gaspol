@@ -5,7 +5,7 @@
  * Phase 8: Admin Console
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -80,11 +80,7 @@ export default function AdminBaselinePage() {
     estimated_duration_min: 15,
   })
 
-  useEffect(() => {
-    loadBaselineModules()
-  }, [])
-
-  const loadBaselineModules = async () => {
+  const loadBaselineModules = useCallback(async () => {
     setIsLoading(true)
     try {
       const supabase = createClient()
@@ -108,7 +104,11 @@ export default function AdminBaselinePage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadBaselineModules()
+  }, [loadBaselineModules])
 
   const loadAvailableModules = async () => {
     try {
@@ -624,11 +624,11 @@ export default function AdminBaselinePage() {
               <Select
                 value={formData.module_id}
                 onValueChange={(value) => {
-                  const module = availableModules.find((m) => m.id === value)
+                  const selectedModule = availableModules.find((m) => m.id === value)
                   setFormData({
                     ...formData,
                     module_id: value,
-                    title: module?.name || "",
+                    title: selectedModule?.name || "",
                   })
                 }}
               >
@@ -864,7 +864,7 @@ export default function AdminBaselinePage() {
               <Card>
                 <CardContent className="text-center py-12">
                   <p className="text-muted-foreground">
-                    No active checkpoints. Students won't see any baseline assessment.
+                    No active checkpoints. Students won&apos;t see any baseline assessment.
                   </p>
                 </CardContent>
               </Card>
