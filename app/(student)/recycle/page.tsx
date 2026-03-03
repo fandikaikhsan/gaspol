@@ -22,6 +22,8 @@ export default function RecycleHubPage() {
   const [user, setUser] = useState<any>(null)
   const [userState, setUserState] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
+  const [requiredTaskCount, setRequiredTaskCount] = useState(0)
+  const [completedRequiredCount, setCompletedRequiredCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
 
@@ -44,6 +46,23 @@ export default function RecycleHubPage() {
         .single()
 
       setUserState(state)
+
+      if (state?.current_cycle_id) {
+        const { data: requiredTasks } = await supabase
+          .from('plan_tasks')
+          .select('id, is_completed')
+          .eq('cycle_id', state.current_cycle_id)
+          .eq('is_required', true)
+
+        const totalRequired = requiredTasks?.length || 0
+        const completedRequired = (requiredTasks || []).filter((task) => task.is_completed).length
+
+        setRequiredTaskCount(totalRequired)
+        setCompletedRequiredCount(completedRequired)
+      } else {
+        setRequiredTaskCount(0)
+        setCompletedRequiredCount(0)
+      }
 
       const { data: checkpointData } = await supabase
         .from('recycle_checkpoints')
@@ -109,8 +128,13 @@ export default function RecycleHubPage() {
     </div>
   }
 
-  const isUnlocked = userState?.current_phase === 'RECYCLE_UNLOCKED' ||
-                     userState?.current_phase === 'RECYCLE_ASSESSMENT_IN_PROGRESS'
+  const hasCompletedAllRequiredTasks =
+    requiredTaskCount > 0 && completedRequiredCount >= requiredTaskCount
+
+  const isUnlocked =
+    userState?.current_phase === 'RECYCLE_UNLOCKED' ||
+    userState?.current_phase === 'RECYCLE_ASSESSMENT_IN_PROGRESS' ||
+    hasCompletedAllRequiredTasks
 
   return (
     <div className="min-h-screen bg-background p-4">

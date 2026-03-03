@@ -72,6 +72,23 @@ export function QuestionRunner({
   const progress = ((currentIndex + 1) / totalQuestions) * 100
   const isLastQuestion = currentIndex === totalQuestions - 1
 
+  const normalizeFormat = (format?: string) => (format || '').toLowerCase().replace(/[_\s-]/g, '')
+
+  const isValidAnswer = useCallback((answer: string | undefined, format?: string) => {
+    if (typeof answer !== "string") return false
+
+    const normalizedFormat = normalizeFormat(format)
+
+    if (normalizedFormat === 'mcktable' || normalizedFormat === 'mctable') {
+      return answer
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean).length > 0
+    }
+
+    return answer.trim().length > 0
+  }, [])
+
   // Timer effect
   useEffect(() => {
     if (!showTimer) return
@@ -121,20 +138,26 @@ export function QuestionRunner({
   }
 
   // Navigate to specific question
-  const goToQuestion = (index: number) => {
+  const goToQuestion = useCallback((index: number) => {
     if (!allowNavigation) return
     if (index < 0 || index >= totalQuestions) return
 
     setCurrentIndex(index)
     setQuestionStartTime(new Date())
-  }
+  }, [allowNavigation, totalQuestions])
 
   // Next question
   const handleNext = () => {
+    if (!hasCurrentAnswer) return
+
     if (isLastQuestion) {
       handleFinish()
     } else {
-      goToQuestion(currentIndex + 1)
+      setCurrentIndex((prev) => {
+        const nextIndex = Math.min(prev + 1, totalQuestions - 1)
+        setQuestionStartTime(new Date())
+        return nextIndex
+      })
     }
   }
 
@@ -146,7 +169,10 @@ export function QuestionRunner({
   // Finish assessment
   const handleFinish = async () => {
     // Check if all questions are answered
-    const unansweredCount = questions.filter(q => !answers[q.id]).length
+    const unansweredCount = questions.filter((q) => {
+      const answerValue = answers[q.id]?.answer
+      return !isValidAnswer(answerValue, q.question_format)
+    }).length
 
     if (unansweredCount > 0) {
       const confirmed = window.confirm(
@@ -179,11 +205,14 @@ export function QuestionRunner({
 
   // Get current answer
   const currentAnswer = answers[currentQuestion.id]?.answer || ""
+  const hasCurrentAnswer = isValidAnswer(currentAnswer, currentQuestion.question_format)
 
   // Render answer input based on question format
   const renderAnswerInput = () => {
-    switch (currentQuestion.question_format) {
-      case 'MCQ5':
+    const normalizedFormat = normalizeFormat(currentQuestion.question_format)
+
+    switch (normalizedFormat) {
+      case 'mcq5':
         return (
           <AnswerOptions
             options={currentQuestion.options as any}
@@ -191,7 +220,8 @@ export function QuestionRunner({
             onAnswerChange={handleAnswerChange}
           />
         )
-      case 'MCK-Table':
+      case 'mcktable':
+      case 'mctable':
         return (
           <TableOptions
             options={currentQuestion.options as any}
@@ -199,7 +229,7 @@ export function QuestionRunner({
             onAnswerChange={(answers) => handleAnswerChange(answers.join(','))}
           />
         )
-      case 'Fill-in':
+      case 'fillin':
         return (
           <FillInInput
             options={currentQuestion.options as any}
@@ -212,7 +242,7 @@ export function QuestionRunner({
     }
   }
 
-  const answered = Object.keys(answers).length
+  const answered = questions.filter((q) => isValidAnswer(answers[q.id]?.answer, q.question_format)).length
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -297,7 +327,7 @@ export function QuestionRunner({
 
               <Button
                 onClick={handleNext}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hasCurrentAnswer}
               >
                 {isSubmitting ? t('button.submitting') :
                  isLastQuestion ? t('button.finish') : t('button.next')}
@@ -315,7 +345,7 @@ export function QuestionRunner({
             <CardContent>
               <div className="grid grid-cols-10 gap-2">
                 {questions.map((q, idx) => {
-                  const isAnswered = !!answers[q.id]
+                  const isAnswered = isValidAnswer(answers[q.id]?.answer, q.question_format)
                   const isCurrent = idx === currentIndex
 
                   return (
@@ -369,7 +399,7 @@ export function QuestionRunner({
               {/* Question Grid */}
               <div className="grid grid-cols-5 gap-3">
                 {questions.map((q, idx) => {
-                  const isAnswered = !!answers[q.id]
+                  const isAnswered = isValidAnswer(answers[q.id]?.answer, q.question_format)
                   const isCurrent = idx === currentIndex
 
                   return (

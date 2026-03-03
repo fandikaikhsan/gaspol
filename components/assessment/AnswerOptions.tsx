@@ -39,22 +39,26 @@ export function AnswerOptions({
         const isWrong = showCorrectAnswer && selectedAnswer === key && selectedAnswer !== showCorrectAnswer
 
         return (
-          <div key={key} className="relative">
+          <div
+            key={key}
+            className={`
+              flex items-start gap-4 rounded-lg border-2 p-4 transition-all
+              ${!showCorrectAnswer && !isSelected ? 'border-border bg-background hover:bg-muted' : ''}
+              ${!showCorrectAnswer && isSelected ? 'border-primary bg-primary/10 shadow-brutal-sm' : ''}
+              ${showCorrectAnswer && isCorrect ? 'border-status-strong bg-status-strong/10' : ''}
+              ${showCorrectAnswer && isWrong ? 'border-destructive bg-destructive/10' : ''}
+              ${showCorrectAnswer && !isCorrect && !isWrong ? 'border-border bg-background opacity-60' : ''}
+            `}
+          >
             <RadioGroupItem
               value={key}
               id={`option-${key}`}
-              className="peer sr-only"
+              disabled={disabled || !!showCorrectAnswer}
+              className="mt-1"
             />
             <Label
               htmlFor={`option-${key}`}
-              className={`
-                flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all
-                ${!showCorrectAnswer && !isSelected ? 'border-border bg-background hover:bg-muted' : ''}
-                ${!showCorrectAnswer && isSelected ? 'border-primary bg-primary/10 shadow-brutal-sm' : ''}
-                ${showCorrectAnswer && isCorrect ? 'border-status-strong bg-status-strong/10' : ''}
-                ${showCorrectAnswer && isWrong ? 'border-destructive bg-destructive/10' : ''}
-                ${showCorrectAnswer && !isCorrect && !isWrong ? 'border-border bg-background opacity-60' : ''}
-              `}
+              className="flex flex-1 cursor-pointer items-start gap-4"
             >
               {/* Option letter */}
               <div

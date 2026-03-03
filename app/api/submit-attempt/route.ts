@@ -172,6 +172,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 8. INSERT ATTEMPT RECORD
+    const normalizedContextId = typeof context_id === 'string' && context_id.trim().length > 0
+      ? context_id.trim()
+      : `${context_type || 'baseline'}-${Date.now()}`
+
     const { data: attempt, error: attemptError } = await supabaseAdmin
       .from('attempts')
       .insert({
@@ -182,7 +186,7 @@ export async function POST(request: NextRequest) {
         user_answer: JSON.stringify({ selected: selected_answer }),
         time_spent_sec: Math.round(time_spent_sec),
         context_type: context_type || 'baseline',
-        context_id: context_id || null,
+        context_id: normalizedContextId,
       })
       .select('id')
       .single()
@@ -198,7 +202,7 @@ export async function POST(request: NextRequest) {
           .select('id, is_correct, user_answer')
           .eq('user_id', userId)
           .eq('question_id', question_id)
-          .eq('context_id', context_id)
+          .eq('context_id', normalizedContextId)
           .single()
 
         if (existingAttempt) {

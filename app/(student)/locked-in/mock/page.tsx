@@ -84,6 +84,8 @@ function MockTestContent() {
     try {
       const accessToken = (await supabase.auth.getSession()).data.session?.access_token
 
+      const contextIdForSubmission = taskId || sessionId
+
       const attemptPromises = Object.entries(session.answers).map(
         async ([questionId, data]) => {
           const response = await fetch('/api/submit-attempt', {
@@ -97,7 +99,7 @@ function MockTestContent() {
               selected_answer: data.answer,
               time_spent_sec: data.timeSpent,
               context_type: 'mock',
-              context_id: sessionId,
+              context_id: contextIdForSubmission,
             }),
           })
 

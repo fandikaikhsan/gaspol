@@ -44,7 +44,7 @@ export function ReadinessRing({
     },
   }
 
-  const config = sizes[size]
+  const config = sizes[size] ?? sizes.lg
   const radius = config.circle
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference - (score / 100) * circumference
