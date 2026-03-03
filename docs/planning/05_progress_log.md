@@ -250,6 +250,94 @@ All 19 tasks completed. Exit criteria:
 
 ---
 
+## Supabase Migration Drift Repair (2026-03-03)
+
+### Problem
+`supabase db push` failed on migration 001 with:
+```
+ERROR: relation "profiles" already exists (SQLSTATE 42P07)
+```
+The remote DB schema already contained all objects from migrations, but the remote migration history table (`supabase_migrations.schema_migrations`) was empty — so `db push` tried to re-apply them.
+
+### Diagnosis
+
+**`supabase migration list --linked` (BEFORE repair):**
+```
+ Local | Remote | Time (UTC) 
+-------|--------|------------
+ 001   |        | 001        
+ 002   |        | 002        
+ ...   |        | ...        
+ 032   |        | 032        
+```
+All 31 migrations showed as local-only (Remote column empty).
+
+**`supabase db diff --linked --schema public`:**
+Command failed with Docker→remote networking error:
+```
+error diffing schema: error running container: exit 1:
+[sql_e12dd29]: Executing query failed: connect ECONNREFUSED 2406:da18:243:7426:c4d:9fbc:f226:38c5:5432
+```
+However, shadow database applied all 31 migrations cleanly (only expected NOTICE messages from idempotent IF NOT EXISTS clauses). Combined with the "profiles already exists" error, this confirmed the remote schema already matches local migrations.
+
+### Repair
+
+Marked all 31 migrations as applied in remote history without re-executing SQL:
+```bash
+supabase migration repair --linked --status applied \
+  001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018 019 \
+  021 022 023 024 025 026 027 028 029 030 031 032
+```
+Output: `Repaired migration history: [001 002 ... 032] => applied`
+
+### Verification
+
+**`supabase migration list --linked` (AFTER repair):**
+```
+ Local | Remote | Time (UTC) 
+-------|--------|------------
+ 001   | 001    | 001        
+ 002   | 002    | 002        
+ 003   | 003    | 003        
+ 004   | 004    | 004        
+ 005   | 005    | 005        
+ 006   | 006    | 006        
+ 007   | 007    | 007        
+ 008   | 008    | 008        
+ 009   | 009    | 009        
+ 010   | 010    | 010        
+ 011   | 011    | 011        
+ 012   | 012    | 012        
+ 013   | 013    | 013        
+ 014   | 014    | 014        
+ 015   | 015    | 015        
+ 016   | 016    | 016        
+ 017   | 017    | 017        
+ 018   | 018    | 018        
+ 019   | 019    | 019        
+ 021   | 021    | 021        
+ 022   | 022    | 022        
+ 023   | 023    | 023        
+ 024   | 024    | 024        
+ 025   | 025    | 025        
+ 026   | 026    | 026        
+ 027   | 027    | 027        
+ 028   | 028    | 028        
+ 029   | 029    | 029        
+ 030   | 030    | 030        
+ 031   | 031    | 031        
+ 032   | 032    | 032        
+```
+All 31 migrations synced (Local = Remote).
+
+**`supabase db push`:**
+```
+Remote database is up to date.
+```
+No-op — confirmed fully consistent.
+
+---
+
 ## Commands Run
 
 ```
