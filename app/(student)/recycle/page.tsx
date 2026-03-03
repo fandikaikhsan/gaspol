@@ -3,6 +3,7 @@
 /**
  * Re-cycle Hub
  * Phase 7: Re-cycle Assessment
+ * T-062: "Generate Next Plan" button after recycle completion
  */
 
 import { useEffect, useState } from "react"
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
+import { Sparkles, Loader2 } from "lucide-react"
 
 export default function RecycleHubPage() {
   const router = useRouter()
@@ -26,6 +28,7 @@ export default function RecycleHubPage() {
   const [completedRequiredCount, setCompletedRequiredCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -119,6 +122,41 @@ export default function RecycleHubPage() {
       })
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  // T-062: Generate Next Plan after recycle completion
+  const handleGenerateNextPlan = async () => {
+    if (!user) return
+    setIsGeneratingPlan(true)
+    try {
+      const supabase = createClient()
+      const response = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast({
+          title: t("toast.planGenerated", { fallback: "Plan Generated!" }),
+          description: t("toast.planGeneratedDesc", { fallback: "Your next study plan is ready." }),
+        })
+        router.push("/plan")
+      } else {
+        throw new Error(result.error || "Failed to generate plan")
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: t("toast.error"),
+        description: err.message || "Failed to generate plan",
+      })
+    } finally {
+      setIsGeneratingPlan(false)
     }
   }
 
@@ -219,6 +257,41 @@ export default function RecycleHubPage() {
                 </Card>
               ))}
             </div>
+
+            {/* T-062: Generate Next Plan CTA */}
+            {checkpoints.some((c: any) => c.is_completed) && (
+              <Card className="border-2 border-primary bg-surface-recycle/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    {t('generateNextPlan', { fallback: 'Ready for Next Cycle?' })}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('generateNextPlanDesc', { fallback: 'Generate a new study plan based on your updated performance.' })}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={handleGenerateNextPlan}
+                    disabled={isGeneratingPlan}
+                    className="w-full touch-target"
+                    size="lg"
+                  >
+                    {isGeneratingPlan ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t('generating', { fallback: 'Generating...' })}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {t('generateNextPlanButton', { fallback: 'Generate Next Plan' })}
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </div>

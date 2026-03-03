@@ -19,6 +19,7 @@ import { CoverageMap } from "@/components/analytics/CoverageMap"
 import { WeakSkillsList } from "@/components/analytics/WeakSkillsList"
 import { ErrorPatternAnalysis } from "@/components/analytics/ErrorPatternAnalysis"
 import { useTranslation } from "@/lib/i18n"
+import { calculateReadinessScore, type ReadinessMetrics } from "@/lib/analytics/readiness-score"
 
 interface AnalyticsSnapshot {
   id: string
@@ -52,33 +53,46 @@ interface ExamConfig {
   error_tag_count: number
 }
 
-// Compute breakdown from snapshot data (avoids NaN)
+// T-054: Compute breakdown using readiness-score.ts formula
 function computeBreakdown(snapshot: AnalyticsSnapshot) {
   const coverageValues = Object.values(snapshot.coverage || {})
   const coverageCount = coverageValues.length
 
-  // Calculate coverage percentage (avoid division by zero)
+  // Point-based coverage: each value is 0-1 or total_points
   const coveragePct = coverageCount > 0
     ? (coverageValues.reduce((a, b) => a + (b as number), 0) / coverageCount) * 100
     : 0
 
-  // Calculate average mastery from weak skills (if available)
+  // Accuracy from weak skills
   const weakSkills = snapshot.top_weak_skills || []
   const masteryAvg = weakSkills.length > 0
     ? (1 - (weakSkills.reduce((sum, s) => sum + s.mastery, 0) / weakSkills.length)) * 100
     : snapshot.readiness || 50
 
-  // Construct average as proxy for consistency
+  // Construct average as proxy for stability
   const constructValues = Object.values(snapshot.constructs || {})
   const constructAvg = constructValues.length > 0
     ? constructValues.reduce((a, b) => a + (b as number), 0) / constructValues.length
     : 50
 
+  // Use the SoT formula (readiness-score.ts)
+  const metrics: ReadinessMetrics = {
+    accuracy: Math.round(masteryAvg),
+    speed_index: Math.round(snapshot.readiness || 50),
+    stability: Math.round(constructAvg),
+    coverage: Math.round(coveragePct),
+  }
+
+  const result = calculateReadinessScore(metrics)
+
   return {
-    mastery_avg: Math.round(masteryAvg),
-    coverage_pct: Math.round(coveragePct),
-    consistency: Math.round(constructAvg),
-    time_efficiency: Math.round(snapshot.readiness || 50) // Use readiness as proxy
+    mastery_avg: metrics.accuracy,
+    coverage_pct: metrics.coverage,
+    consistency: metrics.stability,
+    time_efficiency: metrics.speed_index,
+    computedScore: result.score,
+    grade: result.grade,
+    recommendations: result.recommendations,
   }
 }
 
@@ -271,8 +285,8 @@ export default function AnalyticsPage() {
           examId={examConfig?.exam_id}
         />
 
-        {/* Coverage Map */}
-        <CoverageMap coverage={snapshot.coverage} />
+        {/* Coverage Map — T-055 point-based */}
+        <CoverageMap coverage={snapshot.coverage} pointBased={true} />
       </div>
 
       {/* Weak Skills */}

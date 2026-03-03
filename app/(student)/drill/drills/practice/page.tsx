@@ -14,7 +14,7 @@
 import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { QuestionRunner } from "@/components/assessment/QuestionRunner"
+import { QuestionRunner, ModuleResult } from "@/components/assessment/QuestionRunner"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -198,127 +198,146 @@ function DrillPracticeContent() {
     return shuffled
   }
 
-  const handleComplete = async (session: AssessmentSession) => {
-    if (!user) return
+  const handleCompleteWithResult = async (
+    session: AssessmentSession,
+  ): Promise<ModuleResult> => {
+    if (!user) throw new Error("Not authenticated")
 
     const supabase = createClient()
 
-    try {
-      // Submit all attempts
-      const attemptPromises = Object.entries(session.answers).map(
-        async ([questionId, data]) => {
-          const accessToken = (await supabase.auth.getSession()).data.session
-            ?.access_token
-
-          const response = await fetch("/api/submit-attempt", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              question_id: questionId,
-              selected_answer: data.answer,
-              time_spent_sec: data.timeSpent,
-              context_type: "drill",
-              context_id: sessionId,
-              module_id: moduleId || null,
-            }),
-          })
-
-          if (!response.ok) {
-            console.error("Submit attempt failed:", await response.text())
-            return { is_correct: false }
-          }
-
-          return response.json()
-        },
-      )
-
-      const results = await Promise.all(attemptPromises)
-      const correctCount = results.filter((r) => r.is_correct).length
-      const totalCount = questions.length
-      const score = (correctCount / totalCount) * 100
-
-      // Update user analytics if this was a module
-      if (moduleId) {
-        await supabase.from("module_completions").insert({
-          user_id: user.id,
-          module_id: moduleId,
-          context_type: "drill",
-          score,
-          total_questions: totalCount,
-          correct_count: correctCount,
-          total_time_sec: Object.values(session.answers).reduce(
-            (sum, a) => sum + a.timeSpent,
-            0,
-          ),
-          started_at: session.startedAt.toISOString(),
-          completed_at: new Date().toISOString(),
-        })
-      }
-
-      // Mark plan task as completed if taskId exists
-      if (taskId) {
-        await supabase
-          .from("plan_tasks")
-          .update({
-            is_completed: true,
-            completion_score: score,
-            completed_at: new Date().toISOString(),
-          })
-          .eq("id", taskId)
-          .eq("user_id", user.id)
-      }
-
-      // Mark recycle checkpoint as completed if checkpointId exists
-      if (checkpointId) {
-        await supabase
-          .from("recycle_checkpoints")
-          .update({
-            is_completed: true,
-            score,
-            completed_at: new Date().toISOString(),
-          })
-          .eq("id", checkpointId)
-          .eq("user_id", user.id)
-      }
-
-      // Refresh analytics snapshot via API route (ES256 JWT workaround)
-      try {
+    // Submit all attempts
+    const attemptPromises = Object.entries(session.answers).map(
+      async ([questionId, data]) => {
         const accessToken = (await supabase.auth.getSession()).data.session
           ?.access_token
-        await fetch("/api/generate-snapshot", {
+
+        const response = await fetch("/api/submit-attempt", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ scope: "checkpoint" }),
+          body: JSON.stringify({
+            question_id: questionId,
+            selected_answer: data.answer,
+            time_spent_sec: data.timeSpent,
+            context_type: "drill",
+            context_id: sessionId,
+            module_id: moduleId || null,
+          }),
         })
-      } catch (e) {
-        console.warn("Snapshot refresh failed (non-critical):", e)
-      }
 
-      toast({
-        title: t("practice.complete"),
-        description: t("practice.scoreDesc", {
-          score: score.toFixed(0),
-          correct: correctCount,
-          total: totalCount,
-        }),
-      })
+        if (!response.ok) {
+          console.error("Submit attempt failed:", await response.text())
+          return { is_correct: false }
+        }
 
-      // Navigate to results or back to drills
-      router.push("/drill/drills")
-    } catch (err) {
-      console.error("Error completing drill:", err)
-      toast({
-        variant: "destructive",
-        title: tc("error.title"),
-        description: tc("error.submissionFailedDesc"),
+        return response.json()
+      },
+    )
+
+    const results = await Promise.all(attemptPromises)
+    const correctCount = results.filter((r) => r.is_correct).length
+    const totalCount = questions.length
+    const score = (correctCount / totalCount) * 100
+    const passingThreshold = 0.7
+
+    // Update module_completions if module drill
+    if (moduleId) {
+      await supabase.from("module_completions").insert({
+        user_id: user.id,
+        module_id: moduleId,
+        context_type: "drill",
+        score,
+        total_questions: totalCount,
+        correct_count: correctCount,
+        total_time_sec: Object.values(session.answers).reduce(
+          (sum, a) => sum + a.timeSpent,
+          0,
+        ),
+        started_at: session.startedAt.toISOString(),
+        completed_at: new Date().toISOString(),
       })
     }
+
+    // Mark plan task as completed if taskId exists and passed
+    if (taskId && score >= passingThreshold * 100) {
+      await supabase
+        .from("plan_tasks")
+        .update({
+          is_completed: true,
+          completion_score: score,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", taskId)
+        .eq("user_id", user.id)
+    }
+
+    // Mark recycle checkpoint as completed if checkpointId exists
+    if (checkpointId) {
+      await supabase
+        .from("recycle_checkpoints")
+        .update({
+          is_completed: true,
+          score,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", checkpointId)
+        .eq("user_id", user.id)
+    }
+
+    // Refresh analytics snapshot (non-critical)
+    try {
+      const accessToken = (await supabase.auth.getSession()).data.session
+        ?.access_token
+      await fetch("/api/generate-snapshot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ scope: "checkpoint" }),
+      })
+    } catch (e) {
+      console.warn("Snapshot refresh failed (non-critical):", e)
+    }
+
+    // T-048: Fetch weak Material Cards on fail
+    let weakMaterialCards: ModuleResult["weakMaterialCards"] = []
+    if (score < passingThreshold * 100) {
+      // Get incorrect question skill IDs
+      const incorrectSkillIds = questions
+        .filter((q) => {
+          const r = results[questions.indexOf(q)]
+          return r && !r.is_correct
+        })
+        .map((q) => (q as any).micro_skill_id)
+        .filter(Boolean)
+
+      if (incorrectSkillIds.length > 0) {
+        const { data: cards } = await supabase
+          .from("material_cards")
+          .select("id, skill_id, title, core_idea, key_facts, common_mistakes, examples")
+          .in("skill_id", [...new Set(incorrectSkillIds)])
+          .eq("status", "published")
+          .limit(5)
+        weakMaterialCards = (cards || []) as any
+      }
+    }
+
+    return {
+      passed: score >= passingThreshold * 100,
+      score,
+      correctCount,
+      totalQuestions: totalCount,
+      passingThreshold,
+      weakMaterialCards,
+    }
+  }
+
+  const handleRetry = () => {
+    // Reload the page to restart the drill
+    window.location.reload()
   }
 
   if (isLoading) {
@@ -360,7 +379,10 @@ function DrillPracticeContent() {
       moduleId={moduleId || sessionId}
       contextType="drill"
       contextId={sessionId}
-      onComplete={handleComplete}
+      onComplete={() => {}}
+      onCompleteWithResult={handleCompleteWithResult}
+      onRetry={handleRetry}
+      onContinue={() => router.push("/drill")}
       showTimer={true}
       allowNavigation={true}
     />

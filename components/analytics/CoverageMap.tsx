@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * Coverage Map Component
- * Shows percentage of taxonomy attempted per subject area
+ * Coverage Map Component — T-055 point-based coverage
+ * Shows covered/uncovered based on total_points ≥ 20
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,21 +12,33 @@ import { Button } from "@/components/ui/button"
 import { useTranslation } from "@/lib/i18n"
 
 interface CoverageMapProps {
-  coverage: Record<string, number> // e.g., { "TPS": 0.85, "TKA": 0.45 }
+  coverage: Record<string, number> // e.g., { "TPS": 0.85 } (percentage) or { "TPS": 25 } (points)
+  pointBased?: boolean // When true, values are total_points (covered ≥ 20)
   onPracticeSubject?: (subject: string) => void
 }
 
-export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
+export function CoverageMap({ coverage, pointBased = false, onPracticeSubject }: CoverageMapProps) {
   const { t } = useTranslation('analytics')
 
-  // Sort subjects by coverage (lowest first to highlight what needs work)
-  const sortedCoverage = Object.entries(coverage).sort((a, b) => a[1] - b[1])
+  const POINT_THRESHOLD = 20 // T-055: covered when total_points ≥ 20
 
-  // Calculate overall coverage
-  const overallCoverage = Object.values(coverage).length > 0
-    ? Object.values(coverage).reduce((sum, val) => sum + val, 0) / Object.values(coverage).length
+  // Normalize to percentage for display
+  const normalizedEntries = Object.entries(coverage).map(([subject, val]) => {
+    if (pointBased) {
+      // val is total_points — convert to 0-100 capped at threshold
+      return [subject, Math.min((val / POINT_THRESHOLD) * 100, 100)] as [string, number]
+    }
+    // Legacy: val is 0-1 ratio
+    return [subject, val * 100] as [string, number]
+  })
+
+  // Sort by coverage (lowest first)
+  const sortedCoverage = normalizedEntries.sort((a, b) => a[1] - b[1])
+
+  // Overall
+  const overallPct = sortedCoverage.length > 0
+    ? Math.round(sortedCoverage.reduce((sum, [, pct]) => sum + pct, 0) / sortedCoverage.length)
     : 0
-  const overallPct = Math.round(overallCoverage * 100)
 
   // Get status for a coverage percentage
   const getStatus = (pct: number) => {
@@ -86,10 +98,12 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {sortedCoverage.map(([subject, percentage]) => {
-              const pct = Math.round(percentage * 100)
-              const status = getStatus(pct)
+            {sortedCoverage.map(([subject, pct]) => {
+              const roundedPct = Math.round(pct)
+              const status = getStatus(roundedPct)
               const StatusIcon = status.icon
+              // For point-based, show the raw points from original data
+              const rawPoints = pointBased ? coverage[subject] : undefined
 
               return (
                 <div key={subject} className={`p-3 border-2 rounded-lg ${status.bgColor}`}>
@@ -102,11 +116,18 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{pct}%</span>
-                      {onPracticeSubject && pct < 70 && (
+                      {pointBased && rawPoints !== undefined ? (
+                        <span className="text-sm font-medium">
+                          {rawPoints}/{POINT_THRESHOLD} pts
+                        </span>
+                      ) : (
+                        <span className="text-sm font-medium">{roundedPct}%</span>
+                      )}
+                      {onPracticeSubject && roundedPct < 70 && (
                         <Button
                           size="sm"
                           variant="outline"
+                          className="touch-target"
                           onClick={() => onPracticeSubject(subject)}
                         >
                           {t('coverage.practice')}
@@ -119,7 +140,7 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
                   <div className="h-3 bg-white border-2 border-charcoal rounded-full overflow-hidden">
                     <div
                       className={`h-full ${status.color} transition-all duration-500`}
-                      style={{ width: `${pct}%` }}
+                      style={{ width: `${roundedPct}%` }}
                     />
                   </div>
 
@@ -127,8 +148,8 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
                   <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
                     <span>0%</span>
                     <div className="flex gap-2">
-                      <span className={pct >= 30 ? "font-semibold" : ""}>30%</span>
-                      <span className={pct >= 70 ? "font-semibold" : ""}>70%</span>
+                      <span className={roundedPct >= 30 ? "font-semibold" : ""}>30%</span>
+                      <span className={roundedPct >= 70 ? "font-semibold" : ""}>70%</span>
                     </div>
                     <span>100%</span>
                   </div>
@@ -140,10 +161,10 @@ export function CoverageMap({ coverage, onPracticeSubject }: CoverageMapProps) {
             <div className="pt-4 border-t-2 border-border">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {t('coverage.subjectsStrong', { strong: sortedCoverage.filter(([_, pct]) => pct >= 0.7).length, total: sortedCoverage.length })}
+                  {t('coverage.subjectsStrong', { strong: sortedCoverage.filter(([_, pct]) => pct >= 70).length, total: sortedCoverage.length })}
                 </span>
                 <span className="text-muted-foreground">
-                  {t('coverage.needFocus', { count: sortedCoverage.filter(([_, pct]) => pct < 0.3).length })}
+                  {t('coverage.needFocus', { count: sortedCoverage.filter(([_, pct]) => pct < 30).length })}
                 </span>
               </div>
             </div>

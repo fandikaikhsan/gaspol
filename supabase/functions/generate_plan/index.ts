@@ -76,13 +76,13 @@ serve(async (req) => {
       .limit(1)
       .single()
 
-    // 3. Identify weak skills
+    // 3. Identify weak/uncovered skills (T-061: total_points < 20)
     const { data: weakSkills } = await supabase
       .from('user_skill_state')
-      .select('micro_skill_id, accuracy')
+      .select('micro_skill_id, accuracy, total_points')
       .eq('user_id', userId)
-      .lt('accuracy', 60)
-      .order('accuracy')
+      .or('total_points.lt.20,total_points.is.null')
+      .order('total_points', { ascending: true, nullsFirst: true })
       .limit(10)
 
     const weakSkillIds = (weakSkills || []).map(s => s.micro_skill_id)

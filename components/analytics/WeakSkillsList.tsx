@@ -8,7 +8,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle, Target, TrendingDown, Zap } from "lucide-react"
+import { AlertTriangle, Target, TrendingDown, Zap, BookOpen } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n"
 
@@ -30,9 +30,12 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
   const { t } = useTranslation('analytics')
 
   const handlePracticeSkill = (skill: WeakSkill) => {
-    // Navigate to practice page with this skill targeted
-    // Navigate to drill mode (could be enhanced to target specific skill)
-    router.push(`/drill?focus=${skill.node_id}`)
+    router.push(`/drill/drills/practice?mode=focused&node=${skill.node_id}`)
+  }
+
+  // T-057: Navigate to Material Card for a skill
+  const handleViewMaterial = (skill: WeakSkill) => {
+    router.push(`/review/${skill.node_id}`)
   }
 
   // Get mastery status
@@ -138,15 +141,27 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
                       </div>
                     </div>
 
-                    {/* Action Button */}
-                    <Button
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => handlePracticeSkill(skill)}
-                    >
-                      <Zap className="mr-2 h-4 w-4" />
-                      {t('weakSkills.practiceNow')}
-                    </Button>
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        className="touch-target"
+                        onClick={() => handlePracticeSkill(skill)}
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        {t('weakSkills.practiceNow')}
+                      </Button>
+                      {/* T-057: Material Card link */}
+                      <Button
+                        size="sm"
+                        variant="brutal-outline"
+                        className="touch-target"
+                        onClick={() => handleViewMaterial(skill)}
+                      >
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        {t('weakSkills.reviewMaterial', { fallback: 'Review' })}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )
