@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     // 6. FETCH QUESTION DATA
     const { data: question, error: questionError } = await supabaseAdmin
       .from('questions')
-      .select('id, question_type, question_format, difficulty, time_estimate_seconds, construct_weights, is_active, options, correct_answer')
+      .select('id, question_type, question_format, difficulty, difficulty_level, point_value, micro_skill_id, time_estimate_seconds, construct_weights, is_active, options, correct_answer')
       .eq('id', question_id)
       .single()
 
@@ -171,7 +171,11 @@ export async function POST(request: NextRequest) {
         normalizeAnswer(selected_answer) === normalizeAnswer(correctAnswer)
     }
 
-    // 8. INSERT ATTEMPT RECORD
+    // 8. CALCULATE POINTS AWARDED (T-014)
+    const pointsAwarded = isCorrect ? (question.point_value || 0) : 0
+    const difficultyLevel = question.difficulty_level || 'L1'
+
+    // 9. INSERT ATTEMPT RECORD
     const normalizedContextId = typeof context_id === 'string' && context_id.trim().length > 0
       ? context_id.trim()
       : `${context_type || 'baseline'}-${Date.now()}`
@@ -187,6 +191,7 @@ export async function POST(request: NextRequest) {
         time_spent_sec: Math.round(time_spent_sec),
         context_type: context_type || 'baseline',
         context_id: normalizedContextId,
+        points_awarded: pointsAwarded,
       })
       .select('id')
       .single()
@@ -224,7 +229,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 9. APPLY ERROR TAGS (async, non-blocking)
+    // 10. APPLY ERROR TAGS (async, non-blocking)
     // Determine which error tags to apply based on performance signals
     const expectedTime = question.time_estimate_seconds || 120
     const timeRatio = time_spent_sec / expectedTime
@@ -247,6 +252,29 @@ export async function POST(request: NextRequest) {
       }
       if (timeRatio > 1.3) {
         potentialTags.push({ tag_id: 'ERR.STRUGGLE', confidence: 0.8 })
+      }
+      // Construct-based error tags (T-017)
+      const weights = question.construct_weights as Record<string, number> | null
+      if (weights) {
+        // Tag dominant construct weakness for incorrect answers
+        const maxWeight = Math.max(...Object.values(weights).filter(v => typeof v === 'number'))
+        if (maxWeight > 0) {
+          for (const [construct, weight] of Object.entries(weights)) {
+            if (typeof weight === 'number' && weight === maxWeight && weight >= 0.3) {
+              const constructTagMap: Record<string, string> = {
+                teliti: 'ERR.ATTENTION',
+                speed: 'ERR.SPEED',
+                reasoning: 'ERR.REASONING',
+                computation: 'ERR.COMPUTATION',
+                reading: 'ERR.READING',
+              }
+              const tagId = constructTagMap[construct]
+              if (tagId) {
+                potentialTags.push({ tag_id: tagId, confidence: weight })
+              }
+            }
+          }
+        }
       }
     }
 
@@ -285,25 +313,182 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    // 10. LOG SUCCESS (in development only)
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[submit-attempt] Success: user=${userId}, question=${question_id}, correct=${isCorrect}, time=${Date.now() - startTime}ms`)
+    // 11. UPSERT USER_SKILL_STATE (T-015)
+    // Update the user's skill state for the question's micro-skill
+    const microSkillId = question.micro_skill_id
+    let constructImpacts: Record<string, number> = {}
+
+    if (microSkillId) {
+      try {
+        // Fetch existing skill state
+        const { data: existingState } = await supabaseAdmin
+          .from('user_skill_state')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('micro_skill_id', microSkillId)
+          .single()
+
+        const now = new Date().toISOString()
+        const timeSpentRound = Math.round(time_spent_sec)
+
+        if (existingState) {
+          // Calculate updated metrics
+          const newAttemptCount = (existingState.attempt_count || 0) + 1
+          const newCorrectCount = (existingState.correct_count || 0) + (isCorrect ? 1 : 0)
+          const newTotalTime = (existingState.total_time_sec || 0) + timeSpentRound
+          const newTotalPoints = (existingState.total_points || 0) + pointsAwarded
+          const newAccuracy = newAttemptCount > 0 ? newCorrectCount / newAttemptCount : 0
+          const newAvgTime = newAttemptCount > 0 ? newTotalTime / newAttemptCount : 0
+
+          // Increment per-difficulty counters
+          const l1Delta = (isCorrect && difficultyLevel === 'L1') ? 1 : 0
+          const l2Delta = (isCorrect && difficultyLevel === 'L2') ? 1 : 0
+          const l3Delta = (isCorrect && difficultyLevel === 'L3') ? 1 : 0
+
+          await supabaseAdmin
+            .from('user_skill_state')
+            .update({
+              attempt_count: newAttemptCount,
+              correct_count: newCorrectCount,
+              total_time_sec: newTotalTime,
+              avg_time_sec: Math.round(newAvgTime),
+              total_points: newTotalPoints,
+              l1_correct: (existingState.l1_correct || 0) + l1Delta,
+              l2_correct: (existingState.l2_correct || 0) + l2Delta,
+              l3_correct: (existingState.l3_correct || 0) + l3Delta,
+              accuracy: Math.round(newAccuracy * 100) / 100,
+              last_attempted_at: now,
+            })
+            .eq('id', existingState.id)
+        } else {
+          // Insert new skill state
+          await supabaseAdmin
+            .from('user_skill_state')
+            .insert({
+              user_id: userId,
+              micro_skill_id: microSkillId,
+              attempt_count: 1,
+              correct_count: isCorrect ? 1 : 0,
+              total_time_sec: timeSpentRound,
+              avg_time_sec: timeSpentRound,
+              total_points: pointsAwarded,
+              l1_correct: (isCorrect && difficultyLevel === 'L1') ? 1 : 0,
+              l2_correct: (isCorrect && difficultyLevel === 'L2') ? 1 : 0,
+              l3_correct: (isCorrect && difficultyLevel === 'L3') ? 1 : 0,
+              accuracy: isCorrect ? 1.0 : 0.0,
+              mastery_level: 'novice',
+              last_attempted_at: now,
+            })
+        }
+      } catch (skillError) {
+        console.error('[submit-attempt] Failed to upsert user_skill_state:', skillError)
+        // Non-blocking: don't fail the request for analytics update
+      }
     }
 
-    // 11. RETURN RESPONSE
+    // 12. RECALCULATE USER_CONSTRUCT_STATE (T-016)
+    // Update construct dimensions based on question's construct_weights
+    const weights = question.construct_weights as Record<string, number> | null
+    if (weights) {
+      try {
+        const constructs = ['teliti', 'speed', 'reasoning', 'computation', 'reading']
+        constructImpacts = {}
+
+        for (const construct of constructs) {
+          const weight = weights[construct]
+          if (typeof weight !== 'number' || weight === 0) continue
+
+          // Calculate impact: correct → positive, incorrect → negative
+          // Scale by weight and difficulty. Base impact: ±5 points (modulated by difficulty)
+          const difficultyMultiplier = difficultyLevel === 'L3' ? 1.5 : difficultyLevel === 'L2' ? 1.0 : 0.7
+          const baseImpact = 5
+          const impact = isCorrect
+            ? weight * baseImpact * difficultyMultiplier
+            : -weight * baseImpact * difficultyMultiplier * 0.5 // Penalty is half of reward
+
+          constructImpacts[construct] = Math.round(impact * 100) / 100
+
+          // Fetch existing construct state
+          const { data: existingConstruct } = await supabaseAdmin
+            .from('user_construct_state')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('construct_name', construct)
+            .single()
+
+          if (existingConstruct) {
+            const currentScore = Number(existingConstruct.score) || 50
+            const dataPoints = (existingConstruct.data_points || 0) + 1
+            // Exponential moving average: new_score = old_score + impact * (1 / sqrt(data_points))
+            // This makes early data points have more impact, stabilizing over time
+            const learningRate = 1 / Math.sqrt(dataPoints)
+            const newScore = Math.max(0, Math.min(100, currentScore + impact * learningRate))
+
+            // Determine trend
+            const scoreDelta = newScore - currentScore
+            const trend = scoreDelta > 0.5 ? 'improving' : scoreDelta < -0.5 ? 'declining' : 'stable'
+
+            await supabaseAdmin
+              .from('user_construct_state')
+              .update({
+                score: Math.round(newScore * 100) / 100,
+                data_points: dataPoints,
+                trend,
+                last_updated_at: new Date().toISOString(),
+              })
+              .eq('id', existingConstruct.id)
+          } else {
+            // Insert new construct state starting at 50 ± impact
+            const initialScore = Math.max(0, Math.min(100, 50 + impact))
+            await supabaseAdmin
+              .from('user_construct_state')
+              .insert({
+                user_id: userId,
+                construct_name: construct,
+                score: Math.round(initialScore * 100) / 100,
+                data_points: 1,
+                trend: impact > 0 ? 'improving' : impact < 0 ? 'declining' : 'stable',
+                last_updated_at: new Date().toISOString(),
+              })
+          }
+        }
+
+        // Update the attempt record with construct impacts
+        if (Object.keys(constructImpacts).length > 0) {
+          await supabaseAdmin
+            .from('attempts')
+            .update({ construct_impacts: constructImpacts })
+            .eq('id', attempt.id)
+        }
+      } catch (constructError) {
+        console.error('[submit-attempt] Failed to update construct state:', constructError)
+        // Non-blocking
+      }
+    }
+
+    // 13. LOG SUCCESS (in development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[submit-attempt] Success: user=${userId}, question=${question_id}, correct=${isCorrect}, points=${pointsAwarded}, time=${Date.now() - startTime}ms`)
+    }
+
+    // 14. RETURN RESPONSE
     return NextResponse.json({
       success: true,
       attempt_id: attempt.id,
       is_correct: isCorrect,
       correct_answer: correctAnswer,
       time_spent_sec: Math.round(time_spent_sec),
+      points_awarded: pointsAwarded,
+      difficulty_level: difficultyLevel,
+      construct_impacts: constructImpacts,
       feedback: {
         is_correct: isCorrect,
         message: isCorrect
           ? 'Correct! Great job!'
           : 'Incorrect. Review the explanation to understand why.',
         error_tags: potentialTags.map(t => t.tag_id),
-        difficulty: question.difficulty
+        difficulty: question.difficulty,
+        points_awarded: pointsAwarded,
       }
     })
 
