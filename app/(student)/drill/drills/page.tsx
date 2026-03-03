@@ -250,7 +250,7 @@ export default function DrillsPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push(/drill")}
+            onClick={() => router.push("/drill")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
