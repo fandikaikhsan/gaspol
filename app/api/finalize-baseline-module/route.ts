@@ -62,7 +62,18 @@ export async function POST(request: NextRequest) {
       ? Math.max(0, Math.floor((new Date().getTime() - new Date(started_at).getTime()) / 1000))
       : 0
 
-    // 4. RECORD MODULE COMPLETION
+    // 4. FETCH MODULE & CHECK PASS THRESHOLD (T-019)
+    const { data: moduleData } = await supabase
+      .from('modules')
+      .select('id, passing_threshold')
+      .eq('id', module_id)
+      .single()
+
+    const passingThreshold = moduleData?.passing_threshold ?? 0.70
+    const scoreRatio = total_questions > 0 ? correct_count / total_questions : 0
+    const passed = scoreRatio >= passingThreshold
+
+    // 5. RECORD MODULE COMPLETION
     const { data: completion, error: completionError } = await supabase
       .from('module_completions')
       .insert({
@@ -164,14 +175,63 @@ export async function POST(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[finalize-baseline] Success: user=${user.id}, module=${module_id}, allComplete=${allComplete}`)
+      console.log(`[finalize-baseline] Success: user=${user.id}, module=${module_id}, passed=${passed}, score=${scoreRatio.toFixed(2)}, allComplete=${allComplete}`)
+    }
+
+    // 9. FETCH WEAK MATERIAL CARDS ON FAIL (T-020)
+    let weakMaterialCards: Array<Record<string, unknown>> = []
+
+    if (!passed) {
+      try {
+        // Get the incorrect attempts for this module to find weak skills
+        const { data: moduleAttempts } = await supabase
+          .from('attempts')
+          .select('question_id, is_correct')
+          .eq('user_id', user.id)
+          .eq('module_id', module_id)
+          .eq('is_correct', false)
+
+        if (moduleAttempts && moduleAttempts.length > 0) {
+          const wrongQuestionIds = moduleAttempts.map(a => a.question_id)
+
+          // Get the micro_skill_ids for wrong questions
+          const { data: wrongQuestions } = await supabase
+            .from('questions')
+            .select('id, micro_skill_id')
+            .in('id', wrongQuestionIds)
+
+          const weakSkillIds = [...new Set(
+            (wrongQuestions || [])
+              .map(q => q.micro_skill_id)
+              .filter(Boolean)
+          )]
+
+          if (weakSkillIds.length > 0) {
+            // Fetch published material cards for those skills
+            const { data: cards } = await supabase
+              .from('material_cards')
+              .select('id, skill_id, title, core_idea, key_facts, common_mistakes, examples, status')
+              .in('skill_id', weakSkillIds)
+              .eq('status', 'published')
+
+            weakMaterialCards = cards || []
+          }
+        }
+      } catch (mcError) {
+        console.error('[finalize-baseline] Failed to fetch weak Material Cards:', mcError)
+        // Non-blocking
+      }
     }
 
     return NextResponse.json({
       success: true,
       completion,
+      passed,
+      score_ratio: Math.round(scoreRatio * 100) / 100,
+      passing_threshold: passingThreshold,
       all_complete: allComplete,
       readiness_score: readinessScore,
+      weak_material_cards: weakMaterialCards,
     })
 
   } catch (error) {
