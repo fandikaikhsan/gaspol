@@ -1,8 +1,8 @@
 {
   "nav": {
     "plan": "Plan",
-    "lockedIn": "Locked-In",
-    "taktis": "Taktis",
+    "drill": "Drill",
+    "review": "Review",
     "analytics": "Analytics",
     "menu": "Menu",
     "profileSettings": "Profile Settings",

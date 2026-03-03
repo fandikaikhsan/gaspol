@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * Locked-In Mode Hub
- * Phase 5: Locked-In Learning Mode
+ * Drill Mode Hub
+ * Phase 5: Drill Learning Mode
  *
  * Three main modes:
  * 1. Practice Drills - Mixed or focused practice
@@ -27,7 +27,7 @@ interface UserAnalytics {
 
 export default function LockedInHubPage() {
   const router = useRouter()
-  const { t } = useTranslation('lockedIn')
+  const { t } = useTranslation('drill')
   const { t: tc } = useTranslation('common')
   const [analytics, setAnalytics] = useState<UserAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -83,7 +83,7 @@ export default function LockedInHubPage() {
       icon: Target,
       description: t('drills.subtitle'),
       color: 'bg-pastel-yellow',
-      href: '/locked-in/drills',
+      href: '/drill/drills',
       features: [
         { icon: Shuffle, label: t('drills.mixed'), description: t('drills.mixedDesc') },
         { icon: Focus, label: t('drills.focused'), description: t('drills.focusedDesc') },
@@ -97,7 +97,7 @@ export default function LockedInHubPage() {
       icon: BookOpen,
       description: t('modules.subtitle'),
       color: 'bg-pastel-lavender',
-      href: '/locked-in/modules',
+      href: '/drill/modules',
       features: [
         { icon: Sparkles, label: t('modules.adminCurated'), description: t('modules.adminCuratedDesc') },
         { icon: Target, label: t('modules.forWeakAreas'), description: t('modules.forWeakAreasDesc') },
@@ -111,7 +111,7 @@ export default function LockedInHubPage() {
       icon: Eye,
       description: t('review.subtitle', { count: 0 }),
       color: 'bg-pastel-peach',
-      href: '/locked-in/review',
+      href: '/drill/review',
       features: null,
       badge: null,
       badgeVariant: 'outline' as const,

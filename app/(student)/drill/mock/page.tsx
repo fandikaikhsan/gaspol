@@ -18,7 +18,7 @@ function MockTestContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { t } = useTranslation('lockedIn')
+  const { t } = useTranslation('drill')
   const { t: tc } = useTranslation('common')
 
   const taskId = searchParams.get('taskId')
@@ -150,7 +150,7 @@ function MockTestContent() {
         description: t('mock.scoreDesc', { score: score.toFixed(0), correct: correctCount, total: totalCount }),
       })
 
-      router.push('/locked-in')
+      router.push('/drill')
     } catch (err) {
       console.error('Error completing mock test:', err)
       toast({
@@ -178,7 +178,7 @@ function MockTestContent() {
         <div className="text-center space-y-4">
           <p className="text-lg font-medium text-destructive">{error}</p>
           <button
-            onClick={() => router.push('/locked-in')}
+            onClick={() => router.push('/drill')}
             className="text-primary underline"
           >
             {t('mock.backToHub')}

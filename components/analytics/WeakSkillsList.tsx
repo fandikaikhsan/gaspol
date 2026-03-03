@@ -31,8 +31,8 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
 
   const handlePracticeSkill = (skill: WeakSkill) => {
     // Navigate to practice page with this skill targeted
-    // For now, navigate to locked-in mode (could be enhanced to target specific skill)
-    router.push(`/locked-in?focus=${skill.node_id}`)
+    // Navigate to drill mode (could be enhanced to target specific skill)
+    router.push(`/drill?focus=${skill.node_id}`)
   }
 
   // Get mastery status

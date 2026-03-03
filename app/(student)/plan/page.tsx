@@ -626,7 +626,7 @@ export default function PlanDashboardPage() {
             <Button
               variant="brutal-outline"
               size="sm"
-              onClick={() => router.push("/locked-in")}
+              onClick={() => router.push("/drill")}
             >
               <BookOpen className="h-4 w-4 mr-2" />
               {t("active.browseAllPractice")}

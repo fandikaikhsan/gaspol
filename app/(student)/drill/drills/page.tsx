@@ -2,7 +2,7 @@
 
 /**
  * Practice Drills Selection Page
- * Phase 5: Locked-In Learning Mode
+ * Phase 5: Drill Learning Mode
  *
  * Two modes:
  * 1. Mixed - Random questions from different subtopics
@@ -69,7 +69,7 @@ interface WeakSkill {
 
 export default function DrillsPage() {
   const router = useRouter()
-  const { t } = useTranslation("lockedIn")
+  const { t } = useTranslation("drill")
   const { t: tc } = useTranslation("common")
   const [activeTab, setActiveTab] = useState("quick-start")
   const [searchTerm, setSearchTerm] = useState("")
@@ -207,24 +207,24 @@ export default function DrillsPage() {
 
   const startMixedDrill = () => {
     router.push(
-      `/locked-in/drills/practice?mode=mixed&count=${selectedQuestionCount}`,
+      `/drill/drills/practice?mode=mixed&count=${selectedQuestionCount}`,
     )
   }
 
   const startFocusedDrill = (nodeId: string) => {
     router.push(
-      `/locked-in/drills/practice?mode=focused&node=${nodeId}&count=${selectedQuestionCount}`,
+      `/drill/drills/practice?mode=focused&node=${nodeId}&count=${selectedQuestionCount}`,
     )
   }
 
   const startModuleDrill = (moduleId: string) => {
-    router.push(`/locked-in/drills/practice?module=${moduleId}`)
+    router.push(`/drill/drills/practice?module=${moduleId}`)
   }
 
   const startWeakSkillDrill = (nodeIds: string[]) => {
     const nodesParam = nodeIds.join(",")
     router.push(
-      `/locked-in/drills/practice?mode=weak&nodes=${nodesParam}&count=${selectedQuestionCount}`,
+      `/drill/drills/practice?mode=weak&nodes=${nodesParam}&count=${selectedQuestionCount}`,
     )
   }
 
@@ -250,7 +250,7 @@ export default function DrillsPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push("/locked-in")}
+            onClick={() => router.push(/drill")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

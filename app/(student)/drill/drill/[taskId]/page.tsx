@@ -2,7 +2,7 @@
 
 /**
  * Drill Runner
- * Phase 5: Locked-In Learning Mode
+ * Phase 5: Drill Learning Mode
  * Reuses QuestionRunner for focused/mixed drills
  */
 
@@ -18,7 +18,7 @@ export default function DrillRunnerPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { t } = useTranslation("lockedIn")
+  const { t } = useTranslation("drill")
   const { t: tc } = useTranslation("common")
   const taskId = params.taskId as string
 

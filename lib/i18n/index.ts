@@ -7,8 +7,8 @@ import idAuth from './locales/id/auth.json'
 import idOnboarding from './locales/id/onboarding.json'
 import idBaseline from './locales/id/baseline.json'
 import idPlan from './locales/id/plan.json'
-import idLockedIn from './locales/id/lockedIn.json'
-import idTaktis from './locales/id/taktis.json'
+import idDrill from './locales/id/drill.json'
+import idReview from './locales/id/review.json'
 import idAnalytics from './locales/id/analytics.json'
 import idRecycle from './locales/id/recycle.json'
 import idSettings from './locales/id/settings.json'
@@ -18,8 +18,8 @@ import enAuth from './locales/en/auth.json'
 import enOnboarding from './locales/en/onboarding.json'
 import enBaseline from './locales/en/baseline.json'
 import enPlan from './locales/en/plan.json'
-import enLockedIn from './locales/en/lockedIn.json'
-import enTaktis from './locales/en/taktis.json'
+import enDrill from './locales/en/drill.json'
+import enReview from './locales/en/review.json'
 import enAnalytics from './locales/en/analytics.json'
 import enRecycle from './locales/en/recycle.json'
 import enSettings from './locales/en/settings.json'
@@ -31,8 +31,8 @@ const translations: Record<Locale, Record<Namespace, TranslationRecord>> = {
     onboarding: idOnboarding,
     baseline: idBaseline,
     plan: idPlan,
-    lockedIn: idLockedIn,
-    taktis: idTaktis,
+    drill: idDrill,
+    review: idReview,
     analytics: idAnalytics,
     recycle: idRecycle,
     settings: idSettings,
@@ -43,8 +43,8 @@ const translations: Record<Locale, Record<Namespace, TranslationRecord>> = {
     onboarding: enOnboarding,
     baseline: enBaseline,
     plan: enPlan,
-    lockedIn: enLockedIn,
-    taktis: enTaktis,
+    drill: enDrill,
+    review: enReview,
     analytics: enAnalytics,
     recycle: enRecycle,
     settings: enSettings,

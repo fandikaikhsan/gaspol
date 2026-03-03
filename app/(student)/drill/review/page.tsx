@@ -2,7 +2,7 @@
 
 /**
  * Review Mode
- * Phase 5: Locked-In Learning Mode
+ * Phase 5: Drill Learning Mode
  */
 
 import { useEffect, useState, Suspense } from "react"
@@ -20,7 +20,7 @@ function ReviewModeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { t } = useTranslation('lockedIn')
+  const { t } = useTranslation('drill')
 
   const taskId = searchParams.get('taskId')
 
@@ -167,7 +167,7 @@ function ReviewModeContent() {
 }
 
 export default function ReviewModePage() {
-  const { t } = useTranslation('lockedIn')
+  const { t } = useTranslation('drill')
 
   return (
     <Suspense fallback={

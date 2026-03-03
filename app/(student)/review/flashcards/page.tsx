@@ -8,7 +8,7 @@
 import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { FlashcardStack } from "@/components/taktis/FlashcardStack"
+import { FlashcardStack } from "@/components/review/FlashcardStack"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
@@ -17,7 +17,7 @@ function FlashcardsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { t } = useTranslation('taktis')
+  const { t } = useTranslation('review')
 
   const taskId = searchParams.get('taskId')
 
@@ -122,7 +122,7 @@ function FlashcardsContent() {
 }
 
 export default function FlashcardsPage() {
-  const { t } = useTranslation('taktis')
+  const { t } = useTranslation('review')
 
   return (
     <Suspense fallback={

@@ -13,7 +13,7 @@ import { useTranslation } from "@/lib/i18n"
 
 export default function TaktisPage() {
   const router = useRouter()
-  const { t } = useTranslation('taktis')
+  const { t } = useTranslation('review')
   const { t: tc } = useTranslation('common')
 
   const studyModes = [
@@ -22,7 +22,7 @@ export default function TaktisPage() {
       name: t('flashcards.title'),
       description: t('flashcards.desc'),
       icon: Layers,
-      href: "/taktis/flashcards",
+      href: "/review/flashcards",
       color: "bg-pastel-lavender",
       available: true,
     },
@@ -31,7 +31,7 @@ export default function TaktisPage() {
       name: t('swipe.title'),
       description: t('swipe.desc'),
       icon: Zap,
-      href: "/taktis/swipe",
+      href: "/review/swipe",
       color: "bg-pastel-peach",
       available: false,
     },

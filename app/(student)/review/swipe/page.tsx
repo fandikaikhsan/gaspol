@@ -13,7 +13,7 @@ import { useTranslation } from "@/lib/i18n"
 export default function SwipeTestPage() {
   const [score, setScore] = useState(0)
   const [total, setTotal] = useState(0)
-  const { t } = useTranslation('taktis')
+  const { t } = useTranslation('review')
   const { t: tc } = useTranslation('common')
 
   return (

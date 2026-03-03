@@ -44,17 +44,17 @@ const taskColors = {
 function getTaskHref(task: TaskCardProps['task']): string {
   switch (task.task_type) {
     case 'drill_focus':
-      return `/locked-in/drills/practice?mode=focused&node=${task.target_node_id || ''}&count=10&taskId=${task.id}`
+      return `/drill/drills/practice?mode=focused&node=${task.target_node_id || ''}&count=10&taskId=${task.id}`
     case 'drill_mixed':
-      return `/locked-in/drills/practice?mode=mixed&count=10&taskId=${task.id}`
+      return `/drill/drills/practice?mode=mixed&count=10&taskId=${task.id}`
     case 'mock':
-      return `/locked-in/mock?taskId=${task.id}`
+      return `/drill/mock?taskId=${task.id}`
     case 'flashcard':
-      return `/taktis/flashcards?taskId=${task.id}`
+      return `/review/flashcards?taskId=${task.id}`
     case 'review':
-      return `/locked-in/review?taskId=${task.id}`
+      return `/drill/review?taskId=${task.id}`
     default:
-      return `/locked-in/drills/practice?mode=mixed&count=10&taskId=${task.id}`
+      return `/drill/drills/practice?mode=mixed&count=10&taskId=${task.id}`
   }
 }
 

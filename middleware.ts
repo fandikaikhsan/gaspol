@@ -28,8 +28,8 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/onboarding') ||
     path.startsWith('/baseline') ||
     path.startsWith('/plan') ||
-    path.startsWith('/locked-in') ||
-    path.startsWith('/taktis') ||
+    path.startsWith('/drill') ||
+    path.startsWith('/review') ||
     path.startsWith('/analytics') ||
     path.startsWith('/recycle')
 

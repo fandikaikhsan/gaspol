@@ -2,7 +2,7 @@
 
 /**
  * Drill Practice Runner
- * Phase 5: Locked-In Learning Mode
+ * Phase 5: Drill Learning Mode
  *
  * Handles all drill types:
  * - Mixed: Random questions from all topics
@@ -26,7 +26,7 @@ function DrillPracticeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { t } = useTranslation("lockedIn")
+  const { t } = useTranslation("drill")
   const { t: tc } = useTranslation("common")
 
   const mode = searchParams.get("mode") // mixed, focused, weak
@@ -310,7 +310,7 @@ function DrillPracticeContent() {
       })
 
       // Navigate to results or back to drills
-      router.push("/locked-in/drills")
+      router.push("/drill/drills")
     } catch (err) {
       console.error("Error completing drill:", err)
       toast({
@@ -343,7 +343,7 @@ function DrillPracticeContent() {
               <p className="text-lg font-medium text-destructive mb-4">
                 {error}
               </p>
-              <Button onClick={() => router.push("/locked-in/drills")}>
+              <Button onClick={() => router.push("/drill/drills")}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {t("practice.backToDrills")}
               </Button>

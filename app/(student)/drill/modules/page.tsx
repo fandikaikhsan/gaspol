@@ -2,7 +2,7 @@
 
 /**
  * Study Modules Page
- * Phase 5: Locked-In Learning Mode
+ * Phase 5: Drill Learning Mode
  *
  * Shows pre-generated modules from admin and
  * modules suggested based on user's analytics
@@ -39,7 +39,7 @@ interface SuggestedModule {
 
 export default function ModulesPage() {
   const router = useRouter()
-  const { t } = useTranslation('lockedIn')
+  const { t } = useTranslation('drill')
   const { t: tc } = useTranslation('common')
   const [allModules, setAllModules] = useState<Module[]>([])
   const [suggestedModules, setSuggestedModules] = useState<SuggestedModule[]>([])
@@ -167,7 +167,7 @@ export default function ModulesPage() {
   }, [router])
 
   const startModule = (moduleId: string) => {
-    router.push(`/locked-in/drills/practice?module=${moduleId}`)
+    router.push(`/drill/drills/practice?module=${moduleId}`)
   }
 
   const priorityColors = {
@@ -192,7 +192,7 @@ export default function ModulesPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push('/locked-in')}
+            onClick={() => router.push('/drill')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

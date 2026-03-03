@@ -58,7 +58,7 @@ const journeySteps: JourneyStep[] = [
     glowClassName: "from-amber-500/10 via-amber-500/5 to-transparent",
   },
   {
-    title: "3. Locked-In",
+    title: "3. Drill",
     description:
       "Latihan fokus di area terlemah biar kenaikan skor lebih cepat terasa.",
     badge: "Latihan terarah",
@@ -205,7 +205,7 @@ const faqs = [
   },
   {
     q: "Mulainya dari mana?",
-    a: "Mulai dari Baseline dulu, lalu ikuti Plan harian. Setelah itu lanjut ke Locked-In drills dan cek Analytics secara rutin.",
+    a: "Mulai dari Baseline dulu, lalu ikuti Plan harian. Setelah itu lanjut ke Drill dan cek Analytics secara rutin.",
   },
 ]
 

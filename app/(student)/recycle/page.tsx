@@ -108,7 +108,7 @@ export default function RecycleHubPage() {
       })
 
       router.push(
-        `/locked-in/drills/practice?module=${data.module_id}&checkpointId=${data.checkpoint_id}`
+        `/drill/drills/practice?module=${data.module_id}&checkpointId=${data.checkpoint_id}`
       )
     } catch (err: any) {
       console.error('Failed to create checkpoint:', err)

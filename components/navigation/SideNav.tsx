@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Target, Lock, Zap, BarChart2, User, Rocket, LogOut, Settings } from "lucide-react"
+import { Target, Swords, BookOpen, BarChart2, User, Rocket, LogOut, Settings } from "lucide-react"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -11,8 +11,8 @@ import { useTranslation } from "@/lib/i18n"
 
 const navigation = [
   { key: "plan", href: "/plan", icon: Target },
-  { key: "lockedIn", href: "/locked-in", icon: Lock },
-  { key: "taktis", href: "/taktis", icon: Zap },
+  { key: "drill", href: "/drill", icon: Swords },
+  { key: "review", href: "/review", icon: BookOpen },
   { key: "analytics", href: "/analytics", icon: BarChart2 },
 ] as const
 
