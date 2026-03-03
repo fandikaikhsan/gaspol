@@ -5,7 +5,7 @@
  * Phase 2: Question Runner & Assessment Engine
  *
  * THE MOST CRITICAL & REUSED COMPONENT
- * Handles all question formats: MCQ5, MCK-Table, Fill-in
+ * Handles all question formats: MCQ5, MCQ4, TF, MCK-Table, Fill-in
  * Features: Timer, navigation, local state management
  */
 
@@ -15,6 +15,7 @@ import { useTranslation } from "@/lib/i18n"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
 import { QuestionDisplay } from "./QuestionDisplay"
 import { AnswerOptions } from "./AnswerOptions"
+import { TrueFalseOptions } from "./TrueFalseOptions"
 import { TableOptions } from "./TableOptions"
 import { FillInInput } from "./FillInInput"
 import { Button } from "@/components/ui/button"
@@ -249,6 +250,23 @@ export function QuestionRunner({
       case 'mcq5':
         return (
           <AnswerOptions
+            options={currentQuestion.options as any}
+            selectedAnswer={currentAnswer}
+            onAnswerChange={handleAnswerChange}
+          />
+        )
+      case 'mcq4':
+        return (
+          <AnswerOptions
+            options={currentQuestion.options as any}
+            selectedAnswer={currentAnswer}
+            onAnswerChange={handleAnswerChange}
+            optionKeys={['A', 'B', 'C', 'D']}
+          />
+        )
+      case 'tf':
+        return (
+          <TrueFalseOptions
             options={currentQuestion.options as any}
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}

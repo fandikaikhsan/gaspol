@@ -3,7 +3,7 @@
  * Phase 2: Question Runner & Assessment Engine
  */
 
-export type QuestionFormat = 'MCQ5' | 'MCK-Table' | 'Fill-in'
+export type QuestionFormat = 'MCQ5' | 'MCQ4' | 'TF' | 'MCK-Table' | 'Fill-in'
 
 export type CognitiveLevel = 'L1' | 'L2' | 'L3'
 
@@ -26,6 +26,8 @@ export interface Question {
 
 export type QuestionOptions =
   | MCQ5Options
+  | MCQ4Options
+  | TFOptions
   | MCKTableOptions
   | FillInOptions
 
@@ -35,6 +37,18 @@ export interface MCQ5Options {
   C: string
   D: string
   E: string
+}
+
+export interface MCQ4Options {
+  A: string
+  B: string
+  C: string
+  D: string
+}
+
+export interface TFOptions {
+  True: string
+  False: string
 }
 
 export interface MCKTableOptions {

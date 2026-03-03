@@ -89,7 +89,7 @@ export function checkCorrectness(
 ): boolean {
   const normalizedFormat = (format || '').toLowerCase()
 
-  if (normalizedFormat.includes('mcq') || normalizedFormat === 'mcq') {
+  if (normalizedFormat.includes('mcq') || normalizedFormat === 'mcq' || normalizedFormat === 'tf') {
     return checkMCQCorrectness(selectedAnswer, correctAnswer)
   }
   if (normalizedFormat.includes('mck') || normalizedFormat === 'mck') {

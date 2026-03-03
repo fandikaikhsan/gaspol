@@ -16,6 +16,7 @@ interface FillInInputProps {
   disabled?: boolean
   showCorrectAnswer?: string // For review mode
   isCorrect?: boolean // For review mode
+  onSubmit?: () => void // Enter key submit handler
 }
 
 export function FillInInput({
@@ -25,6 +26,7 @@ export function FillInInput({
   disabled = false,
   showCorrectAnswer,
   isCorrect,
+  onSubmit,
 }: FillInInputProps) {
   const { type, unit, placeholder } = options
 
@@ -54,6 +56,13 @@ export function FillInInput({
     onChange(inputValue)
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && onSubmit && value.trim().length > 0) {
+      e.preventDefault()
+      onSubmit()
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -68,6 +77,7 @@ export function FillInInput({
             inputMode={type === 'numeric' ? 'decimal' : 'text'}
             value={value}
             onChange={handleChange}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder || (type === 'numeric' ? 'Enter number...' : 'Enter answer...')}
             disabled={disabled}
             className={`

@@ -2,19 +2,20 @@
  * AnswerOptions Component
  * Phase 2: Question Runner & Assessment Engine
  *
- * MCQ5 format (A, B, C, D, E)
+ * Supports MCQ5 (A–E) and MCQ4 (A–D) formats
  */
 
-import { MCQ5Options } from "@/lib/assessment/types"
+import { MCQ5Options, MCQ4Options } from "@/lib/assessment/types"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface AnswerOptionsProps {
-  options: MCQ5Options
+  options: MCQ5Options | MCQ4Options
   selectedAnswer: string
   onAnswerChange: (answer: string) => void
   disabled?: boolean
   showCorrectAnswer?: string // For review mode
+  optionKeys?: readonly string[] // Override option keys (default: auto-detect from options)
 }
 
 export function AnswerOptions({
@@ -23,8 +24,14 @@ export function AnswerOptions({
   onAnswerChange,
   disabled = false,
   showCorrectAnswer,
+  optionKeys: overrideKeys,
 }: AnswerOptionsProps) {
-  const optionKeys = ['A', 'B', 'C', 'D', 'E'] as const
+  // Auto-detect keys: if E exists → MCQ5, otherwise MCQ4
+  const optionKeys = overrideKeys ?? (
+    'E' in options
+      ? (['A', 'B', 'C', 'D', 'E'] as const)
+      : (['A', 'B', 'C', 'D'] as const)
+  )
 
   return (
     <RadioGroup
