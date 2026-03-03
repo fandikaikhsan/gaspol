@@ -18,7 +18,8 @@ import {
   Target,
   Bot,
   Sliders,
-  Activity
+  Activity,
+  BookOpen,
 } from "lucide-react"
 
 const navigation = [
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Exams', href: '/admin/exams', icon: FileText },
   { name: 'Taxonomy', href: '/admin/taxonomy', icon: Network },
   { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
+  { name: 'Materials', href: '/admin/materials', icon: BookOpen },
   { name: 'Flashcards', href: '/admin/flashcards', icon: Layers },
   { name: 'Metadata', href: '/admin/metadata', icon: Sliders },
   { name: 'Modules', href: '/admin/modules', icon: Package },

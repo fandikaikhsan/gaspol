@@ -63,6 +63,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       user_state: {
         Row: {
@@ -110,6 +111,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       questions: {
         Row: {
@@ -197,6 +199,7 @@ export interface Database {
           updated_at?: string
           published_at?: string | null
         }
+        Relationships: []
       }
       attempts: {
         Row: {
@@ -244,6 +247,7 @@ export interface Database {
           construct_impacts?: Json
           attempted_at?: string
         }
+        Relationships: []
       }
       modules: {
         Row: {
@@ -291,6 +295,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       user_skill_state: {
         Row: {
@@ -354,6 +359,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       material_cards: {
         Row: {
@@ -398,6 +404,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       campus_scores: {
         Row: {
@@ -430,12 +437,7 @@ export interface Database {
           verified?: boolean
           created_at?: string
         }
-      }
-      // Remaining tables use generic typing until full generation
-      [key: string]: {
-        Row: Record<string, unknown>
-        Insert: Record<string, unknown>
-        Update: Record<string, unknown>
+        Relationships: []
       }
     }
     Views: {
