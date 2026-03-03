@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
+import { Check } from "lucide-react"
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -164,7 +165,11 @@ export default function OnboardingPage() {
                     />
                     <Label
                       htmlFor={`package-${option.value}`}
-                      className={`flex items-center justify-between p-4 rounded-lg border-2 border-border cursor-pointer transition-all peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-primary ${option.color}`}
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 border-border cursor-pointer transition-all ${option.color} ${
+                        packageDays === option.value
+                          ? "ring-2 ring-primary border-primary shadow-md"
+                          : "hover:border-primary/50"
+                      }`}
                     >
                       <div>
                         <p className="font-bold text-lg">{option.label}</p>
@@ -172,7 +177,15 @@ export default function OnboardingPage() {
                           {option.subtitle}
                         </p>
                       </div>
-                      <div className="w-5 h-5 rounded-full border-2 border-border bg-background peer-data-[state=checked]:bg-primary" />
+                      <div
+                        className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+                          packageDays === option.value
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background"
+                        }`}
+                      >
+                        {packageDays === option.value && <Check className="h-4 w-4" />}
+                      </div>
                     </Label>
                   </div>
                 ))}
@@ -212,13 +225,26 @@ export default function OnboardingPage() {
                     />
                     <Label
                       htmlFor={`time-${option.value}`}
-                      className="flex items-center justify-between p-4 rounded-lg border-2 border-border cursor-pointer transition-all peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-primary bg-background"
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all bg-background ${
+                        timeBudget === option.value
+                          ? "ring-2 ring-primary border-primary shadow-md"
+                          : "border-border hover:border-primary/50"
+                      }`}
                     >
                       <div>
                         <p className="font-bold text-lg">{option.label}</p>
                         <p className="text-sm text-muted-foreground">
                           {option.subtitle}
                         </p>
+                      </div>
+                      <div
+                        className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+                          timeBudget === option.value
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background"
+                        }`}
+                      >
+                        {timeBudget === option.value && <Check className="h-4 w-4" />}
                       </div>
                     </Label>
                   </div>

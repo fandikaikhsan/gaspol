@@ -139,7 +139,17 @@ export default function PlanDashboardPage() {
           .eq('cycle_id', cycle?.id)
           .order('task_order')
 
-        setTasks(cycleTasks || [])
+        const sortedTasks = [...(cycleTasks || [])].sort((a: PlanTask, b: PlanTask) => {
+          // 1) Required + incomplete first
+          const aPriority = a.is_required && !a.is_completed ? 0 : 1
+          const bPriority = b.is_required && !b.is_completed ? 0 : 1
+          if (aPriority !== bPriority) return aPriority - bPriority
+
+          // 2) Keep stable logical order
+          return a.task_order - b.task_order
+        })
+
+        setTasks(sortedTasks)
       }
 
       // Fetch latest readiness
@@ -429,10 +439,13 @@ export default function PlanDashboardPage() {
   }
 
   // Has active plan
-  const completedTasks = tasks.filter(t => t.is_completed).length
-  const requiredTasks = tasks.filter(t => t.is_required)
-  const completedRequired = requiredTasks.filter(t => t.is_completed).length
-  const canUnlockRecycle = completedRequired >= currentCycle.required_task_count
+  const completedTasks = tasks.filter((task) => task.is_completed).length
+  const requiredTasks = tasks.filter((task) => task.is_required)
+  const requiredTaskCount = requiredTasks.length
+  const completedRequired = requiredTasks.filter((task) => task.is_completed).length
+  const canUnlockRecycle = completedRequired >= requiredTaskCount
+  const requiredProgressPct = requiredTaskCount > 0 ? (completedRequired / requiredTaskCount) * 100 : 0
+  const allTasksProgressPct = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0
   const isRecycleUnlocked = userState?.current_phase === 'RECYCLE_UNLOCKED'
 
   const cycleStartDate = new Date(currentCycle.start_date)
@@ -453,13 +466,11 @@ export default function PlanDashboardPage() {
 
         {/* Progress Header */}
         <ProgressHeader
-          currentDay={currentDay}
-          totalDays={currentCycle.target_days_remaining}
           daysUntilExam={currentCycle.target_days_remaining - currentDay}
         />
 
         {/* Status Cards */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           {/* Baseline Status */}
           <Card className="bg-green-50 border-green-200">
             <CardContent className="py-4">
@@ -468,25 +479,6 @@ export default function PlanDashboardPage() {
                 <div>
                   <p className="font-semibold text-green-800">{t('active.firstAssessment')}</p>
                   <p className="text-sm text-green-600">{tc('status.complete')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Tasks Status */}
-          <Card className={canUnlockRecycle ? 'bg-green-50 border-green-200' : 'border-primary'}>
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                {canUnlockRecycle ? (
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
-                ) : (
-                  <Target className="h-8 w-8 text-primary" />
-                )}
-                <div>
-                  <p className="font-semibold">{t('active.studyTasks')}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {t('active.requiredCount', { completed: completedRequired, required: currentCycle.required_task_count })}
-                  </p>
                 </div>
               </div>
             </CardContent>
@@ -527,20 +519,20 @@ export default function PlanDashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>{t('active.taskProgress')}</CardTitle>
-              <CardDescription>{t('active.taskProgressDesc')}</CardDescription>
+              <CardDescription>{t('active.completeToUnlockRule')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span>{t('active.requiredTasks')}</span>
                   <span className="font-semibold">
-                    {completedRequired}/{currentCycle.required_task_count}
+                    {completedRequired}/{requiredTaskCount}
                   </span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden border-2 border-border">
                   <div
                     className="h-full bg-primary transition-all"
-                    style={{ width: `${(completedRequired / currentCycle.required_task_count) * 100}%` }}
+                    style={{ width: `${requiredProgressPct}%` }}
                   />
                 </div>
               </div>
@@ -555,9 +547,31 @@ export default function PlanDashboardPage() {
                 <div className="h-3 bg-muted rounded-full overflow-hidden border-2 border-border">
                   <div
                     className="h-full bg-secondary transition-all"
-                    style={{ width: `${(completedTasks / tasks.length) * 100}%` }}
+                    style={{ width: `${allTasksProgressPct}%` }}
                   />
                 </div>
+              </div>
+
+              <div
+                className={`rounded-lg border p-3 text-sm ${
+                  canUnlockRecycle
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-amber-200 bg-amber-50'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={canUnlockRecycle ? 'text-green-800' : 'text-amber-900'}>
+                    {t('active.nextAssessmentStatus')}
+                  </span>
+                  <Badge variant={canUnlockRecycle ? 'strong' : 'secondary'}>
+                    {canUnlockRecycle ? tc('status.ready') : tc('status.locked')}
+                  </Badge>
+                </div>
+                <p className={`mt-2 text-xs ${canUnlockRecycle ? 'text-green-700' : 'text-amber-800'}`}>
+                  {canUnlockRecycle
+                    ? t('active.recycleReadyMessage')
+                    : t('active.completeToUnlockRule')}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -577,6 +591,26 @@ export default function PlanDashboardPage() {
             </Button>
           </div>
 
+          {/* Timeline Start: Assessment 1 */}
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-700">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-green-900">Assessment 1</p>
+                    <p className="text-sm text-green-700">{tc('status.complete')}</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="border-green-300 text-green-700">
+                  {tc('status.complete')}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
           {tasks.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center">
@@ -592,15 +626,47 @@ export default function PlanDashboardPage() {
               <TaskCard key={task.id} task={task} />
             ))
           )}
-        </div>
 
-        {/* Re-cycle CTA */}
-        <GatedCTAButton
-          isUnlocked={canUnlockRecycle || isRecycleUnlocked}
-          unlockedText={t('active.startRecycle')}
-          lockedReason={t('active.completeMoreRequired', { count: currentCycle.required_task_count - completedRequired })}
-          onClick={() => router.push('/recycle')}
-        />
+          {/* Timeline End: Assessment 2 */}
+          <Card className={canUnlockRecycle ? 'border-primary bg-primary/5' : 'opacity-90 border-amber-200 bg-amber-50'}>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                      canUnlockRecycle
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}
+                  >
+                    {canUnlockRecycle ? <RefreshCw className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <p className="font-semibold">Assessment 2</p>
+                    <p className="text-sm text-muted-foreground">
+                      {canUnlockRecycle
+                        ? t('active.recycleReadyMessage')
+                        : t('active.completeToUnlockRule')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Badge variant={canUnlockRecycle ? 'strong' : 'secondary'}>
+                    {canUnlockRecycle ? tc('status.ready') : tc('status.locked')}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    disabled={!canUnlockRecycle && !isRecycleUnlocked}
+                    onClick={() => router.push('/recycle')}
+                  >
+                    {t('active.startRecycle')}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

@@ -65,7 +65,12 @@ export function TaskCard({ task }: TaskCardProps) {
   const color = taskColors[task.task_type as keyof typeof taskColors] || 'bg-muted'
 
   return (
-    <Card className={task.is_completed ? 'bg-status-strong/5 border-status-strong' : ''}>
+    <Card
+      className={[
+        task.is_completed ? 'bg-status-strong/5 border-status-strong' : '',
+        task.is_required && !task.is_completed ? 'border-l-4 border-l-destructive bg-destructive/5' : '',
+      ].join(' ')}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
