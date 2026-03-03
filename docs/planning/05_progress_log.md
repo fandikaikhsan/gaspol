@@ -66,6 +66,45 @@ Goal: Get the data model, auth, and routes correct before building features.
 - **AC**: Students read-only on published material_cards; admin full access; campus_scores public read (verified only)
 - **Files**: `supabase/migrations/032_rls_material_cards_campus_scores.sql`
 
+### T-022: Rename /locked-in → /drill
+- **AC**: Route active at /drill; all imports/refs updated; i18n namespace changed to 'drill'
+- **Files**: `app/(student)/drill/` (moved from `locked-in/`), `lib/i18n/locales/{en,id}/drill.json`
+
+### T-023: Rename /taktis → /review
+- **AC**: Route active at /review; all imports/refs updated; i18n namespace changed to 'review'
+- **Files**: `app/(student)/review/` (moved from `taktis/`), `components/review/FlashcardStack.tsx`, `lib/i18n/locales/{en,id}/review.json`
+
+### T-024: Update nav labels and icons
+- **AC**: BottomNav, SideNav, TopNav show correct 4 tabs (Plan, Drill, Review, Analytics) with updated icons
+- **Files**: `components/navigation/BottomNav.tsx`, `SideNav.tsx`, `TopNav.tsx`
+
+### T-071: Admin role check on API routes
+- **AC**: All 6 admin API routes return 403 if user is not admin
+- **Files**: `lib/supabase/require-admin.ts`, `app/api/admin/*/route.ts` (6 files)
+
+### T-072: Admin middleware guard for API routes
+- **AC**: Middleware guards `/api/admin/*` in addition to `/admin` page routes
+- **Files**: `middleware.ts`
+
+### T-073: Middleware phase guards for all 6 phases
+- **AC**: Each phase maps to allowed routes; unauthorized access redirects to phase default route
+- **Files**: `middleware.ts`
+- **Notes**: Phase→route map: ONBOARDING→/onboarding, BASELINE_IN_PROGRESS→/baseline, BASELINE_COMPLETE→/analytics, PLAN_ACTIVE→/plan, RECYCLE_UNLOCKED→/plan, RECYCLE_IN_PROGRESS→/recycle
+
+---
+
+## Milestone A — COMPLETE
+
+All 18 tasks completed. Exit criteria verified:
+- [x] All new columns/tables exist in Supabase with RLS
+- [x] `database.types.ts` reflects full schema
+- [x] Existing data backfill script available
+- [x] Routes renamed: `/drill` and `/review` active
+- [x] Bottom/side nav shows correct 4 tabs (Plan, Drill, Review, Analytics)
+- [x] Admin routes require authenticated admin role (middleware + API handler)
+- [x] Middleware enforces all 6 user phases
+- [x] App builds without errors (`next build` passes)
+
 ---
 
 ## Open Blockers
