@@ -68,6 +68,7 @@ interface QuestionRunnerProps {
   onCompleteWithResult?: (session: AssessmentSession) => Promise<ModuleResult>
   onRetry?: () => void
   onContinue?: () => void
+  onViewPembahasan?: () => void
   timeLimit?: number // in minutes, null = untimed
   showTimer?: boolean
   allowNavigation?: boolean
@@ -83,6 +84,7 @@ export function QuestionRunner({
   onCompleteWithResult,
   onRetry,
   onContinue,
+  onViewPembahasan,
   timeLimit,
   showTimer = true,
   allowNavigation = true,
@@ -550,26 +552,36 @@ export function QuestionRunner({
             )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
-            {!moduleResult.passed && onRetry && (
+          <div className="flex flex-col gap-3">
+            {onViewPembahasan && (
               <Button
-                variant="brutal-outline"
-                onClick={onRetry}
-                className="flex-1"
+                onClick={onViewPembahasan}
+                className="w-full"
               >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                {t("result.retry", { fallback: "Try Again" })}
+                <BookOpen className="w-4 h-4 mr-2" />
+                Lihat Pembahasan
               </Button>
             )}
-            <Button
-              onClick={onContinue || (() => router.back())}
-              className="flex-1"
-            >
-              <ArrowRight className="w-4 h-4 mr-2" />
-              {moduleResult.passed
-                ? t("result.continue", { fallback: "Continue" })
-                : t("result.backToModules", { fallback: "Back to Modules" })}
-            </Button>
+            <div className="flex gap-3">
+              {onRetry && (
+                <Button
+                  variant="brutal-outline"
+                  onClick={onRetry}
+                  className="flex-1"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Coba Lagi
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={onContinue || (() => router.back())}
+                className="flex-1"
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Kembali ke Drill
+              </Button>
+            </div>
           </div>
         </div>
       </div>
