@@ -136,7 +136,6 @@ async function fetchDrillData() {
 export default function DrillHubPage() {
   const router = useRouter()
   const { t } = useTranslation("drill")
-  const { t: tc } = useTranslation("common")
   const [filter, setFilter] = useState<FilterTab>("all")
 
   const { data, isLoading } = useQuery({
@@ -224,15 +223,13 @@ export default function DrillHubPage() {
         >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all" className="touch-target">
-              {tc("filter.all", { fallback: "All" })} ({data.modules.length})
+              Semua ({data.modules.length})
             </TabsTrigger>
             <TabsTrigger value="required" className="touch-target">
-              {tc("filter.required", { fallback: "Required" })} ({requiredCount}
-              )
+              Wajib ({requiredCount})
             </TabsTrigger>
             <TabsTrigger value="completed" className="touch-target">
-              {tc("filter.completed", { fallback: "Completed" })} (
-              {completedCount})
+              Selesai ({completedCount})
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -266,11 +263,7 @@ export default function DrillHubPage() {
                       : ""
                   } ${module.is_completed ? "opacity-75" : ""}`}
                   onClick={() => {
-                    if (module.plan_task_id) {
-                      router.push(`/drill/drills/practice?module=${module.id}`)
-                    } else {
-                      router.push(`/drill/drills/practice?module=${module.id}`)
-                    }
+                    router.push(`/drill/drill/${module.id}`)
                   }}
                 >
                   <CardContent className="py-4">
@@ -292,9 +285,7 @@ export default function DrillHubPage() {
                           {module.is_required && !module.is_completed && (
                             <Badge variant="default" className="shrink-0 gap-1">
                               <Pin className="h-3 w-3" />
-                              {tc("status.required", {
-                                fallback: "Required",
-                              })}
+                              Wajib
                             </Badge>
                           )}
                           {module.is_completed && (
@@ -303,9 +294,7 @@ export default function DrillHubPage() {
                               className="shrink-0 gap-1"
                             >
                               <CheckCircle2 className="h-3 w-3" />
-                              {tc("status.complete", {
-                                fallback: "Done",
-                              })}
+                              Selesai
                             </Badge>
                           )}
                         </div>
@@ -318,16 +307,14 @@ export default function DrillHubPage() {
                               <span>•</span>
                               <span>
                                 {module.question_count}{" "}
-                                {tc("unit.questions", {
-                                  fallback: "questions",
-                                })}
+                                soal
                               </span>
                             </>
                           )}
                           <span>•</span>
                           <span>
                             ~{module.estimated_duration_min}{" "}
-                            {tc("unit.min", { fallback: "min" })}
+                            menit
                           </span>
                         </div>
                       </div>
@@ -338,9 +325,7 @@ export default function DrillHubPage() {
                         size="sm"
                         className="shrink-0 touch-target"
                       >
-                        {module.is_completed
-                          ? tc("button.retry", { fallback: "Retry" })
-                          : tc("button.start", { fallback: "Start" })}
+                        {module.is_completed ? "Ulangi" : "Mulai"}
                       </Button>
                     </div>
                   </CardContent>
