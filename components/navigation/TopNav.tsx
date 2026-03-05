@@ -29,7 +29,7 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
-  const { t } = useTranslation('common')
+  const { t } = useTranslation("common")
 
   useEffect(() => {
     loadProfile()
@@ -83,7 +83,9 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
         className="flex items-center gap-2"
       >
         <Rocket className="h-6 w-6" />
-        <div className="text-2xl font-bold text-foreground">{t('nav.gaspol')}</div>
+        <div className="text-2xl font-bold text-foreground">
+          {t("nav.gaspol")}
+        </div>
       </Link>
 
       {/* Navigation Links */}
@@ -135,17 +137,17 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-2">
             <p className="text-sm font-semibold">
-              {profile?.full_name || t('nav.user')}
+              {profile?.full_name || t("nav.user")}
             </p>
             <p className="text-xs text-muted-foreground">{profile?.email}</p>
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/settings")}>
-            {t('nav.profileSettings')}
+            {t("nav.profileSettings")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-            {t('nav.logout')}
+            {t("nav.logout")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -18,20 +18,21 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({ ...body, user_id: user.id }),
-      }
+      },
     )
 
     const data = await response.json()
-    if (!response.ok) return NextResponse.json(data, { status: response.status })
+    if (!response.ok)
+      return NextResponse.json(data, { status: response.status })
     return NextResponse.json(data)
   } catch (error) {
     console.error("[admin/research-exam] Error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

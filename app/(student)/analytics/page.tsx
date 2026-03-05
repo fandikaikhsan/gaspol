@@ -7,11 +7,28 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, TrendingUp, Target, Brain, AlertCircle, RefreshCw } from "lucide-react"
-import { SkeletonCard, SkeletonRing, SkeletonBar } from "@/components/ui/skeleton"
+import {
+  Loader2,
+  TrendingUp,
+  Target,
+  Brain,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react"
+import {
+  SkeletonCard,
+  SkeletonRing,
+  SkeletonBar,
+} from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { ReadinessScore } from "@/components/analytics/ReadinessScore"
 import { ConstructRadarChart } from "@/components/analytics/ConstructRadarChart"
@@ -19,7 +36,10 @@ import { CoverageMap } from "@/components/analytics/CoverageMap"
 import { WeakSkillsList } from "@/components/analytics/WeakSkillsList"
 import { ErrorPatternAnalysis } from "@/components/analytics/ErrorPatternAnalysis"
 import { useTranslation } from "@/lib/i18n"
-import { calculateReadinessScore, type ReadinessMetrics } from "@/lib/analytics/readiness-score"
+import {
+  calculateReadinessScore,
+  type ReadinessMetrics,
+} from "@/lib/analytics/readiness-score"
 
 interface AnalyticsSnapshot {
   id: string
@@ -59,21 +79,30 @@ function computeBreakdown(snapshot: AnalyticsSnapshot) {
   const coverageCount = coverageValues.length
 
   // Point-based coverage: each value is 0-1 or total_points
-  const coveragePct = coverageCount > 0
-    ? (coverageValues.reduce((a, b) => a + (b as number), 0) / coverageCount) * 100
-    : 0
+  const coveragePct =
+    coverageCount > 0
+      ? (coverageValues.reduce((a, b) => a + (b as number), 0) /
+          coverageCount) *
+        100
+      : 0
 
   // Accuracy from weak skills
   const weakSkills = snapshot.top_weak_skills || []
-  const masteryAvg = weakSkills.length > 0
-    ? (1 - (weakSkills.reduce((sum, s) => sum + s.mastery, 0) / weakSkills.length)) * 100
-    : snapshot.readiness || 50
+  const masteryAvg =
+    weakSkills.length > 0
+      ? (1 -
+          weakSkills.reduce((sum, s) => sum + s.mastery, 0) /
+            weakSkills.length) *
+        100
+      : snapshot.readiness || 50
 
   // Construct average as proxy for stability
   const constructValues = Object.values(snapshot.constructs || {})
-  const constructAvg = constructValues.length > 0
-    ? constructValues.reduce((a, b) => a + (b as number), 0) / constructValues.length
-    : 50
+  const constructAvg =
+    constructValues.length > 0
+      ? constructValues.reduce((a, b) => a + (b as number), 0) /
+        constructValues.length
+      : 50
 
   // Use the SoT formula (readiness-score.ts)
   const metrics: ReadinessMetrics = {
@@ -98,7 +127,7 @@ function computeBreakdown(snapshot: AnalyticsSnapshot) {
 
 export default function AnalyticsPage() {
   const { toast } = useToast()
-  const { t } = useTranslation('analytics')
+  const { t } = useTranslation("analytics")
   const [snapshot, setSnapshot] = useState<AnalyticsSnapshot | null>(null)
   const [examConfig, setExamConfig] = useState<ExamConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -115,7 +144,10 @@ export default function AnalyticsPage() {
       const supabase = createClient()
 
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
       if (userError || !user) {
         throw new Error("Not authenticated")
       }
@@ -124,11 +156,11 @@ export default function AnalyticsPage() {
       const [snapshotResult, examConfigResult] = await Promise.all([
         (supabase.rpc as any)("get_latest_snapshot", {
           p_user_id: user.id,
-          p_scope: null // Get most recent of any type
+          p_scope: null, // Get most recent of any type
         }),
         (supabase.rpc as any)("get_user_exam_config", {
-          p_user_id: user.id
-        })
+          p_user_id: user.id,
+        }),
       ])
 
       if (snapshotResult.error) throw snapshotResult.error
@@ -147,8 +179,9 @@ export default function AnalyticsPage() {
       console.error("Load snapshot error:", error)
       toast({
         variant: "destructive",
-        title: t('toast.loadFailed'),
-        description: error instanceof Error ? error.message : "Please try again"
+        title: t("toast.loadFailed"),
+        description:
+          error instanceof Error ? error.message : "Please try again",
       })
     } finally {
       setIsLoading(false)
@@ -159,24 +192,26 @@ export default function AnalyticsPage() {
     setIsRefreshing(true)
     try {
       const supabase = createClient()
-      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
+      const accessToken = (await supabase.auth.getSession()).data.session
+        ?.access_token
 
-      const response = await fetch('/api/generate-snapshot', {
-        method: 'POST',
+      const response = await fetch("/api/generate-snapshot", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ scope: 'checkpoint' }),
+        body: JSON.stringify({ scope: "checkpoint" }),
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to generate snapshot')
+      if (!response.ok)
+        throw new Error(data.error || "Failed to generate snapshot")
 
       if (data.success) {
         toast({
-          title: t('toast.updated'),
-          description: t('toast.updatedDesc'),
+          title: t("toast.updated"),
+          description: t("toast.updatedDesc"),
         })
         loadSnapshot()
       }
@@ -184,8 +219,9 @@ export default function AnalyticsPage() {
       console.error("Generate snapshot error:", error)
       toast({
         variant: "destructive",
-        title: t('toast.updateFailed'),
-        description: error instanceof Error ? error.message : "Please try again"
+        title: t("toast.updateFailed"),
+        description:
+          error instanceof Error ? error.message : "Please try again",
       })
     } finally {
       setIsRefreshing(false)
@@ -218,18 +254,18 @@ export default function AnalyticsPage() {
       <div className="container mx-auto p-6">
         <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
           <AlertCircle className="h-16 w-16 text-muted-foreground" />
-          <h2 className="text-2xl font-bold">{t('noData')}</h2>
+          <h2 className="text-2xl font-bold">{t("noData")}</h2>
           <p className="text-muted-foreground text-center max-w-md">
-            {t('noDataDesc')}
+            {t("noDataDesc")}
           </p>
           <Button onClick={generateSnapshot} disabled={isRefreshing}>
             {isRefreshing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('generating')}
+                {t("generating")}
               </>
             ) : (
-              t('generateNow')
+              t("generateNow")
             )}
           </Button>
         </div>
@@ -242,14 +278,16 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{t('title')}</h1>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
             {examConfig && (
               <span className="mr-2">
                 <Badge variant="outline">{examConfig.exam_type}</Badge>
               </span>
             )}
-            {t('lastUpdated', { date: new Date(snapshot.created_at).toLocaleDateString() })}
+            {t("lastUpdated", {
+              date: new Date(snapshot.created_at).toLocaleDateString(),
+            })}
           </p>
         </div>
         <Button
@@ -260,12 +298,12 @@ export default function AnalyticsPage() {
           {isRefreshing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('refreshing')}
+              {t("refreshing")}
             </>
           ) : (
             <>
               <RefreshCw className="mr-2 h-4 w-4" />
-              {t('refresh')}
+              {t("refresh")}
             </>
           )}
         </Button>

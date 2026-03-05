@@ -5,18 +5,24 @@
  * Point calculation, correctness checking, construct impact computation
  */
 
-export type DifficultyLevel = 'L1' | 'L2' | 'L3'
+export type DifficultyLevel = "L1" | "L2" | "L3"
 
 /**
  * Calculate point value from difficulty level
  * L1 → 1pt, L2 → 2pt, L3 → 5pt
  */
-export function getPointValue(difficultyLevel: DifficultyLevel | string | null): number {
+export function getPointValue(
+  difficultyLevel: DifficultyLevel | string | null,
+): number {
   switch (difficultyLevel) {
-    case 'L1': return 1
-    case 'L2': return 2
-    case 'L3': return 5
-    default: return 0
+    case "L1":
+      return 1
+    case "L2":
+      return 2
+    case "L3":
+      return 5
+    default:
+      return 0
   }
 }
 
@@ -27,7 +33,7 @@ export function getPointValue(difficultyLevel: DifficultyLevel | string | null):
 export function calculatePointsAwarded(
   isCorrect: boolean,
   pointValue: number | null,
-  difficultyLevel: DifficultyLevel | string | null
+  difficultyLevel: DifficultyLevel | string | null,
 ): number {
   if (!isCorrect) return 0
   // Prefer stored point_value, fall back to computed from difficulty
@@ -39,11 +45,11 @@ export function calculatePointsAwarded(
  */
 export function checkMCQCorrectness(
   selectedAnswer: unknown,
-  correctAnswer: unknown
+  correctAnswer: unknown,
 ): boolean {
   return (
-    typeof selectedAnswer === 'string' &&
-    typeof correctAnswer === 'string' &&
+    typeof selectedAnswer === "string" &&
+    typeof correctAnswer === "string" &&
     selectedAnswer.toUpperCase() === correctAnswer.toUpperCase()
   )
 }
@@ -53,15 +59,18 @@ export function checkMCQCorrectness(
  */
 export function checkMCKCorrectness(
   selectedAnswer: unknown,
-  correctAnswer: unknown
+  correctAnswer: unknown,
 ): boolean {
   if (!Array.isArray(selectedAnswer)) return false
 
-  const userAnswers = selectedAnswer.map(a => String(a).toUpperCase()).sort()
+  const userAnswers = selectedAnswer.map((a) => String(a).toUpperCase()).sort()
   const correct = Array.isArray(correctAnswer)
-    ? correctAnswer.map(a => String(a).toUpperCase()).sort()
-    : typeof correctAnswer === 'string'
-      ? correctAnswer.split(',').map(a => a.trim().toUpperCase()).sort()
+    ? correctAnswer.map((a) => String(a).toUpperCase()).sort()
+    : typeof correctAnswer === "string"
+      ? correctAnswer
+          .split(",")
+          .map((a) => a.trim().toUpperCase())
+          .sort()
       : []
 
   return JSON.stringify(userAnswers) === JSON.stringify(correct)
@@ -72,10 +81,11 @@ export function checkMCKCorrectness(
  */
 export function checkFillInCorrectness(
   selectedAnswer: unknown,
-  correctAnswer: unknown
+  correctAnswer: unknown,
 ): boolean {
-  if (typeof selectedAnswer !== 'string' || typeof correctAnswer !== 'string') return false
-  const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ')
+  if (typeof selectedAnswer !== "string" || typeof correctAnswer !== "string")
+    return false
+  const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ")
   return normalize(selectedAnswer) === normalize(correctAnswer)
 }
 
@@ -85,20 +95,28 @@ export function checkFillInCorrectness(
 export function checkCorrectness(
   format: string,
   selectedAnswer: unknown,
-  correctAnswer: unknown
+  correctAnswer: unknown,
 ): boolean {
-  const normalizedFormat = (format || '').toLowerCase()
+  const normalizedFormat = (format || "").toLowerCase()
 
-  if (normalizedFormat.includes('mcq') || normalizedFormat === 'mcq' || normalizedFormat === 'tf') {
+  if (
+    normalizedFormat.includes("mcq") ||
+    normalizedFormat === "mcq" ||
+    normalizedFormat === "tf"
+  ) {
     return checkMCQCorrectness(selectedAnswer, correctAnswer)
   }
-  if (normalizedFormat.includes('mck') || normalizedFormat === 'mck') {
+  if (normalizedFormat.includes("mck") || normalizedFormat === "mck") {
     return checkMCKCorrectness(selectedAnswer, correctAnswer)
   }
-  if (normalizedFormat.includes('fill')) {
+  if (normalizedFormat.includes("fill")) {
     return checkFillInCorrectness(selectedAnswer, correctAnswer)
   }
-  if (normalizedFormat === 'tf' || normalizedFormat === 'true_false' || normalizedFormat === 'truefalse') {
+  if (
+    normalizedFormat === "tf" ||
+    normalizedFormat === "true_false" ||
+    normalizedFormat === "truefalse"
+  ) {
     return checkMCQCorrectness(selectedAnswer, correctAnswer) // TF is just binary choice
   }
 
@@ -112,13 +130,12 @@ export function checkCorrectness(
 export function calculateConstructImpact(
   isCorrect: boolean,
   weight: number,
-  difficultyLevel: DifficultyLevel | string | null
+  difficultyLevel: DifficultyLevel | string | null,
 ): number {
   if (weight === 0) return 0
 
   const difficultyMultiplier =
-    difficultyLevel === 'L3' ? 1.5 :
-    difficultyLevel === 'L2' ? 1.0 : 0.7
+    difficultyLevel === "L3" ? 1.5 : difficultyLevel === "L2" ? 1.0 : 0.7
 
   const baseImpact = 5
 
@@ -135,17 +152,21 @@ export function calculateConstructImpact(
 export function calculateAllConstructImpacts(
   isCorrect: boolean,
   constructWeights: Record<string, number> | null,
-  difficultyLevel: DifficultyLevel | string | null
+  difficultyLevel: DifficultyLevel | string | null,
 ): Record<string, number> {
   if (!constructWeights) return {}
 
   const impacts: Record<string, number> = {}
-  const constructs = ['teliti', 'speed', 'reasoning', 'computation', 'reading']
+  const constructs = ["teliti", "speed", "reasoning", "computation", "reading"]
 
   for (const construct of constructs) {
     const weight = constructWeights[construct]
-    if (typeof weight !== 'number' || weight === 0) continue
-    impacts[construct] = calculateConstructImpact(isCorrect, weight, difficultyLevel)
+    if (typeof weight !== "number" || weight === 0) continue
+    impacts[construct] = calculateConstructImpact(
+      isCorrect,
+      weight,
+      difficultyLevel,
+    )
   }
 
   return impacts
@@ -157,7 +178,7 @@ export function calculateAllConstructImpacts(
 export function computeNewConstructScore(
   currentScore: number,
   impact: number,
-  dataPoints: number
+  dataPoints: number,
 ): number {
   const learningRate = 1 / Math.sqrt(dataPoints)
   const newScore = currentScore + impact * learningRate
@@ -167,10 +188,12 @@ export function computeNewConstructScore(
 /**
  * Determine construct trend from score delta
  */
-export function determineTrend(scoreDelta: number): 'improving' | 'stable' | 'declining' {
-  if (scoreDelta > 0.5) return 'improving'
-  if (scoreDelta < -0.5) return 'declining'
-  return 'stable'
+export function determineTrend(
+  scoreDelta: number,
+): "improving" | "stable" | "declining" {
+  if (scoreDelta > 0.5) return "improving"
+  if (scoreDelta < -0.5) return "declining"
+  return "stable"
 }
 
 /**
@@ -179,7 +202,7 @@ export function determineTrend(scoreDelta: number): 'improving' | 'stable' | 'de
 export function checkModulePassFail(
   correctCount: number,
   totalQuestions: number,
-  passingThreshold: number = 0.70
+  passingThreshold: number = 0.7,
 ): { passed: boolean; scoreRatio: number } {
   const scoreRatio = totalQuestions > 0 ? correctCount / totalQuestions : 0
   return {
@@ -195,43 +218,47 @@ export function deriveErrorTags(
   isCorrect: boolean,
   timeSpentSec: number,
   expectedTimeSec: number,
-  constructWeights?: Record<string, number> | null
+  constructWeights?: Record<string, number> | null,
 ): Array<{ tag_id: string; confidence: number }> {
   const tags: Array<{ tag_id: string; confidence: number }> = []
   const timeRatio = timeSpentSec / (expectedTimeSec || 120)
 
   // Time-based tags
   if (timeRatio > 1.5) {
-    tags.push({ tag_id: 'ERR.SLOW', confidence: 1.0 })
+    tags.push({ tag_id: "ERR.SLOW", confidence: 1.0 })
   }
   if (timeRatio < 0.3) {
-    tags.push({ tag_id: 'ERR.RUSHED', confidence: 1.0 })
+    tags.push({ tag_id: "ERR.RUSHED", confidence: 1.0 })
   }
 
   // Performance-based tags (incorrect only)
   if (!isCorrect) {
     if (timeRatio < 0.6) {
-      tags.push({ tag_id: 'ERR.CARELESS', confidence: 0.8 })
+      tags.push({ tag_id: "ERR.CARELESS", confidence: 0.8 })
     }
     if (timeRatio > 1.3) {
-      tags.push({ tag_id: 'ERR.STRUGGLE', confidence: 0.8 })
+      tags.push({ tag_id: "ERR.STRUGGLE", confidence: 0.8 })
     }
 
     // Construct-based tags
     if (constructWeights) {
       const maxWeight = Math.max(
-        ...Object.values(constructWeights).filter(v => typeof v === 'number')
+        ...Object.values(constructWeights).filter((v) => typeof v === "number"),
       )
       if (maxWeight > 0) {
         const constructTagMap: Record<string, string> = {
-          teliti: 'ERR.ATTENTION',
-          speed: 'ERR.SPEED',
-          reasoning: 'ERR.REASONING',
-          computation: 'ERR.COMPUTATION',
-          reading: 'ERR.READING',
+          teliti: "ERR.ATTENTION",
+          speed: "ERR.SPEED",
+          reasoning: "ERR.REASONING",
+          computation: "ERR.COMPUTATION",
+          reading: "ERR.READING",
         }
         for (const [construct, weight] of Object.entries(constructWeights)) {
-          if (typeof weight === 'number' && weight === maxWeight && weight >= 0.3) {
+          if (
+            typeof weight === "number" &&
+            weight === maxWeight &&
+            weight >= 0.3
+          ) {
             const tagId = constructTagMap[construct]
             if (tagId) {
               tags.push({ tag_id: tagId, confidence: weight })

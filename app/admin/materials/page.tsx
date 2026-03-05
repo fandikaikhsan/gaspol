@@ -9,7 +9,13 @@ import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { MaterialCardStatus } from "@/lib/supabase/database.types"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
@@ -53,7 +59,7 @@ interface MaterialCard {
   key_facts: string[]
   common_mistakes: string[]
   examples: string[]
-  status: 'draft' | 'review' | 'published'
+  status: "draft" | "review" | "published"
   created_by: string | null
   reviewed_by: string | null
   created_at: string
@@ -70,19 +76,39 @@ interface TaxonomyNode {
 }
 
 const STATUS_CONFIG = {
-  draft: { label: 'Draft', color: 'bg-muted text-muted-foreground', icon: FileEdit },
-  review: { label: 'In Review', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-  published: { label: 'Published', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  draft: {
+    label: "Draft",
+    color: "bg-muted text-muted-foreground",
+    icon: FileEdit,
+  },
+  review: {
+    label: "In Review",
+    color: "bg-yellow-100 text-yellow-800",
+    icon: Clock,
+  },
+  published: {
+    label: "Published",
+    color: "bg-green-100 text-green-800",
+    icon: CheckCircle,
+  },
 }
 
-const EMPTY_FORM: Omit<MaterialCard, 'id' | 'created_by' | 'reviewed_by' | 'created_at' | 'updated_at' | 'skill_name'> = {
-  skill_id: '',
-  title: '',
-  core_idea: '',
-  key_facts: [''],
-  common_mistakes: [''],
-  examples: [''],
-  status: 'draft',
+const EMPTY_FORM: Omit<
+  MaterialCard,
+  | "id"
+  | "created_by"
+  | "reviewed_by"
+  | "created_at"
+  | "updated_at"
+  | "skill_name"
+> = {
+  skill_id: "",
+  title: "",
+  core_idea: "",
+  key_facts: [""],
+  common_mistakes: [""],
+  examples: [""],
+  status: "draft",
 }
 
 export default function AdminMaterialsPage() {
@@ -93,8 +119,8 @@ export default function AdminMaterialsPage() {
   const [materials, setMaterials] = useState<MaterialCard[]>([])
   const [skills, setSkills] = useState<TaxonomyNode[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -116,30 +142,38 @@ export default function AdminMaterialsPage() {
     setIsLoading(true)
     try {
       let query = supabase
-        .from('material_cards')
-        .select('*')
-        .order('updated_at', { ascending: false })
+        .from("material_cards")
+        .select("*")
+        .order("updated_at", { ascending: false })
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter as MaterialCardStatus)
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter as MaterialCardStatus)
       }
 
       if (searchQuery.trim()) {
-        query = query.or(`title.ilike.%${searchQuery}%,core_idea.ilike.%${searchQuery}%`)
+        query = query.or(
+          `title.ilike.%${searchQuery}%,core_idea.ilike.%${searchQuery}%`,
+        )
       }
 
       const { data, error } = await query
 
       if (error) throw error
-      setMaterials((data || []).map(d => ({
-        ...d,
-        key_facts: Array.isArray(d.key_facts) ? d.key_facts as string[] : [],
-        common_mistakes: Array.isArray(d.common_mistakes) ? d.common_mistakes as string[] : [],
-        examples: Array.isArray(d.examples) ? d.examples as string[] : [],
-      })))
+      setMaterials(
+        (data || []).map((d) => ({
+          ...d,
+          key_facts: Array.isArray(d.key_facts)
+            ? (d.key_facts as string[])
+            : [],
+          common_mistakes: Array.isArray(d.common_mistakes)
+            ? (d.common_mistakes as string[])
+            : [],
+          examples: Array.isArray(d.examples) ? (d.examples as string[]) : [],
+        })),
+      )
     } catch (error) {
-      console.error('Failed to fetch materials:', error)
-      toast({ variant: 'destructive', title: 'Failed to load materials' })
+      console.error("Failed to fetch materials:", error)
+      toast({ variant: "destructive", title: "Failed to load materials" })
     } finally {
       setIsLoading(false)
     }
@@ -149,15 +183,15 @@ export default function AdminMaterialsPage() {
   const fetchSkills = useCallback(async () => {
     try {
       const { data, error } = await (supabase as any)
-        .from('taxonomy_nodes')
-        .select('id, name, level, parent_id')
-        .eq('level', 5)
-        .order('name')
+        .from("taxonomy_nodes")
+        .select("id, name, level, parent_id")
+        .eq("level", 5)
+        .order("name")
 
       if (error) throw error
       setSkills((data as TaxonomyNode[]) || [])
     } catch (error) {
-      console.error('Failed to fetch skills:', error)
+      console.error("Failed to fetch skills:", error)
     }
   }, [])
 
@@ -180,9 +214,10 @@ export default function AdminMaterialsPage() {
       skill_id: card.skill_id,
       title: card.title,
       core_idea: card.core_idea,
-      key_facts: card.key_facts.length > 0 ? card.key_facts : [''],
-      common_mistakes: card.common_mistakes.length > 0 ? card.common_mistakes : [''],
-      examples: card.examples.length > 0 ? card.examples : [''],
+      key_facts: card.key_facts.length > 0 ? card.key_facts : [""],
+      common_mistakes:
+        card.common_mistakes.length > 0 ? card.common_mistakes : [""],
+      examples: card.examples.length > 0 ? card.examples : [""],
       status: card.status,
     })
     setIsDialogOpen(true)
@@ -191,7 +226,7 @@ export default function AdminMaterialsPage() {
   // Save (create or update)
   const handleSave = async () => {
     if (!form.skill_id || !form.title || !form.core_idea) {
-      toast({ variant: 'destructive', title: 'Please fill in required fields' })
+      toast({ variant: "destructive", title: "Please fill in required fields" })
       return
     }
 
@@ -201,32 +236,30 @@ export default function AdminMaterialsPage() {
         skill_id: form.skill_id,
         title: form.title.trim(),
         core_idea: form.core_idea.trim(),
-        key_facts: form.key_facts.filter(f => f.trim()),
-        common_mistakes: form.common_mistakes.filter(m => m.trim()),
-        examples: form.examples.filter(e => e.trim()),
+        key_facts: form.key_facts.filter((f) => f.trim()),
+        common_mistakes: form.common_mistakes.filter((m) => m.trim()),
+        examples: form.examples.filter((e) => e.trim()),
         status: form.status,
       }
 
       if (editingCard) {
         const { error } = await supabase
-          .from('material_cards')
+          .from("material_cards")
           .update(payload)
-          .eq('id', editingCard.id)
+          .eq("id", editingCard.id)
         if (error) throw error
-        toast({ title: 'Material Card updated' })
+        toast({ title: "Material Card updated" })
       } else {
-        const { error } = await supabase
-          .from('material_cards')
-          .insert(payload)
+        const { error } = await supabase.from("material_cards").insert(payload)
         if (error) throw error
-        toast({ title: 'Material Card created' })
+        toast({ title: "Material Card created" })
       }
 
       setIsDialogOpen(false)
       fetchMaterials()
     } catch (error) {
-      console.error('Save error:', error)
-      toast({ variant: 'destructive', title: 'Failed to save' })
+      console.error("Save error:", error)
+      toast({ variant: "destructive", title: "Failed to save" })
     } finally {
       setIsSubmitting(false)
     }
@@ -236,54 +269,65 @@ export default function AdminMaterialsPage() {
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('material_cards')
+        .from("material_cards")
         .delete()
-        .eq('id', id)
+        .eq("id", id)
       if (error) throw error
-      toast({ title: 'Material Card deleted' })
+      toast({ title: "Material Card deleted" })
       setDeleteConfirmId(null)
       fetchMaterials()
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Failed to delete' })
+      toast({ variant: "destructive", title: "Failed to delete" })
     }
   }
 
   // Status transition (T-039: publish workflow)
-  const handleStatusChange = async (id: string, newStatus: 'draft' | 'review' | 'published') => {
+  const handleStatusChange = async (
+    id: string,
+    newStatus: "draft" | "review" | "published",
+  ) => {
     try {
       const updateData: Record<string, unknown> = { status: newStatus }
-      if (newStatus === 'published') {
-        updateData.reviewed_by = (await supabase.auth.getUser()).data.user?.id || null
+      if (newStatus === "published") {
+        updateData.reviewed_by =
+          (await supabase.auth.getUser()).data.user?.id || null
       }
 
       const { error } = await supabase
-        .from('material_cards')
+        .from("material_cards")
         .update(updateData)
-        .eq('id', id)
+        .eq("id", id)
 
       if (error) throw error
       toast({ title: `Status changed to ${newStatus}` })
       fetchMaterials()
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Failed to update status' })
+      toast({ variant: "destructive", title: "Failed to update status" })
     }
   }
 
   // Dynamic list field helpers
-  const addListItem = (field: 'key_facts' | 'common_mistakes' | 'examples') => {
-    setForm(prev => ({ ...prev, [field]: [...prev[field], ''] }))
+  const addListItem = (field: "key_facts" | "common_mistakes" | "examples") => {
+    setForm((prev) => ({ ...prev, [field]: [...prev[field], ""] }))
   }
 
-  const updateListItem = (field: 'key_facts' | 'common_mistakes' | 'examples', index: number, value: string) => {
-    setForm(prev => {
+  const updateListItem = (
+    field: "key_facts" | "common_mistakes" | "examples",
+    index: number,
+    value: string,
+  ) => {
+    setForm((prev) => {
       const arr = [...prev[field]]
       arr[index] = value
       return { ...prev, [field]: arr }
     })
   }
 
-  const removeListItem = (field: 'key_facts' | 'common_mistakes' | 'examples', index: number) => {
-    setForm(prev => ({
+  const removeListItem = (
+    field: "key_facts" | "common_mistakes" | "examples",
+    index: number,
+  ) => {
+    setForm((prev) => ({
       ...prev,
       [field]: prev[field].filter((_, i) => i !== index),
     }))
@@ -295,43 +339,52 @@ export default function AdminMaterialsPage() {
   // AI Batch Generation (T-038)
   const handleGenerate = async () => {
     if (selectedSkillIds.length === 0) {
-      toast({ variant: 'destructive', title: 'Select at least one micro-skill' })
+      toast({
+        variant: "destructive",
+        title: "Select at least one micro-skill",
+      })
       return
     }
     setIsGenerating(true)
     setGenerateResults(null)
     try {
-      const res = await fetch('/api/admin/generate-material-cards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taxonomy_node_ids: selectedSkillIds, auto_save: true }),
+      const res = await fetch("/api/admin/generate-material-cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taxonomy_node_ids: selectedSkillIds,
+          auto_save: true,
+        }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Generation failed')
+      if (!res.ok) throw new Error(data.error || "Generation failed")
       setGenerateResults(data)
       toast({ title: `Generated ${data.summary?.saved || 0} material cards` })
       fetchMaterials()
     } catch (error: any) {
-      toast({ variant: 'destructive', title: error.message || 'Generation failed' })
+      toast({
+        variant: "destructive",
+        title: error.message || "Generation failed",
+      })
     } finally {
       setIsGenerating(false)
     }
   }
 
   const toggleSkillSelection = (skillId: string) => {
-    setSelectedSkillIds(prev =>
+    setSelectedSkillIds((prev) =>
       prev.includes(skillId)
-        ? prev.filter(id => id !== skillId)
-        : [...prev, skillId]
+        ? prev.filter((id) => id !== skillId)
+        : [...prev, skillId],
     )
   }
 
   // Stats
   const stats = {
     total: materials.length,
-    draft: materials.filter(m => m.status === 'draft').length,
-    review: materials.filter(m => m.status === 'review').length,
-    published: materials.filter(m => m.status === 'published').length,
+    draft: materials.filter((m) => m.status === "draft").length,
+    review: materials.filter((m) => m.status === "review").length,
+    published: materials.filter((m) => m.status === "published").length,
   }
 
   return (
@@ -348,11 +401,14 @@ export default function AdminMaterialsPage() {
           <Plus className="h-4 w-4 mr-2" />
           New Material Card
         </Button>
-        <Button variant="brutal-outline" onClick={() => {
-          setIsGenerateDialogOpen(true)
-          setSelectedSkillIds([])
-          setGenerateResults(null)
-        }}>
+        <Button
+          variant="brutal-outline"
+          onClick={() => {
+            setIsGenerateDialogOpen(true)
+            setSelectedSkillIds([])
+            setGenerateResults(null)
+          }}
+        >
           <Sparkles className="h-4 w-4 mr-2" />
           Generate with AI
         </Button>
@@ -368,19 +424,25 @@ export default function AdminMaterialsPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-muted-foreground">{stats.draft}</div>
+            <div className="text-2xl font-bold text-muted-foreground">
+              {stats.draft}
+            </div>
             <div className="text-sm text-muted-foreground">Draft</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-yellow-600">{stats.review}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.review}
+            </div>
             <div className="text-sm text-muted-foreground">In Review</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-green-600">{stats.published}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.published}
+            </div>
             <div className="text-sm text-muted-foreground">Published</div>
           </CardContent>
         </Card>
@@ -420,7 +482,9 @@ export default function AdminMaterialsPage() {
           <CardContent className="py-12 text-center">
             <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-1">No Material Cards</h3>
-            <p className="text-muted-foreground mb-4">Create your first material card to get started.</p>
+            <p className="text-muted-foreground mb-4">
+              Create your first material card to get started.
+            </p>
             <Button onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Create Material Card
@@ -458,31 +522,33 @@ export default function AdminMaterialsPage() {
 
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {/* Publish workflow buttons (T-039) */}
-                      {card.status === 'draft' && (
+                      {card.status === "draft" && (
                         <Button
                           size="sm"
                           variant="brutal-outline"
-                          onClick={() => handleStatusChange(card.id, 'review')}
+                          onClick={() => handleStatusChange(card.id, "review")}
                         >
                           <ArrowRight className="h-3 w-3 mr-1" />
                           Submit for Review
                         </Button>
                       )}
-                      {card.status === 'review' && (
+                      {card.status === "review" && (
                         <Button
                           size="sm"
                           variant="default"
-                          onClick={() => handleStatusChange(card.id, 'published')}
+                          onClick={() =>
+                            handleStatusChange(card.id, "published")
+                          }
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Publish
                         </Button>
                       )}
-                      {card.status === 'published' && (
+                      {card.status === "published" && (
                         <Button
                           size="sm"
                           variant="brutal-outline"
-                          onClick={() => handleStatusChange(card.id, 'draft')}
+                          onClick={() => handleStatusChange(card.id, "draft")}
                         >
                           Unpublish
                         </Button>
@@ -517,7 +583,7 @@ export default function AdminMaterialsPage() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingCard ? 'Edit Material Card' : 'Create Material Card'}
+              {editingCard ? "Edit Material Card" : "Create Material Card"}
             </DialogTitle>
             <DialogDescription>
               Fill in the learning material for a micro-skill.
@@ -530,7 +596,9 @@ export default function AdminMaterialsPage() {
               <Label>Micro-Skill *</Label>
               <Select
                 value={form.skill_id}
-                onValueChange={(v) => setForm(prev => ({ ...prev, skill_id: v }))}
+                onValueChange={(v) =>
+                  setForm((prev) => ({ ...prev, skill_id: v }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a micro-skill" />
@@ -550,7 +618,9 @@ export default function AdminMaterialsPage() {
               <Label>Title *</Label>
               <Input
                 value={form.title}
-                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, title: e.target.value }))
+                }
                 placeholder="e.g., Understanding Fractions"
               />
             </div>
@@ -560,7 +630,9 @@ export default function AdminMaterialsPage() {
               <Label>Core Idea *</Label>
               <Textarea
                 value={form.core_idea}
-                onChange={(e) => setForm(prev => ({ ...prev, core_idea: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, core_idea: e.target.value }))
+                }
                 placeholder="The central concept students need to understand..."
                 rows={3}
               />
@@ -573,14 +645,16 @@ export default function AdminMaterialsPage() {
                 <div key={i} className="flex gap-2 mt-2">
                   <Input
                     value={fact}
-                    onChange={(e) => updateListItem('key_facts', i, e.target.value)}
+                    onChange={(e) =>
+                      updateListItem("key_facts", i, e.target.value)
+                    }
                     placeholder={`Fact ${i + 1}`}
                   />
                   {form.key_facts.length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeListItem('key_facts', i)}
+                      onClick={() => removeListItem("key_facts", i)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -591,7 +665,7 @@ export default function AdminMaterialsPage() {
                 variant="ghost"
                 size="sm"
                 className="mt-2"
-                onClick={() => addListItem('key_facts')}
+                onClick={() => addListItem("key_facts")}
               >
                 <Plus className="h-4 w-4 mr-1" /> Add Fact
               </Button>
@@ -604,14 +678,16 @@ export default function AdminMaterialsPage() {
                 <div key={i} className="flex gap-2 mt-2">
                   <Input
                     value={mistake}
-                    onChange={(e) => updateListItem('common_mistakes', i, e.target.value)}
+                    onChange={(e) =>
+                      updateListItem("common_mistakes", i, e.target.value)
+                    }
                     placeholder={`Mistake ${i + 1}`}
                   />
                   {form.common_mistakes.length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeListItem('common_mistakes', i)}
+                      onClick={() => removeListItem("common_mistakes", i)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -622,7 +698,7 @@ export default function AdminMaterialsPage() {
                 variant="ghost"
                 size="sm"
                 className="mt-2"
-                onClick={() => addListItem('common_mistakes')}
+                onClick={() => addListItem("common_mistakes")}
               >
                 <Plus className="h-4 w-4 mr-1" /> Add Mistake
               </Button>
@@ -635,7 +711,9 @@ export default function AdminMaterialsPage() {
                 <div key={i} className="flex gap-2 mt-2">
                   <Textarea
                     value={example}
-                    onChange={(e) => updateListItem('examples', i, e.target.value)}
+                    onChange={(e) =>
+                      updateListItem("examples", i, e.target.value)
+                    }
                     placeholder={`Example ${i + 1}`}
                     rows={2}
                   />
@@ -643,7 +721,7 @@ export default function AdminMaterialsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeListItem('examples', i)}
+                      onClick={() => removeListItem("examples", i)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -654,7 +732,7 @@ export default function AdminMaterialsPage() {
                 variant="ghost"
                 size="sm"
                 className="mt-2"
-                onClick={() => addListItem('examples')}
+                onClick={() => addListItem("examples")}
               >
                 <Plus className="h-4 w-4 mr-1" /> Add Example
               </Button>
@@ -666,7 +744,9 @@ export default function AdminMaterialsPage() {
                 <Label>Status</Label>
                 <Select
                   value={form.status}
-                  onValueChange={(v) => setForm(prev => ({ ...prev, status: v as any }))}
+                  onValueChange={(v) =>
+                    setForm((prev) => ({ ...prev, status: v as any }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -682,28 +762,40 @@ export default function AdminMaterialsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="brutal-outline" onClick={() => setIsDialogOpen(false)}>
+            <Button
+              variant="brutal-outline"
+              onClick={() => setIsDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingCard ? 'Update' : 'Create'}
+              {isSubmitting && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {editingCard ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={() => setDeleteConfirmId(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Material Card</DialogTitle>
             <DialogDescription>
-              This action cannot be undone. The material card will be permanently deleted.
+              This action cannot be undone. The material card will be
+              permanently deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="brutal-outline" onClick={() => setDeleteConfirmId(null)}>
+            <Button
+              variant="brutal-outline"
+              onClick={() => setDeleteConfirmId(null)}
+            >
               Cancel
             </Button>
             <Button
@@ -717,7 +809,10 @@ export default function AdminMaterialsPage() {
       </Dialog>
 
       {/* AI Generation Dialog (T-038) */}
-      <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+      <Dialog
+        open={isGenerateDialogOpen}
+        onOpenChange={setIsGenerateDialogOpen}
+      >
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -725,14 +820,15 @@ export default function AdminMaterialsPage() {
               Generate Material Cards with AI
             </DialogTitle>
             <DialogDescription>
-              Select micro-skills to generate material cards for. Cards will be created as drafts.
+              Select micro-skills to generate material cards for. Cards will be
+              created as drafts.
             </DialogDescription>
           </DialogHeader>
 
           {generateResults ? (
             <div className="space-y-3">
               <div className="text-sm font-medium">
-                Results: {generateResults.summary?.saved || 0} saved,{' '}
+                Results: {generateResults.summary?.saved || 0} saved,{" "}
                 {generateResults.summary?.errors || 0} errors
               </div>
               <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -743,20 +839,30 @@ export default function AdminMaterialsPage() {
                     ) : (
                       <span className="h-4 w-4 rounded-full bg-red-500 flex-shrink-0" />
                     )}
-                    <span className="truncate">{r.skill_name || r.skill_id}</span>
-                    {r.error && <span className="text-destructive text-xs">({r.error})</span>}
+                    <span className="truncate">
+                      {r.skill_name || r.skill_id}
+                    </span>
+                    {r.error && (
+                      <span className="text-destructive text-xs">
+                        ({r.error})
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
               <DialogFooter>
-                <Button onClick={() => setIsGenerateDialogOpen(false)}>Done</Button>
+                <Button onClick={() => setIsGenerateDialogOpen(false)}>
+                  Done
+                </Button>
               </DialogFooter>
             </div>
           ) : (
             <>
               <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-2">
                 {skills.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-2">No micro-skills found</p>
+                  <p className="text-sm text-muted-foreground p-2">
+                    No micro-skills found
+                  </p>
                 ) : (
                   skills.map((skill) => (
                     <label
@@ -778,12 +884,22 @@ export default function AdminMaterialsPage() {
                 {selectedSkillIds.length} skill(s) selected
               </p>
               <DialogFooter>
-                <Button variant="brutal-outline" onClick={() => setIsGenerateDialogOpen(false)}>
+                <Button
+                  variant="brutal-outline"
+                  onClick={() => setIsGenerateDialogOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleGenerate} disabled={isGenerating || selectedSkillIds.length === 0}>
-                  {isGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {isGenerating ? 'Generating...' : `Generate ${selectedSkillIds.length} Card(s)`}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || selectedSkillIds.length === 0}
+                >
+                  {isGenerating && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
+                  {isGenerating
+                    ? "Generating..."
+                    : `Generate ${selectedSkillIds.length} Card(s)`}
                 </Button>
               </DialogFooter>
             </>

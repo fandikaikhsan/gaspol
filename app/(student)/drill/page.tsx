@@ -61,8 +61,16 @@ async function fetchDrillData() {
   const [modulesRes, planTasksRes, snapshotRes] = await Promise.all([
     supabase
       .from("modules")
-      .select("id, title, module_type, question_count, estimated_duration_min, status")
-      .in("module_type", ["drill_focus", "drill_mixed", "mock", "flashcard", "review"])
+      .select(
+        "id, title, module_type, question_count, estimated_duration_min, status",
+      )
+      .in("module_type", [
+        "drill_focus",
+        "drill_mixed",
+        "mock",
+        "flashcard",
+        "review",
+      ])
       .eq("status", "published")
       .order("title"),
     supabase
@@ -89,7 +97,7 @@ async function fetchDrillData() {
 
   const modules: DrillModule[] = (modulesRes.data || []).map((m: any) => {
     const planTask = (planTasksRes as any[]).find(
-      (t: any) => t.module_id === m.id
+      (t: any) => t.module_id === m.id,
     )
     return {
       ...m,
@@ -101,7 +109,7 @@ async function fetchDrillData() {
 
   // Also add plan tasks that don't have a module_id yet (generated tasks)
   const modulePlanTasks = (planTasksRes as any[]).filter(
-    (t: any) => !modules.find((m) => m.id === t.module_id)
+    (t: any) => !modules.find((m) => m.id === t.module_id),
   )
   for (const pt of modulePlanTasks) {
     modules.push({
@@ -219,10 +227,12 @@ export default function DrillHubPage() {
               {tc("filter.all", { fallback: "All" })} ({data.modules.length})
             </TabsTrigger>
             <TabsTrigger value="required" className="touch-target">
-              {tc("filter.required", { fallback: "Required" })} ({requiredCount})
+              {tc("filter.required", { fallback: "Required" })} ({requiredCount}
+              )
             </TabsTrigger>
             <TabsTrigger value="completed" className="touch-target">
-              {tc("filter.completed", { fallback: "Completed" })} ({completedCount})
+              {tc("filter.completed", { fallback: "Completed" })} (
+              {completedCount})
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -257,13 +267,9 @@ export default function DrillHubPage() {
                   } ${module.is_completed ? "opacity-75" : ""}`}
                   onClick={() => {
                     if (module.plan_task_id) {
-                      router.push(
-                        `/drill/drills/practice?module=${module.id}`
-                      )
+                      router.push(`/drill/drills/practice?module=${module.id}`)
                     } else {
-                      router.push(
-                        `/drill/drills/practice?module=${module.id}`
-                      )
+                      router.push(`/drill/drills/practice?module=${module.id}`)
                     }
                   }}
                 >
@@ -284,10 +290,7 @@ export default function DrillHubPage() {
                           </h3>
                           {/* T-046: Required pin badge */}
                           {module.is_required && !module.is_completed && (
-                            <Badge
-                              variant="default"
-                              className="shrink-0 gap-1"
-                            >
+                            <Badge variant="default" className="shrink-0 gap-1">
                               <Pin className="h-3 w-3" />
                               {tc("status.required", {
                                 fallback: "Required",

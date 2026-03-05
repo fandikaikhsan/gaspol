@@ -24,8 +24,8 @@ export function TrueFalseOptions({
   showCorrectAnswer,
 }: TrueFalseOptionsProps) {
   const choices = [
-    { key: 'True', label: options?.True || 'True', icon: Check },
-    { key: 'False', label: options?.False || 'False', icon: X },
+    { key: "True", label: options?.True || "True", icon: Check },
+    { key: "False", label: options?.False || "False", icon: X },
   ]
 
   return (
@@ -33,7 +33,10 @@ export function TrueFalseOptions({
       {choices.map(({ key, label, icon: Icon }) => {
         const isSelected = selectedAnswer === key
         const isCorrect = showCorrectAnswer === key
-        const isWrong = showCorrectAnswer && selectedAnswer === key && selectedAnswer !== showCorrectAnswer
+        const isWrong =
+          showCorrectAnswer &&
+          selectedAnswer === key &&
+          selectedAnswer !== showCorrectAnswer
 
         return (
           <button
@@ -44,21 +47,21 @@ export function TrueFalseOptions({
             className={`
               relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 p-6 
               transition-all font-semibold text-lg
-              ${!showCorrectAnswer && !isSelected ? 'border-border bg-background hover:bg-muted hover:border-muted-foreground cursor-pointer' : ''}
-              ${!showCorrectAnswer && isSelected ? 'border-primary bg-primary/10 shadow-brutal-sm' : ''}
-              ${showCorrectAnswer && isCorrect ? 'border-status-strong bg-status-strong/10' : ''}
-              ${showCorrectAnswer && isWrong ? 'border-destructive bg-destructive/10' : ''}
-              ${showCorrectAnswer && !isCorrect && !isWrong ? 'border-border bg-background opacity-50' : ''}
-              ${disabled || showCorrectAnswer ? 'cursor-not-allowed' : ''}
+              ${!showCorrectAnswer && !isSelected ? "border-border bg-background hover:bg-muted hover:border-muted-foreground cursor-pointer" : ""}
+              ${!showCorrectAnswer && isSelected ? "border-primary bg-primary/10 shadow-brutal-sm" : ""}
+              ${showCorrectAnswer && isCorrect ? "border-status-strong bg-status-strong/10" : ""}
+              ${showCorrectAnswer && isWrong ? "border-destructive bg-destructive/10" : ""}
+              ${showCorrectAnswer && !isCorrect && !isWrong ? "border-border bg-background opacity-50" : ""}
+              ${disabled || showCorrectAnswer ? "cursor-not-allowed" : ""}
             `}
           >
             <div
               className={`
                 w-12 h-12 rounded-full border-2 flex items-center justify-center
-                ${!showCorrectAnswer && !isSelected ? 'border-border bg-background' : ''}
-                ${!showCorrectAnswer && isSelected ? 'border-primary bg-primary text-primary-foreground' : ''}
-                ${showCorrectAnswer && isCorrect ? 'border-status-strong bg-status-strong text-white' : ''}
-                ${showCorrectAnswer && isWrong ? 'border-destructive bg-destructive text-white' : ''}
+                ${!showCorrectAnswer && !isSelected ? "border-border bg-background" : ""}
+                ${!showCorrectAnswer && isSelected ? "border-primary bg-primary text-primary-foreground" : ""}
+                ${showCorrectAnswer && isCorrect ? "border-status-strong bg-status-strong text-white" : ""}
+                ${showCorrectAnswer && isWrong ? "border-destructive bg-destructive text-white" : ""}
               `}
             >
               <Icon className="w-6 h-6" />
@@ -67,10 +70,14 @@ export function TrueFalseOptions({
 
             {/* Correctness indicator (review mode) */}
             {showCorrectAnswer && isCorrect && (
-              <span className="text-sm text-status-strong font-semibold">✓ Correct</span>
+              <span className="text-sm text-status-strong font-semibold">
+                ✓ Correct
+              </span>
             )}
             {showCorrectAnswer && isWrong && (
-              <span className="text-sm text-destructive font-semibold">✗ Wrong</span>
+              <span className="text-sm text-destructive font-semibold">
+                ✗ Wrong
+              </span>
             )}
           </button>
         )

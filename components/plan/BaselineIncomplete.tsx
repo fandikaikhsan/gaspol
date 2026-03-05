@@ -24,7 +24,9 @@ interface BaselineIncompleteProps {
   baselineModules: BaselineModule[]
 }
 
-export function BaselineIncomplete({ baselineModules }: BaselineIncompleteProps) {
+export function BaselineIncomplete({
+  baselineModules,
+}: BaselineIncompleteProps) {
   const router = useRouter()
   const { t } = useTranslation("plan")
 
@@ -107,9 +109,7 @@ export function BaselineIncomplete({ baselineModules }: BaselineIncompleteProps)
                     </span>
                   </div>
                   {module.is_completed && module.score && (
-                    <Badge variant="outline">
-                      {module.score.toFixed(0)}%
-                    </Badge>
+                    <Badge variant="outline">{module.score.toFixed(0)}%</Badge>
                   )}
                 </div>
               ))}

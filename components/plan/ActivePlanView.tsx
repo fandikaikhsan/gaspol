@@ -111,22 +111,34 @@ export function ActivePlanView({
 
         {/* T-059: Exam countdown */}
         {daysUntilExam !== null && (
-          <Card className={`border-2 ${daysUntilExam < 7 ? 'border-destructive bg-destructive/5' : daysUntilExam < 14 ? 'border-orange-400 bg-orange-50' : 'border-primary bg-surface-plan/30'}`}>
+          <Card
+            className={`border-2 ${daysUntilExam < 7 ? "border-destructive bg-destructive/5" : daysUntilExam < 14 ? "border-orange-400 bg-orange-50" : "border-primary bg-surface-plan/30"}`}
+          >
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Calendar className="h-6 w-6" />
                   <div>
                     <p className="font-bold text-lg">
-                      {daysUntilExam} {t("examCountdown.daysUntilExam", { fallback: "days until exam" })}
+                      {daysUntilExam}{" "}
+                      {t("examCountdown.daysUntilExam", {
+                        fallback: "days until exam",
+                      })}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(examDate!).toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      {new Date(examDate!).toLocaleDateString("id-ID", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </p>
                   </div>
                 </div>
                 {daysUntilExam < 7 && (
-                  <Badge variant="destructive">{t("examCountdown.urgent", { fallback: "Urgent" })}</Badge>
+                  <Badge variant="destructive">
+                    {t("examCountdown.urgent", { fallback: "Urgent" })}
+                  </Badge>
                 )}
               </div>
             </CardContent>
@@ -204,12 +216,16 @@ export function ActivePlanView({
                 <div className="flex items-center justify-between gap-2">
                   <span
                     className={
-                      stats.canUnlockRecycle ? "text-green-800" : "text-amber-900"
+                      stats.canUnlockRecycle
+                        ? "text-green-800"
+                        : "text-amber-900"
                     }
                   >
                     {t("active.nextAssessmentStatus")}
                   </span>
-                  <Badge variant={stats.canUnlockRecycle ? "strong" : "secondary"}>
+                  <Badge
+                    variant={stats.canUnlockRecycle ? "strong" : "secondary"}
+                  >
                     {stats.canUnlockRecycle
                       ? tc("status.ready")
                       : tc("status.locked")}
@@ -319,7 +335,9 @@ export function ActivePlanView({
                   <Button
                     size="sm"
                     className="min-h-[44px]"
-                    disabled={!stats.canUnlockRecycle && !stats.isRecycleUnlocked}
+                    disabled={
+                      !stats.canUnlockRecycle && !stats.isRecycleUnlocked
+                    }
                     onClick={() => router.push("/recycle")}
                   >
                     {t("active.startRecycle")}

@@ -5,13 +5,16 @@
  * Circular progress ring showing readiness score with delta indicator
  */
 
-import { getReadinessColor, calculateReadinessDelta } from "@/lib/analytics/readiness-score"
+import {
+  getReadinessColor,
+  calculateReadinessDelta,
+} from "@/lib/analytics/readiness-score"
 
 interface ReadinessRingProps {
   score: number // 0-100
   previousScore?: number
   campusTarget?: number // T-052: campus target score (0-100 scale)
-  size?: 'sm' | 'md' | 'lg'
+  size?: "sm" | "md" | "lg"
   showDelta?: boolean
 }
 
@@ -19,30 +22,30 @@ export function ReadinessRing({
   score,
   previousScore,
   campusTarget,
-  size = 'lg',
+  size = "lg",
   showDelta = true,
 }: ReadinessRingProps) {
   const sizes = {
     sm: {
-      container: 'w-32 h-32',
+      container: "w-32 h-32",
       circle: 60,
       strokeWidth: 8,
-      text: 'text-2xl',
-      label: 'text-xs',
+      text: "text-2xl",
+      label: "text-xs",
     },
     md: {
-      container: 'w-40 h-40',
+      container: "w-40 h-40",
       circle: 70,
       strokeWidth: 10,
-      text: 'text-3xl',
-      label: 'text-sm',
+      text: "text-3xl",
+      label: "text-sm",
     },
     lg: {
-      container: 'w-48 h-48',
+      container: "w-48 h-48",
       circle: 85,
       strokeWidth: 12,
-      text: 'text-4xl',
-      label: 'text-base',
+      text: "text-4xl",
+      label: "text-base",
     },
   }
 
@@ -57,19 +60,16 @@ export function ReadinessRing({
   const svgSize = radius * 2 + config.strokeWidth * 2
   const center = radius + config.strokeWidth
 
-  const delta = previousScore !== undefined
-    ? calculateReadinessDelta(previousScore, score)
-    : null
+  const delta =
+    previousScore !== undefined
+      ? calculateReadinessDelta(previousScore, score)
+      : null
 
   return (
     <div className="relative inline-flex flex-col items-center">
       {/* SVG Ring */}
       <div className={`relative ${config.container}`}>
-        <svg
-          className="transform -rotate-90"
-          width={svgSize}
-          height={svgSize}
-        >
+        <svg className="transform -rotate-90" width={svgSize} height={svgSize}>
           {/* Background circle */}
           <circle
             cx={center}
@@ -111,7 +111,9 @@ export function ReadinessRing({
 
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className={`font-bold ${config.text} ${getReadinessColor(score)}`}>
+          <div
+            className={`font-bold ${config.text} ${getReadinessColor(score)}`}
+          >
             {Math.round(score)}%
           </div>
           <div className={`${config.label} text-muted-foreground font-medium`}>
@@ -130,24 +132,25 @@ export function ReadinessRing({
       {/* Delta indicator */}
       {showDelta && delta && (
         <div className="mt-2 flex items-center gap-1">
-          {delta.trend === 'improving' && (
+          {delta.trend === "improving" && (
             <span className="text-status-strong text-sm font-semibold">
               ↑ +{delta.delta}
             </span>
           )}
-          {delta.trend === 'declining' && (
+          {delta.trend === "declining" && (
             <span className="text-destructive text-sm font-semibold">
               ↓ {delta.delta}
             </span>
           )}
-          {delta.trend === 'stable' && (
+          {delta.trend === "stable" && (
             <span className="text-muted-foreground text-sm font-semibold">
               → {delta.delta}
             </span>
           )}
           {delta.percentage !== 0 && (
             <span className="text-xs text-muted-foreground">
-              ({delta.percentage > 0 ? '+' : ''}{delta.percentage}%)
+              ({delta.percentage > 0 ? "+" : ""}
+              {delta.percentage}%)
             </span>
           )}
         </div>

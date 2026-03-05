@@ -14,7 +14,10 @@
 import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { QuestionRunner, ModuleResult } from "@/components/assessment/QuestionRunner"
+import {
+  QuestionRunner,
+  ModuleResult,
+} from "@/components/assessment/QuestionRunner"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -317,7 +320,9 @@ function DrillPracticeContent() {
       if (incorrectSkillIds.length > 0) {
         const { data: cards } = await supabase
           .from("material_cards")
-          .select("id, skill_id, title, core_idea, key_facts, common_mistakes, examples")
+          .select(
+            "id, skill_id, title, core_idea, key_facts, common_mistakes, examples",
+          )
           .in("skill_id", [...new Set(incorrectSkillIds)])
           .eq("status", "published")
           .limit(5)

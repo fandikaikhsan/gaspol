@@ -39,18 +39,23 @@ interface SkillCoverage {
 }
 
 interface ExpandedSubtopic extends TaxonomyNode {
-  skills: (TaxonomyNode & { coverage: SkillCoverage | null; hasMaterialCard: boolean })[]
+  skills: (TaxonomyNode & {
+    coverage: SkillCoverage | null
+    hasMaterialCard: boolean
+  })[]
 }
 
 export default function ReviewPage() {
   const router = useRouter()
   const supabase = createClient()
-  const { t } = useTranslation('review')
-  const { t: tc } = useTranslation('common')
+  const { t } = useTranslation("review")
+  const { t: tc } = useTranslation("common")
 
   const [isLoading, setIsLoading] = useState(true)
   const [subtopics, setSubtopics] = useState<TaxonomyNode[]>([])
-  const [expanded, setExpanded] = useState<Record<string, ExpandedSubtopic | null>>({})
+  const [expanded, setExpanded] = useState<
+    Record<string, ExpandedSubtopic | null>
+  >({})
   const [loadingExpand, setLoadingExpand] = useState<string | null>(null)
 
   // Fetch L4 subtopics
@@ -58,15 +63,15 @@ export default function ReviewPage() {
     async function fetchSubtopics() {
       try {
         const { data, error } = await (supabase as any)
-          .from('taxonomy_nodes')
-          .select('id, name, code, level, parent_id')
-          .eq('level', 4)
-          .order('code')
+          .from("taxonomy_nodes")
+          .select("id, name, code, level, parent_id")
+          .eq("level", 4)
+          .order("code")
 
         if (error) throw error
         setSubtopics((data as TaxonomyNode[]) || [])
       } catch (err) {
-        console.error('Failed to fetch subtopics:', err)
+        console.error("Failed to fetch subtopics:", err)
       } finally {
         setIsLoading(false)
       }
@@ -75,82 +80,95 @@ export default function ReviewPage() {
   }, [])
 
   // Toggle expand a subtopic → load L5 skills + coverage
-  const toggleExpand = useCallback(async (subtopicId: string) => {
-    if (expanded[subtopicId] !== undefined) {
-      // Collapse
-      setExpanded(prev => {
-        const next = { ...prev }
-        delete next[subtopicId]
-        return next
-      })
-      return
-    }
-
-    setLoadingExpand(subtopicId)
-    try {
-      // Get L5 skills under this L4
-      const { data: skillsData, error: skillsError } = await (supabase as any)
-        .from('taxonomy_nodes')
-        .select('id, name, code, level, parent_id')
-        .eq('parent_id', subtopicId)
-        .eq('level', 5)
-        .order('code')
-
-      if (skillsError) throw skillsError
-      const skills = (skillsData as TaxonomyNode[]) || []
-
-      // Get user's coverage for these skills
-      const { data: { user } } = await supabase.auth.getUser()
-      let coverageMap: Record<string, SkillCoverage> = {}
-
-      if (user && skills.length > 0) {
-        const { data: coverageData } = await supabase
-          .from('user_skill_state')
-          .select('micro_skill_id, total_points, is_covered')
-          .eq('user_id', user.id)
-          .in('micro_skill_id', skills.map(s => s.id))
-
-        if (coverageData) {
-          for (const c of coverageData) {
-            coverageMap[c.micro_skill_id] = c as SkillCoverage
-          }
-        }
+  const toggleExpand = useCallback(
+    async (subtopicId: string) => {
+      if (expanded[subtopicId] !== undefined) {
+        // Collapse
+        setExpanded((prev) => {
+          const next = { ...prev }
+          delete next[subtopicId]
+          return next
+        })
+        return
       }
 
-      // Check which skills have published material cards
-      const { data: materialData } = await (supabase as any)
-        .from('material_cards')
-        .select('skill_id')
-        .in('skill_id', skills.map(s => s.id))
-        .eq('status', 'published')
+      setLoadingExpand(subtopicId)
+      try {
+        // Get L5 skills under this L4
+        const { data: skillsData, error: skillsError } = await (supabase as any)
+          .from("taxonomy_nodes")
+          .select("id, name, code, level, parent_id")
+          .eq("parent_id", subtopicId)
+          .eq("level", 5)
+          .order("code")
 
-      const materialSkillIds = new Set((materialData || []).map((m: any) => m.skill_id))
+        if (skillsError) throw skillsError
+        const skills = (skillsData as TaxonomyNode[]) || []
 
-      const subtopic = subtopics.find(s => s.id === subtopicId)!
-      setExpanded(prev => ({
-        ...prev,
-        [subtopicId]: {
-          ...subtopic,
-          skills: skills.map(skill => ({
-            ...skill,
-            coverage: coverageMap[skill.id] || null,
-            hasMaterialCard: materialSkillIds.has(skill.id),
-          })),
-        },
-      }))
-    } catch (err) {
-      console.error('Failed to expand subtopic:', err)
-    } finally {
-      setLoadingExpand(null)
-    }
-  }, [expanded, subtopics, supabase])
+        // Get user's coverage for these skills
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        let coverageMap: Record<string, SkillCoverage> = {}
+
+        if (user && skills.length > 0) {
+          const { data: coverageData } = await supabase
+            .from("user_skill_state")
+            .select("micro_skill_id, total_points, is_covered")
+            .eq("user_id", user.id)
+            .in(
+              "micro_skill_id",
+              skills.map((s) => s.id),
+            )
+
+          if (coverageData) {
+            for (const c of coverageData) {
+              coverageMap[c.micro_skill_id] = c as SkillCoverage
+            }
+          }
+        }
+
+        // Check which skills have published material cards
+        const { data: materialData } = await (supabase as any)
+          .from("material_cards")
+          .select("skill_id")
+          .in(
+            "skill_id",
+            skills.map((s) => s.id),
+          )
+          .eq("status", "published")
+
+        const materialSkillIds = new Set(
+          (materialData || []).map((m: any) => m.skill_id),
+        )
+
+        const subtopic = subtopics.find((s) => s.id === subtopicId)!
+        setExpanded((prev) => ({
+          ...prev,
+          [subtopicId]: {
+            ...subtopic,
+            skills: skills.map((skill) => ({
+              ...skill,
+              coverage: coverageMap[skill.id] || null,
+              hasMaterialCard: materialSkillIds.has(skill.id),
+            })),
+          },
+        }))
+      } catch (err) {
+        console.error("Failed to expand subtopic:", err)
+      } finally {
+        setLoadingExpand(null)
+      }
+    },
+    [expanded, subtopics, supabase],
+  )
 
   // Compute subtopic summary stats
   const getSubtopicStats = (subtopicId: string) => {
     const data = expanded[subtopicId]
     if (!data) return null
     const total = data.skills.length
-    const covered = data.skills.filter(s => s.coverage?.is_covered).length
+    const covered = data.skills.filter((s) => s.coverage?.is_covered).length
     return { total, covered }
   }
 
@@ -158,8 +176,10 @@ export default function ReviewPage() {
   const studyModes = [
     {
       id: "flashcards",
-      name: t('flashcards.title', { fallback: 'Flashcards' }),
-      description: t('flashcards.desc', { fallback: 'Quick review with flashcards' }),
+      name: t("flashcards.title", { fallback: "Flashcards" }),
+      description: t("flashcards.desc", {
+        fallback: "Quick review with flashcards",
+      }),
       icon: Layers,
       href: "/review/flashcards",
       color: "bg-pastel-lavender",
@@ -167,8 +187,8 @@ export default function ReviewPage() {
     },
     {
       id: "swipe",
-      name: t('swipe.title', { fallback: 'Swipe' }),
-      description: t('swipe.desc', { fallback: 'Swipe to review' }),
+      name: t("swipe.title", { fallback: "Swipe" }),
+      description: t("swipe.desc", { fallback: "Swipe to review" }),
       icon: Zap,
       href: "/review/swipe",
       color: "bg-pastel-peach",
@@ -182,10 +202,12 @@ export default function ReviewPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-1">
-            {t('title', { fallback: 'Review' })}
+            {t("title", { fallback: "Review" })}
           </h1>
           <p className="text-muted-foreground">
-            {t('subtitle', { fallback: 'Browse topics and review material cards' })}
+            {t("subtitle", {
+              fallback: "Browse topics and review material cards",
+            })}
           </p>
         </div>
 
@@ -202,14 +224,16 @@ export default function ReviewPage() {
                 onClick={() => mode.available && router.push(mode.href)}
               >
                 <CardContent className="p-3 flex items-center gap-3">
-                  <div className={`${mode.color} p-2 rounded-lg border border-border`}>
+                  <div
+                    className={`${mode.color} p-2 rounded-lg border border-border`}
+                  >
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="font-semibold text-sm">{mode.name}</div>
                     {!mode.available && (
                       <span className="text-xs text-muted-foreground">
-                        {tc('status.comingSoon', { fallback: 'Coming Soon' })}
+                        {tc("status.comingSoon", { fallback: "Coming Soon" })}
                       </span>
                     )}
                   </div>
@@ -264,14 +288,19 @@ export default function ReviewPage() {
                           <ChevronRight className="h-4 w-4 flex-shrink-0" />
                         )}
                         <span className="font-medium truncate">{st.name}</span>
-                        <span className="text-xs text-muted-foreground">{st.code}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {st.code}
+                        </span>
                       </div>
                       {stats && (
-                        <Badge variant="outline" className={
-                          stats.covered === stats.total
-                            ? 'bg-green-100 text-green-800 border-green-200'
-                            : 'bg-muted text-muted-foreground'
-                        }>
+                        <Badge
+                          variant="outline"
+                          className={
+                            stats.covered === stats.total
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-muted text-muted-foreground"
+                          }
+                        >
                           {stats.covered}/{stats.total} covered
                         </Badge>
                       )}
@@ -294,7 +323,7 @@ export default function ReviewPage() {
                             <Card
                               key={skill.id}
                               className={`border border-border cursor-pointer transition-all hover:bg-muted/50 ${
-                                skill.hasMaterialCard ? '' : 'opacity-60'
+                                skill.hasMaterialCard ? "" : "opacity-60"
                               }`}
                               onClick={() => {
                                 if (skill.hasMaterialCard) {
@@ -309,13 +338,19 @@ export default function ReviewPage() {
                                   ) : (
                                     <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                   )}
-                                  <span className="text-sm truncate">{skill.name}</span>
+                                  <span className="text-sm truncate">
+                                    {skill.name}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   {/* T-042: Coverage X/20 */}
-                                  <span className={`text-xs font-mono ${
-                                    isCovered ? 'text-green-600' : 'text-muted-foreground'
-                                  }`}>
+                                  <span
+                                    className={`text-xs font-mono ${
+                                      isCovered
+                                        ? "text-green-600"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
                                     {points}/20
                                   </span>
                                   {skill.hasMaterialCard && (

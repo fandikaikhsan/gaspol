@@ -16,9 +16,15 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type DifficultyLevel = 'L1' | 'L2' | 'L3'
-export type MaterialCardStatus = 'draft' | 'review' | 'published'
-export type UserPhase = 'ONBOARDING' | 'BASELINE_ASSESSMENT_IN_PROGRESS' | 'BASELINE_COMPLETE' | 'PLAN_ACTIVE' | 'RECYCLE_UNLOCKED' | 'RECYCLE_ASSESSMENT_IN_PROGRESS'
+export type DifficultyLevel = "L1" | "L2" | "L3"
+export type MaterialCardStatus = "draft" | "review" | "published"
+export type UserPhase =
+  | "ONBOARDING"
+  | "BASELINE_ASSESSMENT_IN_PROGRESS"
+  | "BASELINE_COMPLETE"
+  | "PLAN_ACTIVE"
+  | "RECYCLE_UNLOCKED"
+  | "RECYCLE_ASSESSMENT_IN_PROGRESS"
 
 export interface Database {
   public: {
@@ -28,7 +34,7 @@ export interface Database {
           id: string
           email: string
           full_name: string | null
-          role: 'student' | 'admin'
+          role: "student" | "admin"
           package_days: number | null
           time_budget_min: number | null
           target_university: string | null
@@ -41,7 +47,7 @@ export interface Database {
           id: string
           email: string
           full_name?: string | null
-          role?: 'student' | 'admin'
+          role?: "student" | "admin"
           package_days?: number | null
           time_budget_min?: number | null
           target_university?: string | null
@@ -54,7 +60,7 @@ export interface Database {
           id?: string
           email?: string
           full_name?: string | null
-          role?: 'student' | 'admin'
+          role?: "student" | "admin"
           package_days?: number | null
           time_budget_min?: number | null
           target_university?: string | null

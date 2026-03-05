@@ -60,46 +60,54 @@ export default function MaterialCardDetailPage() {
       try {
         // Fetch skill info
         const { data: skillData } = await (supabase as any)
-          .from('taxonomy_nodes')
-          .select('id, name, code')
-          .eq('id', skillId)
+          .from("taxonomy_nodes")
+          .select("id, name, code")
+          .eq("id", skillId)
           .single()
 
         if (skillData) setSkill(skillData as SkillInfo)
 
         // Fetch published material card for this skill
         const { data: cardData } = await supabase
-          .from('material_cards')
-          .select('*')
-          .eq('skill_id', skillId)
-          .eq('status', 'published')
-          .order('updated_at', { ascending: false })
+          .from("material_cards")
+          .select("*")
+          .eq("skill_id", skillId)
+          .eq("status", "published")
+          .order("updated_at", { ascending: false })
           .limit(1)
           .single()
 
         if (cardData) {
           setCard({
             ...cardData,
-            key_facts: Array.isArray(cardData.key_facts) ? cardData.key_facts as string[] : [],
-            common_mistakes: Array.isArray(cardData.common_mistakes) ? cardData.common_mistakes as string[] : [],
-            examples: Array.isArray(cardData.examples) ? cardData.examples as string[] : [],
+            key_facts: Array.isArray(cardData.key_facts)
+              ? (cardData.key_facts as string[])
+              : [],
+            common_mistakes: Array.isArray(cardData.common_mistakes)
+              ? (cardData.common_mistakes as string[])
+              : [],
+            examples: Array.isArray(cardData.examples)
+              ? (cardData.examples as string[])
+              : [],
           })
         }
 
         // Fetch user coverage
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         if (user) {
           const { data: coverageData } = await supabase
-            .from('user_skill_state')
-            .select('total_points, is_covered')
-            .eq('user_id', user.id)
-            .eq('micro_skill_id', skillId)
+            .from("user_skill_state")
+            .select("total_points, is_covered")
+            .eq("user_id", user.id)
+            .eq("micro_skill_id", skillId)
             .single()
 
           if (coverageData) setCoverage(coverageData as Coverage)
         }
       } catch (err) {
-        console.error('Failed to fetch material card:', err)
+        console.error("Failed to fetch material card:", err)
       } finally {
         setIsLoading(false)
       }
@@ -119,7 +127,11 @@ export default function MaterialCardDetailPage() {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-2xl mx-auto py-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -153,11 +165,14 @@ export default function MaterialCardDetailPage() {
         <div className="mb-6">
           <div className="flex items-start justify-between gap-3 mb-2">
             <h1 className="text-2xl font-bold">{card.title}</h1>
-            <Badge variant="outline" className={
-              isCovered
-                ? 'bg-green-100 text-green-800 border-green-200 flex-shrink-0'
-                : 'bg-muted text-muted-foreground flex-shrink-0'
-            }>
+            <Badge
+              variant="outline"
+              className={
+                isCovered
+                  ? "bg-green-100 text-green-800 border-green-200 flex-shrink-0"
+                  : "bg-muted text-muted-foreground flex-shrink-0"
+              }
+            >
               {isCovered ? (
                 <CheckCircle2 className="h-3 w-3 mr-1" />
               ) : (
@@ -248,7 +263,9 @@ export default function MaterialCardDetailPage() {
                     key={i}
                     className="bg-muted/50 rounded-lg p-3 border border-border"
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{example}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {example}
+                    </p>
                   </div>
                 ))}
               </div>

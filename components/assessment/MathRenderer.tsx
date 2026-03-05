@@ -22,10 +22,16 @@ interface MathRendererProps {
  * Split text into segments of plain text and math expressions.
  * Supports $...$, $$...$$, \(...\), and \[...\]
  */
-function parseMath(input: string): Array<{ type: 'text' | 'inline' | 'block'; content: string }> {
-  const segments: Array<{ type: 'text' | 'inline' | 'block'; content: string }> = []
+function parseMath(
+  input: string,
+): Array<{ type: "text" | "inline" | "block"; content: string }> {
+  const segments: Array<{
+    type: "text" | "inline" | "block"
+    content: string
+  }> = []
   // Regex: block first ($$...$$, \[...\]), then inline ($...$, \(...\))
-  const regex = /\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\$((?:[^$\\]|\\.)*?)\$|\\\(((?:[^\\]|\\.)*?)\\\)/g
+  const regex =
+    /\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\$((?:[^$\\]|\\.)*?)\$|\\\(((?:[^\\]|\\.)*?)\\\)/g
 
   let lastIndex = 0
   let match: RegExpExecArray | null
@@ -33,17 +39,20 @@ function parseMath(input: string): Array<{ type: 'text' | 'inline' | 'block'; co
   while ((match = regex.exec(input)) !== null) {
     // Push preceding text
     if (match.index > lastIndex) {
-      segments.push({ type: 'text', content: input.slice(lastIndex, match.index) })
+      segments.push({
+        type: "text",
+        content: input.slice(lastIndex, match.index),
+      })
     }
 
     if (match[1] !== undefined) {
-      segments.push({ type: 'block', content: match[1] })
+      segments.push({ type: "block", content: match[1] })
     } else if (match[2] !== undefined) {
-      segments.push({ type: 'block', content: match[2] })
+      segments.push({ type: "block", content: match[2] })
     } else if (match[3] !== undefined) {
-      segments.push({ type: 'inline', content: match[3] })
+      segments.push({ type: "inline", content: match[3] })
     } else if (match[4] !== undefined) {
-      segments.push({ type: 'inline', content: match[4] })
+      segments.push({ type: "inline", content: match[4] })
     }
 
     lastIndex = match.index + match[0].length
@@ -51,26 +60,26 @@ function parseMath(input: string): Array<{ type: 'text' | 'inline' | 'block'; co
 
   // Trailing text
   if (lastIndex < input.length) {
-    segments.push({ type: 'text', content: input.slice(lastIndex) })
+    segments.push({ type: "text", content: input.slice(lastIndex) })
   }
 
   return segments
 }
 
-export function MathRenderer({ text, className = '' }: MathRendererProps) {
+export function MathRenderer({ text, className = "" }: MathRendererProps) {
   const rendered = useMemo(() => {
     const segments = parseMath(text)
     return segments.map((seg, i) => {
-      if (seg.type === 'text') {
+      if (seg.type === "text") {
         return <span key={i}>{seg.content}</span>
       }
       try {
         const html = katex.renderToString(seg.content, {
-          displayMode: seg.type === 'block',
+          displayMode: seg.type === "block",
           throwOnError: false,
           strict: false,
         })
-        if (seg.type === 'block') {
+        if (seg.type === "block") {
           return (
             <div
               key={i}
@@ -79,15 +88,14 @@ export function MathRenderer({ text, className = '' }: MathRendererProps) {
             />
           )
         }
-        return (
-          <span
-            key={i}
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        )
+        return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
       } catch {
         // Fallback: render raw
-        return <span key={i} className="text-destructive">{seg.content}</span>
+        return (
+          <span key={i} className="text-destructive">
+            {seg.content}
+          </span>
+        )
       }
     })
   }, [text])

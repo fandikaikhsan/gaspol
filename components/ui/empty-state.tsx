@@ -30,17 +30,19 @@ export function EmptyState({
       </div>
       <h3 className="text-lg font-semibold mb-1">{title}</h3>
       {description && (
-        <p className="text-sm text-muted-foreground max-w-sm mb-6">{description}</p>
+        <p className="text-sm text-muted-foreground max-w-sm mb-6">
+          {description}
+        </p>
       )}
-      {ctaLabel && (ctaHref || onCtaClick) && (
-        ctaHref ? (
+      {ctaLabel &&
+        (ctaHref || onCtaClick) &&
+        (ctaHref ? (
           <a href={ctaHref}>
             <Button>{ctaLabel}</Button>
           </a>
         ) : (
           <Button onClick={onCtaClick}>{ctaLabel}</Button>
-        )
-      )}
+        ))}
     </div>
   )
 }

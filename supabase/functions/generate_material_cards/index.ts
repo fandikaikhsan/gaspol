@@ -9,7 +9,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 }
 
 interface AISettings {
@@ -22,7 +23,7 @@ interface AISettings {
 async function callAI(
   settings: AISettings,
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
 ): Promise<{ content: string; tokensUsed: number }> {
   const { provider, api_key, model } = settings
 
@@ -66,7 +67,7 @@ async function callAI(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -111,7 +112,7 @@ async function callAI(
             maxOutputTokens: 8000,
           },
         }),
-      }
+      },
     )
 
     if (!response.ok) {
@@ -154,7 +155,8 @@ serve(async (req) => {
       const authHeader = req.headers.get("Authorization")
       if (!authHeader) throw new Error("Missing authorization header")
       const token = authHeader.replace("Bearer ", "")
-      const { data: userData, error: userError } = await supabase.auth.getUser(token)
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser(token)
       if (userError || !userData.user) throw new Error("Invalid user token")
       userId = userData.user.id
     }
@@ -178,10 +180,16 @@ serve(async (req) => {
       .single()
 
     if (!aiSettings) {
-      throw new Error("No active AI provider configured. Please configure in Admin > AI Runs > Settings.")
+      throw new Error(
+        "No active AI provider configured. Please configure in Admin > AI Runs > Settings.",
+      )
     }
 
-    if (!taxonomy_node_ids || !Array.isArray(taxonomy_node_ids) || taxonomy_node_ids.length === 0) {
+    if (
+      !taxonomy_node_ids ||
+      !Array.isArray(taxonomy_node_ids) ||
+      taxonomy_node_ids.length === 0
+    ) {
       throw new Error("taxonomy_node_ids (array) is required")
     }
 
@@ -199,7 +207,11 @@ serve(async (req) => {
           .single()
 
         if (!taxonomyNode) {
-          results.push({ skill_id: nodeId, error: "Node not found", saved: false })
+          results.push({
+            skill_id: nodeId,
+            error: "Node not found",
+            saved: false,
+          })
           continue
         }
 
@@ -221,14 +233,15 @@ serve(async (req) => {
         }
 
         // Build prompts
-        const systemPrompt = "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure."
+        const systemPrompt =
+          "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure."
         const userPrompt = buildMaterialCardPrompt(taxonomyNode, parentNodes)
 
         // Call AI
         const { content: aiOutput, tokensUsed } = await callAI(
           aiSettings as AISettings,
           systemPrompt,
-          userPrompt
+          userPrompt,
         )
         totalTokensUsed += tokensUsed
 
@@ -241,8 +254,8 @@ serve(async (req) => {
           if (jsonMatch) {
             parsed = JSON.parse(jsonMatch[1])
           } else {
-            const firstBrace = aiOutput.indexOf('{')
-            const lastBrace = aiOutput.lastIndexOf('}')
+            const firstBrace = aiOutput.indexOf("{")
+            const lastBrace = aiOutput.lastIndexOf("}")
             if (firstBrace !== -1 && lastBrace !== -1) {
               parsed = JSON.parse(aiOutput.substring(firstBrace, lastBrace + 1))
             } else {
@@ -256,7 +269,9 @@ serve(async (req) => {
           title: parsed.title || taxonomyNode.name,
           core_idea: parsed.core_idea || "",
           key_facts: Array.isArray(parsed.key_facts) ? parsed.key_facts : [],
-          common_mistakes: Array.isArray(parsed.common_mistakes) ? parsed.common_mistakes : [],
+          common_mistakes: Array.isArray(parsed.common_mistakes)
+            ? parsed.common_mistakes
+            : [],
           examples: Array.isArray(parsed.examples) ? parsed.examples : [],
           status: "draft",
           created_by: userId,
@@ -308,7 +323,11 @@ serve(async (req) => {
       prompt_version: "v1.0",
       initiated_by: userId,
       prompt: `Generated material cards for ${taxonomy_node_ids.length} skills`,
-      input_params: { taxonomy_node_ids, auto_save, provider: aiSettings.provider },
+      input_params: {
+        taxonomy_node_ids,
+        auto_save,
+        provider: aiSettings.provider,
+      },
       output_result: {
         total_requested: taxonomy_node_ids.length,
         total_saved: results.filter((r) => r.saved).length,
@@ -331,19 +350,28 @@ serve(async (req) => {
         provider: aiSettings.provider,
         model: aiSettings.model,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
     )
   } catch (error) {
     console.error("Error in generate_material_cards:", error)
 
     return new Response(
       JSON.stringify({ error: error.message, success: false }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      },
     )
   }
 })
 
-function buildMaterialCardPrompt(taxonomyNode: any, parentNodes: any[]): string {
+function buildMaterialCardPrompt(
+  taxonomyNode: any,
+  parentNodes: any[],
+): string {
   const exam = taxonomyNode.exam
 
   let context = `You are an expert educational content creator for Indonesian university entrance exam preparation (UTBK/SNBT).\n\n`
@@ -357,7 +385,8 @@ function buildMaterialCardPrompt(taxonomyNode: any, parentNodes: any[]): string 
 
   context += `TAXONOMY PATH:\n`
   if (parentNodes.length > 0) {
-    context += parentNodes.map((p: any) => `${p.name} (${p.code})`).join(" > ") + " > "
+    context +=
+      parentNodes.map((p: any) => `${p.name} (${p.code})`).join(" > ") + " > "
   }
   context += `${taxonomyNode.name} (${taxonomyNode.code})\n\n`
 
