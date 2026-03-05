@@ -170,18 +170,25 @@ export default function DrillRunnerPage() {
       const score = (correctCount / questions.length) * 100
       const threshold = module.passing_threshold ?? 0.7
       const passed = score >= threshold * 100
-
-      // Record module completion
-      await supabase.from("module_completions").upsert(
-        {
-          user_id: user.id,
-          module_id: module.id,
-          score,
-          passed,
-          completed_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,module_id" },
+      const totalTimeSec = Object.values(session.answers).reduce(
+        (sum, a) => sum + (a.timeSpent || 0),
+        0,
       )
+
+      // Record module completion (insert, not upsert — each attempt is a new record)
+      await supabase.from("module_completions").insert({
+        user_id: user.id,
+        module_id: module.id,
+        context_type: "drill",
+        score,
+        total_questions: questions.length,
+        correct_count: correctCount,
+        total_time_sec: totalTimeSec,
+        started_at: session.startedAt
+          ? new Date(session.startedAt).toISOString()
+          : new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      })
 
       // Mark plan task complete if applicable
       if (planTaskId) {
