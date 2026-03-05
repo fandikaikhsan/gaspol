@@ -98,11 +98,43 @@ supabase db push --dry-run — network error (env connectivity issue, not migrat
 
 | Task | Status | Commit | Notes |
 |------|--------|--------|-------|
-| — | — | — | — |
+| V3-T-013 | ✅ Done | `e5e76ab` | Migration 034: flashcard_user_state table + RLS + indexes |
+| V3-T-014 | ✅ Done | `3cb95b6` | SM-2 scheduling logic (pure function) + 18 unit tests |
+| V3-T-019 | ✅ Done | `3327e3e` | Baseline gating: locked UI when baseline not complete |
+| V3-T-015 | ✅ Done | `74b06f0` | POST /api/flashcard-review — SM-2 state update endpoint |
+| V3-T-016 | ✅ Done | `179fe59` | MasteryStacks component — 2×2 grid with due counts |
+| V3-T-017 | ✅ Done | `13c648d` | FlashcardStack rewrite — SM-2 buttons, API calls (fixes B-004, B-005) |
+| V3-T-018 | ✅ Done | `6c3b091` | Flashcard init after baseline — batch insert for all L5 skills |
 
 ### Open Blockers
 
-_None yet._
+_None._
+
+### Decisions Made
+
+| Decision | Rationale | Date |
+|----------|-----------|------|
+| Hardcoded Indonesian labels (not i18n) | Consistent with V3-A/B pattern; fixes B-004 | V3-C |
+| Show Answer button instead of flip animation | Simpler UX, more accessible, avoids CSS 3D transform issues | V3-C |
+| Idempotent flashcard init via existing-state check | Prevents duplicates if finalize-baseline called multiple times | V3-C |
+| Non-blocking flashcard init failure | Baseline finalization shouldn't fail due to flashcard init error | V3-C |
+| Migration 034 follows 033 numbering | Both 033 + 034 pending remote push (network connectivity) | V3-C |
+
+### Commands Run
+
+```
+pnpm build — passed after every commit
+pnpm vitest run — 77/77 tests passed (59 existing + 18 new SM-2 tests)
+```
+
+### Verification Results
+
+| Check | Result | Date |
+|-------|--------|------|
+| Build | ✅ Pass | V3-C |
+| Tests (77/77) | ✅ Pass | V3-C |
+| Migration 034 SQL syntax | ✅ Valid | V3-C |
+| Pending migrations | ⚠️ 033 + 034 need `supabase db push` when remote reachable | V3-C |
 
 ---
 
