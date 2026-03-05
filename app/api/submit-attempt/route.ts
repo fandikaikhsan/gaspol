@@ -4,7 +4,7 @@
  * Handles student answer submissions with:
  * - Proper authentication verification using Supabase SDK
  * - Service role for database operations (due to ES256 JWT incompatibility with Edge Functions)
- * - Answer correctness computation
+ * - Answer correctness computation via shared scoring lib
  * - Error tagging for analytics
  *
  * @see /docs/TROUBLESHOOTING-JWT-ES256.md for ES256 context
@@ -13,6 +13,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { createClient as createServerClient } from "@/lib/supabase/server"
+import {
+  checkCorrectness,
+  calculatePointsAwarded,
+  deriveErrorTags,
+  calculateAllConstructImpacts,
+  computeNewConstructScore,
+  determineTrend,
+} from "@/lib/assessment/scoring"
 
 // Rate limiting - simple in-memory store (use Redis in production)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
@@ -152,51 +160,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 7. COMPUTE CORRECTNESS
+    // 7. COMPUTE CORRECTNESS (using shared scoring lib — case-insensitive)
     const correctAnswer = question.correct_answer
     const questionFormat =
       question.question_format || question.question_type || "MCQ5"
-    let isCorrect = false
+    const isCorrect = checkCorrectness(questionFormat, selected_answer, correctAnswer)
 
-    if (questionFormat.includes("MCQ") || question.question_type === "MCQ") {
-      // Single choice - exact string match
-      isCorrect =
-        typeof selected_answer === "string" &&
-        typeof correctAnswer === "string" &&
-        selected_answer.toUpperCase() === correctAnswer.toUpperCase()
-    } else if (
-      questionFormat.includes("MCK") ||
-      question.question_type === "MCK"
-    ) {
-      // Multiple choice - all answers must match
-      if (Array.isArray(selected_answer)) {
-        const userAnswers = selected_answer
-          .map((a) => String(a).toUpperCase())
-          .sort()
-        const correctAnswers = Array.isArray(correctAnswer)
-          ? correctAnswer.map((a) => String(a).toUpperCase()).sort()
-          : typeof correctAnswer === "string"
-            ? correctAnswer
-                .split(",")
-                .map((a) => a.trim().toUpperCase())
-                .sort()
-            : []
-        isCorrect =
-          JSON.stringify(userAnswers) === JSON.stringify(correctAnswers)
-      }
-    } else if (questionFormat.includes("Fill")) {
-      // Fill-in - normalized string comparison
-      const normalizeAnswer = (ans: string) =>
-        ans.trim().toLowerCase().replace(/\s+/g, " ")
-      isCorrect =
-        typeof selected_answer === "string" &&
-        typeof correctAnswer === "string" &&
-        normalizeAnswer(selected_answer) === normalizeAnswer(correctAnswer)
-    }
-
-    // 8. CALCULATE POINTS AWARDED (T-014)
-    const pointsAwarded = isCorrect ? question.point_value || 0 : 0
+    // 8. CALCULATE POINTS AWARDED (T-014) — using shared scoring lib
     const difficultyLevel = question.difficulty_level || "L1"
+    const pointsAwarded = calculatePointsAwarded(
+      isCorrect,
+      question.point_value,
+      difficultyLevel,
+    )
 
     // 9. INSERT ATTEMPT RECORD
     const normalizedContextId =
@@ -233,7 +209,7 @@ export async function POST(request: NextRequest) {
         // Fetch the existing attempt instead
         const { data: existingAttempt } = await supabaseAdmin
           .from("attempts")
-          .select("id, is_correct, user_answer")
+          .select("id, is_correct, user_answer, points_awarded")
           .eq("user_id", userId)
           .eq("question_id", question_id)
           .eq("context_id", normalizedContextId)
@@ -245,76 +221,101 @@ export async function POST(request: NextRequest) {
             attempt_id: existingAttempt.id,
             is_correct: existingAttempt.is_correct,
             correct_answer: correctAnswer,
+            points_awarded: existingAttempt.points_awarded ?? 0,
             already_submitted: true,
             message: "This question was already answered",
           })
         }
       }
 
-      console.error("[submit-attempt] Failed to insert attempt:", attemptError)
+      // Handle foreign key violations (e.g., invalid module_id)
+      if (attemptError.code === "23503") {
+        console.error(
+          "[submit-attempt] Foreign key violation:",
+          attemptError.message,
+          { userId, question_id, module_id, context_id },
+        )
+        // Retry without module_id if that's the FK issue
+        if (module_id) {
+          console.warn("[submit-attempt] Retrying without module_id")
+          const { data: retryAttempt, error: retryError } = await supabaseAdmin
+            .from("attempts")
+            .insert({
+              user_id: userId,
+              question_id: question_id,
+              module_id: null,
+              is_correct: isCorrect,
+              user_answer: JSON.stringify({ selected: selected_answer }),
+              time_spent_sec: Math.round(time_spent_sec),
+              context_type: context_type || "baseline",
+              context_id: normalizedContextId,
+              points_awarded: pointsAwarded,
+            })
+            .select("id")
+            .single()
+
+          if (!retryError && retryAttempt) {
+            // Continue with the retry attempt — skip to response
+            return NextResponse.json({
+              success: true,
+              attempt_id: retryAttempt.id,
+              is_correct: isCorrect,
+              correct_answer: correctAnswer,
+              time_spent_sec: Math.round(time_spent_sec),
+              points_awarded: pointsAwarded,
+              difficulty_level: difficultyLevel,
+              construct_impacts: {},
+              feedback: {
+                is_correct: isCorrect,
+                message: isCorrect
+                  ? "Correct! Great job!"
+                  : "Incorrect. Review the explanation to understand why.",
+                error_tags: [],
+                difficulty: question.difficulty,
+                points_awarded: pointsAwarded,
+              },
+            })
+          }
+        }
+      }
+
+      console.error("[submit-attempt] Failed to insert attempt:", {
+        code: attemptError.code,
+        message: attemptError.message,
+        details: attemptError.details,
+        hint: attemptError.hint,
+        userId,
+        question_id,
+        module_id,
+        context_type,
+        context_id: normalizedContextId,
+      })
       return NextResponse.json(
-        { error: "Failed to save attempt" },
+        {
+          error: "Failed to save attempt",
+          ...(process.env.NODE_ENV === "development"
+            ? {
+                debug: {
+                  code: attemptError.code,
+                  message: attemptError.message,
+                  hint: attemptError.hint,
+                },
+              }
+            : {}),
+        },
         { status: 500 },
       )
     }
 
-    // 10. APPLY ERROR TAGS (async, non-blocking)
-    // Determine which error tags to apply based on performance signals
+    // 10. APPLY ERROR TAGS (async, non-blocking) — using shared scoring lib
     const expectedTime = question.time_estimate_seconds || 120
-    const timeRatio = time_spent_sec / expectedTime
-
-    // Build list of potential error tag IDs based on rules
-    const potentialTags: Array<{ tag_id: string; confidence: number }> = []
-
-    // Time-based tags
-    if (timeRatio > 1.5) {
-      potentialTags.push({ tag_id: "ERR.SLOW", confidence: 1.0 })
-    }
-    if (timeRatio < 0.3) {
-      potentialTags.push({ tag_id: "ERR.RUSHED", confidence: 1.0 })
-    }
-
-    // Performance-based tags (only for incorrect answers)
-    if (!isCorrect) {
-      if (timeRatio < 0.6) {
-        potentialTags.push({ tag_id: "ERR.CARELESS", confidence: 0.8 })
-      }
-      if (timeRatio > 1.3) {
-        potentialTags.push({ tag_id: "ERR.STRUGGLE", confidence: 0.8 })
-      }
-      // Construct-based error tags (T-017)
-      const weights = question.construct_weights as Record<
-        string,
-        number
-      > | null
-      if (weights) {
-        // Tag dominant construct weakness for incorrect answers
-        const maxWeight = Math.max(
-          ...Object.values(weights).filter((v) => typeof v === "number"),
-        )
-        if (maxWeight > 0) {
-          for (const [construct, weight] of Object.entries(weights)) {
-            if (
-              typeof weight === "number" &&
-              weight === maxWeight &&
-              weight >= 0.3
-            ) {
-              const constructTagMap: Record<string, string> = {
-                teliti: "ERR.ATTENTION",
-                speed: "ERR.SPEED",
-                reasoning: "ERR.REASONING",
-                computation: "ERR.COMPUTATION",
-                reading: "ERR.READING",
-              }
-              const tagId = constructTagMap[construct]
-              if (tagId) {
-                potentialTags.push({ tag_id: tagId, confidence: weight })
-              }
-            }
-          }
-        }
-      }
-    }
+    const weights = question.construct_weights as Record<string, number> | null
+    const potentialTags = deriveErrorTags(
+      isCorrect,
+      time_spent_sec,
+      expectedTime,
+      weights,
+    )
 
     // Only insert tags that exist in the database (fire and forget)
     if (potentialTags.length > 0) {
@@ -440,38 +441,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 12. RECALCULATE USER_CONSTRUCT_STATE (T-016)
-    // Update construct dimensions based on question's construct_weights
-    const weights = question.construct_weights as Record<string, number> | null
+    // 12. RECALCULATE USER_CONSTRUCT_STATE (T-016) — using shared scoring lib
     if (weights) {
       try {
-        const constructs = [
-          "teliti",
-          "speed",
-          "reasoning",
-          "computation",
-          "reading",
-        ]
-        constructImpacts = {}
+        const constructImpactsMap = calculateAllConstructImpacts(
+          isCorrect,
+          weights,
+          difficultyLevel,
+        )
 
-        for (const construct of constructs) {
-          const weight = weights[construct]
-          if (typeof weight !== "number" || weight === 0) continue
-
-          // Calculate impact: correct → positive, incorrect → negative
-          // Scale by weight and difficulty. Base impact: ±5 points (modulated by difficulty)
-          const difficultyMultiplier =
-            difficultyLevel === "L3"
-              ? 1.5
-              : difficultyLevel === "L2"
-                ? 1.0
-                : 0.7
-          const baseImpact = 5
-          const impact = isCorrect
-            ? weight * baseImpact * difficultyMultiplier
-            : -weight * baseImpact * difficultyMultiplier * 0.5 // Penalty is half of reward
-
-          constructImpacts[construct] = Math.round(impact * 100) / 100
+        for (const [construct, impact] of Object.entries(constructImpactsMap)) {
+          constructImpacts[construct] = impact
 
           // Fetch existing construct state
           const { data: existingConstruct } = await supabaseAdmin
@@ -484,27 +464,18 @@ export async function POST(request: NextRequest) {
           if (existingConstruct) {
             const currentScore = Number(existingConstruct.score) || 50
             const dataPoints = (existingConstruct.data_points || 0) + 1
-            // Exponential moving average: new_score = old_score + impact * (1 / sqrt(data_points))
-            // This makes early data points have more impact, stabilizing over time
-            const learningRate = 1 / Math.sqrt(dataPoints)
-            const newScore = Math.max(
-              0,
-              Math.min(100, currentScore + impact * learningRate),
+            const newScore = computeNewConstructScore(
+              currentScore,
+              impact,
+              dataPoints,
             )
-
-            // Determine trend
             const scoreDelta = newScore - currentScore
-            const trend =
-              scoreDelta > 0.5
-                ? "improving"
-                : scoreDelta < -0.5
-                  ? "declining"
-                  : "stable"
+            const trend = determineTrend(scoreDelta)
 
             await supabaseAdmin
               .from("user_construct_state")
               .update({
-                score: Math.round(newScore * 100) / 100,
+                score: newScore,
                 data_points: dataPoints,
                 trend,
                 last_updated_at: new Date().toISOString(),
@@ -512,14 +483,13 @@ export async function POST(request: NextRequest) {
               .eq("id", existingConstruct.id)
           } else {
             // Insert new construct state starting at 50 ± impact
-            const initialScore = Math.max(0, Math.min(100, 50 + impact))
+            const initialScore = Math.max(0, Math.min(100, Math.round((50 + impact) * 100) / 100))
             await supabaseAdmin.from("user_construct_state").insert({
               user_id: userId,
               construct_name: construct,
-              score: Math.round(initialScore * 100) / 100,
+              score: initialScore,
               data_points: 1,
-              trend:
-                impact > 0 ? "improving" : impact < 0 ? "declining" : "stable",
+              trend: determineTrend(impact),
               last_updated_at: new Date().toISOString(),
             })
           }
