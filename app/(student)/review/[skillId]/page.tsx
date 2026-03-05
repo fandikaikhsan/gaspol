@@ -23,6 +23,7 @@ import {
   Target,
   MessageCircle,
 } from "lucide-react"
+import TanyaGaspolChat from "@/components/review/TanyaGaspolChat"
 
 interface MaterialCard {
   id: string
@@ -73,6 +74,7 @@ function MaterialCardDetailContent() {
   const [card, setCard] = useState<MaterialCard | null>(null)
   const [skill, setSkill] = useState<SkillInfo | null>(null)
   const [coverage, setCoverage] = useState<Coverage | null>(null)
+  const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -235,8 +237,7 @@ function MaterialCardDetailContent() {
           <Button
             variant="outline"
             className="flex-1 gap-2"
-            disabled
-            title="Segera hadir"
+            onClick={() => setChatOpen(true)}
           >
             <MessageCircle className="h-4 w-4" />
             Tanya Gaspol
@@ -326,6 +327,20 @@ function MaterialCardDetailContent() {
               </div>
             </CardContent>
           </Card>
+        )}
+        {/* Tanya Gaspol Chat Modal */}
+        {card && skill && (
+          <TanyaGaspolChat
+            open={chatOpen}
+            onOpenChange={setChatOpen}
+            skillId={skillId}
+            skillName={skill.name}
+            materialContext={{
+              core_idea: card.core_idea,
+              key_facts: card.key_facts,
+              common_mistakes: card.common_mistakes,
+            }}
+          />
         )}
       </div>
     </div>
