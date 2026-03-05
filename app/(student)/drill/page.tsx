@@ -29,6 +29,13 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Target,
   Shuffle,
   Search,
@@ -37,6 +44,8 @@ import {
   AlertCircle,
   AlertTriangle,
   ChevronRight,
+  Filter,
+  FilterX,
 } from "lucide-react"
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -331,6 +340,9 @@ function DrillHubContent() {
   const [activeTab, setActiveTab] = useState<DrillTab>(initialTab)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [l3Filter, setL3Filter] = useState<string>("all")
+  const [l4Filter, setL4Filter] = useState<string>("all")
+  const [l5Filter, setL5Filter] = useState<string>("all")
 
   const { data, isLoading } = useQuery({
     queryKey: ["drill-hub-v3"],
@@ -358,7 +370,47 @@ function DrillHubContent() {
     [data],
   )
 
-  // Apply status filter + search
+  // Taxonomy filter options — cascading from active tab modules
+  const taxonomyOptions = useMemo(() => {
+    const mods = activeTab === "topic" ? topicModules : mixedModules
+    const l3s = new Set<string>()
+    const l4s = new Set<string>()
+    const l5s = new Set<string>()
+
+    for (const m of mods) {
+      if (m.l3_name) l3s.add(m.l3_name)
+      if (
+        m.l4_name &&
+        (l3Filter === "all" || m.l3_name === l3Filter)
+      )
+        l4s.add(m.l4_name)
+      if (
+        m.l5_name &&
+        (l3Filter === "all" || m.l3_name === l3Filter) &&
+        (l4Filter === "all" || m.l4_name === l4Filter)
+      )
+        l5s.add(m.l5_name)
+    }
+
+    return {
+      l3: Array.from(l3s).sort(),
+      l4: Array.from(l4s).sort(),
+      l5: Array.from(l5s).sort(),
+    }
+  }, [activeTab, topicModules, mixedModules, l3Filter, l4Filter])
+
+  const resetTaxonomyFilters = () => {
+    setL3Filter("all")
+    setL4Filter("all")
+    setL5Filter("all")
+  }
+
+  const handleTabChange = (v: string) => {
+    setActiveTab(v as DrillTab)
+    resetTaxonomyFilters()
+  }
+
+  // Apply status filter + search + taxonomy
   function filterModules(modules: DrillModule[]) {
     let list = modules
 
@@ -366,6 +418,13 @@ function DrillHubContent() {
       list = list.filter((m) => m.is_required)
     else if (statusFilter === "completed")
       list = list.filter((m) => m.is_completed)
+
+    if (l3Filter !== "all")
+      list = list.filter((m) => m.l3_name === l3Filter)
+    if (l4Filter !== "all")
+      list = list.filter((m) => m.l4_name === l4Filter)
+    if (l5Filter !== "all")
+      list = list.filter((m) => m.l5_name === l5Filter)
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
@@ -409,7 +468,7 @@ function DrillHubContent() {
 
     return groups
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicModules, statusFilter, searchQuery])
+  }, [topicModules, statusFilter, searchQuery, l3Filter, l4Filter, l5Filter])
 
   // Group mixed modules: level-2 → modules
   const mixedGroups = useMemo(() => {
@@ -428,7 +487,7 @@ function DrillHubContent() {
 
     return groups
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mixedModules, statusFilter, searchQuery])
+  }, [mixedModules, statusFilter, searchQuery, l3Filter, l4Filter, l5Filter])
 
   // Counts
   const activeModules =
@@ -494,7 +553,7 @@ function DrillHubContent() {
         {/* ── Tab Switcher ── */}
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as DrillTab)}
+          onValueChange={handleTabChange}
         >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="topic" className="touch-target gap-1.5">
@@ -532,6 +591,91 @@ function DrillHubContent() {
               </Button>
             ))}
           </div>
+
+          {/* ── Taxonomy Filters ── */}
+          {(taxonomyOptions.l3.length > 0 ||
+            taxonomyOptions.l4.length > 0 ||
+            taxonomyOptions.l5.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {taxonomyOptions.l3.length > 0 && (
+                <Select
+                  value={l3Filter}
+                  onValueChange={(v) => {
+                    setL3Filter(v)
+                    setL4Filter("all")
+                    setL5Filter("all")
+                  }}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs border-2 border-border">
+                    <Filter className="h-3 w-3 mr-1.5 shrink-0" />
+                    <SelectValue placeholder="Subtopik (L3)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Subtopik</SelectItem>
+                    {taxonomyOptions.l3.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {taxonomyOptions.l4.length > 0 && (
+                <Select
+                  value={l4Filter}
+                  onValueChange={(v) => {
+                    setL4Filter(v)
+                    setL5Filter("all")
+                  }}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs border-2 border-border">
+                    <Filter className="h-3 w-3 mr-1.5 shrink-0" />
+                    <SelectValue placeholder="Materi (L4)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Materi</SelectItem>
+                    {taxonomyOptions.l4.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {taxonomyOptions.l5.length > 0 && (
+                <Select
+                  value={l5Filter}
+                  onValueChange={(v) => setL5Filter(v)}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs border-2 border-border">
+                    <Filter className="h-3 w-3 mr-1.5 shrink-0" />
+                    <SelectValue placeholder="Skill (L5)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Skill</SelectItem>
+                    {taxonomyOptions.l5.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {(l3Filter !== "all" ||
+                l4Filter !== "all" ||
+                l5Filter !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs text-muted-foreground"
+                  onClick={resetTaxonomyFilters}
+                >
+                  <FilterX className="h-3.5 w-3.5 mr-1" />
+                  Reset
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* ── Tab 1: Topic-Based Modules ── */}
           <TabsContent value="topic" className="mt-4 space-y-6">
