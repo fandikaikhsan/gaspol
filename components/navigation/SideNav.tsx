@@ -2,7 +2,16 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Target, Lock, Zap, BarChart2, User, Rocket, LogOut, Settings } from "lucide-react"
+import {
+  Target,
+  Swords,
+  BookOpen,
+  BarChart2,
+  User,
+  Rocket,
+  LogOut,
+  Settings,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -11,8 +20,8 @@ import { useTranslation } from "@/lib/i18n"
 
 const navigation = [
   { key: "plan", href: "/plan", icon: Target },
-  { key: "lockedIn", href: "/locked-in", icon: Lock },
-  { key: "taktis", href: "/taktis", icon: Zap },
+  { key: "drill", href: "/drill", icon: Swords },
+  { key: "review", href: "/review", icon: BookOpen },
   { key: "analytics", href: "/analytics", icon: BarChart2 },
 ] as const
 
@@ -20,7 +29,7 @@ export function SideNav() {
   const pathname = usePathname()
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
-  const { t } = useTranslation('common')
+  const { t } = useTranslation("common")
 
   useEffect(() => {
     loadProfile()
@@ -55,7 +64,9 @@ export function SideNav() {
       <div className="flex h-16 shrink-0 items-center border-b px-5">
         <Link href="/plan" className="flex items-center gap-2">
           <Rocket className="h-5 w-5" />
-          <span className="text-lg font-bold tracking-tight">{t('nav.gaspol')}</span>
+          <span className="text-lg font-bold tracking-tight">
+            {t("nav.gaspol")}
+          </span>
         </Link>
       </div>
 
@@ -87,9 +98,13 @@ export function SideNav() {
           <div className="rounded-lg border bg-muted/30 p-3">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm font-semibold">{profile?.full_name || t('nav.user')}</p>
+              <p className="text-sm font-semibold">
+                {profile?.full_name || t("nav.user")}
+              </p>
             </div>
-            <p className="mt-1 truncate text-xs text-muted-foreground">{profile?.email}</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {profile?.email}
+            </p>
           </div>
 
           <Button
@@ -98,7 +113,7 @@ export function SideNav() {
             onClick={() => router.push("/settings")}
           >
             <Settings className="mr-2 h-4 w-4" />
-            {t('nav.profileSettings')}
+            {t("nav.profileSettings")}
           </Button>
 
           <Button
@@ -107,7 +122,7 @@ export function SideNav() {
             onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            {t('nav.logout')}
+            {t("nav.logout")}
           </Button>
         </div>
       </div>

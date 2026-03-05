@@ -3,22 +3,30 @@
 /**
  * Re-cycle Hub
  * Phase 7: Re-cycle Assessment
+ * T-062: "Generate Next Plan" button after recycle completion
  */
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
+import { Sparkles, Loader2 } from "lucide-react"
 
 export default function RecycleHubPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { t } = useTranslation('recycle')
-  const { t: tc } = useTranslation('common')
+  const { t } = useTranslation("recycle")
+  const { t: tc } = useTranslation("common")
   const [user, setUser] = useState<any>(null)
   const [userState, setUserState] = useState<any>(null)
   const [checkpoints, setCheckpoints] = useState<any[]>([])
@@ -26,36 +34,41 @@ export default function RecycleHubPage() {
   const [completedRequiredCount, setCompletedRequiredCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser()
 
       if (!currentUser) {
-        router.push('/login')
+        router.push("/login")
         return
       }
 
       setUser(currentUser)
 
       const { data: state } = await supabase
-        .from('user_state')
-        .select('*')
-        .eq('user_id', currentUser.id)
+        .from("user_state")
+        .select("*")
+        .eq("user_id", currentUser.id)
         .single()
 
       setUserState(state)
 
       if (state?.current_cycle_id) {
         const { data: requiredTasks } = await supabase
-          .from('plan_tasks')
-          .select('id, is_completed')
-          .eq('cycle_id', state.current_cycle_id)
-          .eq('is_required', true)
+          .from("plan_tasks")
+          .select("id, is_completed")
+          .eq("cycle_id", state.current_cycle_id)
+          .eq("is_required", true)
 
         const totalRequired = requiredTasks?.length || 0
-        const completedRequired = (requiredTasks || []).filter((task) => task.is_completed).length
+        const completedRequired = (requiredTasks || []).filter(
+          (task) => task.is_completed,
+        ).length
 
         setRequiredTaskCount(totalRequired)
         setCompletedRequiredCount(completedRequired)
@@ -65,10 +78,10 @@ export default function RecycleHubPage() {
       }
 
       const { data: checkpointData } = await supabase
-        .from('recycle_checkpoints')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false })
+        .from("recycle_checkpoints")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false })
 
       setCheckpoints(checkpointData || [])
       setIsLoading(false)
@@ -82,39 +95,45 @@ export default function RecycleHubPage() {
 
     setIsCreating(true)
     toast({
-      title: t('toast.creating'),
-      description: t('toast.creatingDesc'),
+      title: t("toast.creating"),
+      description: t("toast.creatingDesc"),
     })
 
     try {
       const supabase = createClient()
-      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
+      const accessToken = (await supabase.auth.getSession()).data.session
+        ?.access_token
 
-      const response = await fetch('/api/create-recycle-checkpoint', {
-        method: 'POST',
+      const response = await fetch("/api/create-recycle-checkpoint", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data?.error || 'Failed to create checkpoint')
-      if (!data?.success) throw new Error(data?.error || 'Failed to create checkpoint')
+      if (!response.ok)
+        throw new Error(data?.error || "Failed to create checkpoint")
+      if (!data?.success)
+        throw new Error(data?.error || "Failed to create checkpoint")
 
       toast({
-        title: t('toast.ready'),
-        description: t('toast.readyDesc', { questions: data.question_count, skills: data.weak_skills_targeted }),
+        title: t("toast.ready"),
+        description: t("toast.readyDesc", {
+          questions: data.question_count,
+          skills: data.weak_skills_targeted,
+        }),
       })
 
       router.push(
-        `/locked-in/drills/practice?module=${data.module_id}&checkpointId=${data.checkpoint_id}`
+        `/drill/drills/practice?module=${data.module_id}&checkpointId=${data.checkpoint_id}`,
       )
     } catch (err: any) {
-      console.error('Failed to create checkpoint:', err)
+      console.error("Failed to create checkpoint:", err)
       toast({
         variant: "destructive",
-        title: t('toast.error'),
+        title: t("toast.error"),
         description: err.message || "Failed to create checkpoint",
       })
     } finally {
@@ -122,40 +141,87 @@ export default function RecycleHubPage() {
     }
   }
 
+  // T-062: Generate Next Plan after recycle completion
+  const handleGenerateNextPlan = async () => {
+    if (!user) return
+    setIsGeneratingPlan(true)
+    try {
+      const supabase = createClient()
+      const response = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast({
+          title: t("toast.planGenerated", { fallback: "Plan Generated!" }),
+          description: t("toast.planGeneratedDesc", {
+            fallback: "Your next study plan is ready.",
+          }),
+        })
+        router.push("/plan")
+      } else {
+        throw new Error(result.error || "Failed to generate plan")
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: t("toast.error"),
+        description: err.message || "Failed to generate plan",
+      })
+    } finally {
+      setIsGeneratingPlan(false)
+    }
+  }
+
   if (isLoading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
-      <p>{tc('status.loading')}</p>
-    </div>
+    return (
+      <div className="min-h-screen bg-surface-recycle/10 p-4">
+        <div className="max-w-4xl mx-auto space-y-6 pt-4">
+          <div className="text-center space-y-2">
+            <div className="h-10 w-48 mx-auto rounded-lg bg-muted animate-skeleton-pulse" />
+            <div className="h-4 w-72 mx-auto rounded bg-muted animate-skeleton-pulse" />
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-28 rounded-xl border-2 border-border bg-muted/50 animate-skeleton-pulse"
+              style={{ animationDelay: `${i * 120}ms` }}
+            />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   const hasCompletedAllRequiredTasks =
     requiredTaskCount > 0 && completedRequiredCount >= requiredTaskCount
 
   const isUnlocked =
-    userState?.current_phase === 'RECYCLE_UNLOCKED' ||
-    userState?.current_phase === 'RECYCLE_ASSESSMENT_IN_PROGRESS' ||
+    userState?.current_phase === "RECYCLE_UNLOCKED" ||
+    userState?.current_phase === "RECYCLE_ASSESSMENT_IN_PROGRESS" ||
     hasCompletedAllRequiredTasks
 
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground">
-            {t('subtitle')}
-          </p>
+          <h1 className="text-4xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
 
         {!isUnlocked && (
           <Card className="border-muted bg-muted/20">
             <CardContent className="text-center py-12">
-              <p className="text-6xl mb-4">{t('locked')}</p>
-              <h3 className="text-2xl font-bold mb-2">{t('lockedTitle')}</h3>
-              <p className="text-muted-foreground mb-6">
-                {t('lockedDesc')}
-              </p>
-              <Button onClick={() => router.push('/plan')}>
-                {t('goToPlan')}
+              <p className="text-6xl mb-4">{t("locked")}</p>
+              <h3 className="text-2xl font-bold mb-2">{t("lockedTitle")}</h3>
+              <p className="text-muted-foreground mb-6">{t("lockedDesc")}</p>
+              <Button onClick={() => router.push("/plan")}>
+                {t("goToPlan")}
               </Button>
             </CardContent>
           </Card>
@@ -165,10 +231,8 @@ export default function RecycleHubPage() {
           <>
             <Card className="border-primary bg-primary/5">
               <CardHeader>
-                <CardTitle>{t('createCheckpoint')}</CardTitle>
-                <CardDescription>
-                  {t('createCheckpointDesc')}
-                </CardDescription>
+                <CardTitle>{t("createCheckpoint")}</CardTitle>
+                <CardDescription>{t("createCheckpointDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -177,18 +241,18 @@ export default function RecycleHubPage() {
                   className="w-full"
                   size="lg"
                 >
-                  {isCreating ? t('creating') : t('startCheckpoint')}
+                  {isCreating ? t("creating") : t("startCheckpoint")}
                 </Button>
               </CardContent>
             </Card>
 
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">{t('pastCheckpoints')}</h2>
+              <h2 className="text-2xl font-bold">{t("pastCheckpoints")}</h2>
               {checkpoints.length === 0 && (
                 <Card>
                   <CardContent className="text-center py-8">
                     <p className="text-muted-foreground">
-                      {t('noCheckpoints')}
+                      {t("noCheckpoints")}
                     </p>
                   </CardContent>
                 </Card>
@@ -198,11 +262,13 @@ export default function RecycleHubPage() {
                 <Card key={checkpoint.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>{t('checkpointNumber', { number: idx + 1 })}</CardTitle>
+                      <CardTitle>
+                        {t("checkpointNumber", { number: idx + 1 })}
+                      </CardTitle>
                       {checkpoint.is_completed ? (
-                        <Badge variant="strong">{tc('status.complete')}</Badge>
+                        <Badge variant="strong">{tc("status.complete")}</Badge>
                       ) : (
-                        <Badge>{tc('status.inProgress')}</Badge>
+                        <Badge>{tc("status.inProgress")}</Badge>
                       )}
                     </div>
                     <CardDescription>
@@ -212,13 +278,57 @@ export default function RecycleHubPage() {
                   <CardContent>
                     {checkpoint.delta_readiness && (
                       <p className="text-sm">
-                        {t('readinessChange', { delta: `${checkpoint.delta_readiness > 0 ? '+' : ''}${checkpoint.delta_readiness}` })}
+                        {t("readinessChange", {
+                          delta: `${checkpoint.delta_readiness > 0 ? "+" : ""}${checkpoint.delta_readiness}`,
+                        })}
                       </p>
                     )}
                   </CardContent>
                 </Card>
               ))}
             </div>
+
+            {/* T-062: Generate Next Plan CTA */}
+            {checkpoints.some((c: any) => c.is_completed) && (
+              <Card className="border-2 border-primary bg-surface-recycle/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    {t("generateNextPlan", {
+                      fallback: "Ready for Next Cycle?",
+                    })}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("generateNextPlanDesc", {
+                      fallback:
+                        "Generate a new study plan based on your updated performance.",
+                    })}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={handleGenerateNextPlan}
+                    disabled={isGeneratingPlan}
+                    className="w-full touch-target"
+                    size="lg"
+                  >
+                    {isGeneratingPlan ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t("generating", { fallback: "Generating..." })}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {t("generateNextPlanButton", {
+                          fallback: "Generate Next Plan",
+                        })}
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </div>

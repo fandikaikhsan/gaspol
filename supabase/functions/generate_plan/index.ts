@@ -14,18 +14,19 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Parse body first to check for user_id (API route proxy pattern)
@@ -38,54 +39,59 @@ serve(async (req) => {
       userId = body.user_id
     } else {
       // Direct call with user JWT (legacy/fallback)
-      const authHeader = req.headers.get('Authorization')!
-      const token = authHeader.replace('Bearer ', '')
-      const { data: { user } } = await supabase.auth.getUser(token)
+      const authHeader = req.headers.get("Authorization")!
+      const token = authHeader.replace("Bearer ", "")
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token)
       if (!user) {
-        throw new Error('Unauthorized')
+        throw new Error("Unauthorized")
       }
       userId = user.id
     }
 
     // 1. Get user profile
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('package_days, time_budget_min')
-      .eq('id', userId)
+      .from("profiles")
+      .select("package_days, time_budget_min")
+      .eq("id", userId)
       .single()
 
     if (!profile || !profile.package_days || !profile.time_budget_min) {
       const missing = []
-      if (!profile?.package_days) missing.push('package_days')
-      if (!profile?.time_budget_min) missing.push('time_budget_min')
+      if (!profile?.package_days) missing.push("package_days")
+      if (!profile?.time_budget_min) missing.push("time_budget_min")
       return new Response(
         JSON.stringify({
-          error: 'User profile incomplete',
-          detail: `Missing fields: ${missing.join(', ')}. Please complete onboarding first.`,
+          error: "User profile incomplete",
+          detail: `Missing fields: ${missing.join(", ")}. Please complete onboarding first.`,
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       )
     }
 
     // 2. Get latest analytics snapshot
     const { data: snapshot } = await supabase
-      .from('analytics_snapshots')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("analytics_snapshots")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(1)
       .single()
 
-    // 3. Identify weak skills
+    // 3. Identify weak/uncovered skills (T-061: total_points < 20)
     const { data: weakSkills } = await supabase
-      .from('user_skill_state')
-      .select('micro_skill_id, accuracy')
-      .eq('user_id', userId)
-      .lt('accuracy', 60)
-      .order('accuracy')
+      .from("user_skill_state")
+      .select("micro_skill_id, accuracy, total_points")
+      .eq("user_id", userId)
+      .or("total_points.lt.20,total_points.is.null")
+      .order("total_points", { ascending: true, nullsFirst: true })
       .limit(10)
 
-    const weakSkillIds = (weakSkills || []).map(s => s.micro_skill_id)
+    const weakSkillIds = (weakSkills || []).map((s) => s.micro_skill_id)
 
     // 4. Calculate plan parameters
     const daysRemaining = profile.package_days
@@ -100,27 +106,32 @@ serve(async (req) => {
     else if (dailyTimeBudget >= 30) taskCount = 4
 
     // 5. Calculate task mix
-    const taskMix = calculateTaskMix(taskCount, daysRemaining, weakSkillIds.length)
+    const taskMix = calculateTaskMix(
+      taskCount,
+      daysRemaining,
+      weakSkillIds.length,
+    )
 
     // 6. Get current cycle number
     const { data: existingCycles } = await supabase
-      .from('plan_cycles')
-      .select('cycle_number')
-      .eq('user_id', userId)
-      .order('cycle_number', { ascending: false })
+      .from("plan_cycles")
+      .select("cycle_number")
+      .eq("user_id", userId)
+      .order("cycle_number", { ascending: false })
       .limit(1)
 
-    const cycleNumber = existingCycles && existingCycles.length > 0
-      ? existingCycles[0].cycle_number + 1
-      : 1
+    const cycleNumber =
+      existingCycles && existingCycles.length > 0
+        ? existingCycles[0].cycle_number + 1
+        : 1
 
     // 7. Create plan cycle
     const { data: cycle, error: cycleError } = await supabase
-      .from('plan_cycles')
+      .from("plan_cycles")
       .insert({
         user_id: userId,
         cycle_number: cycleNumber,
-        start_date: new Date().toISOString().split('T')[0],
+        start_date: new Date().toISOString().split("T")[0],
         target_days_remaining: daysRemaining,
         generated_from_snapshot_id: snapshot?.id,
         weak_skills: weakSkillIds,
@@ -147,12 +158,12 @@ serve(async (req) => {
       tasks.push({
         cycle_id: cycle.id,
         user_id: userId,
-        task_type: 'drill_focus',
+        task_type: "drill_focus",
         task_order: taskOrder++,
         is_required: taskOrder <= cycle.required_task_count,
         target_node_id: targetSkillId,
         title: `Focused Drill ${i + 1}`,
-        subtitle: 'Target your weak areas',
+        subtitle: "Target your weak areas",
         estimated_duration_min: 15,
       })
     }
@@ -162,11 +173,11 @@ serve(async (req) => {
       tasks.push({
         cycle_id: cycle.id,
         user_id: userId,
-        task_type: 'drill_mixed',
+        task_type: "drill_mixed",
         task_order: taskOrder++,
         is_required: taskOrder <= cycle.required_task_count,
         title: `Mixed Practice ${i + 1}`,
-        subtitle: 'Varied question types',
+        subtitle: "Varied question types",
         estimated_duration_min: 20,
       })
     }
@@ -176,11 +187,11 @@ serve(async (req) => {
       tasks.push({
         cycle_id: cycle.id,
         user_id: userId,
-        task_type: 'mock',
+        task_type: "mock",
         task_order: taskOrder++,
         is_required: true, // Mocks always required
         title: `Mock Test ${i + 1}`,
-        subtitle: 'Full exam simulation',
+        subtitle: "Full exam simulation",
         estimated_duration_min: 45,
       })
     }
@@ -190,11 +201,11 @@ serve(async (req) => {
       tasks.push({
         cycle_id: cycle.id,
         user_id: userId,
-        task_type: 'flashcard',
+        task_type: "flashcard",
         task_order: taskOrder++,
         is_required: false,
         title: `Quick Review ${i + 1}`,
-        subtitle: 'Flashcard practice',
+        subtitle: "Flashcard practice",
         estimated_duration_min: 10,
       })
     }
@@ -204,35 +215,35 @@ serve(async (req) => {
       tasks.push({
         cycle_id: cycle.id,
         user_id: userId,
-        task_type: 'review',
+        task_type: "review",
         task_order: taskOrder++,
         is_required: false,
         title: `Past Mistakes Review ${i + 1}`,
-        subtitle: 'Learn from errors',
+        subtitle: "Learn from errors",
         estimated_duration_min: 15,
       })
     }
 
     const { error: tasksError } = await supabase
-      .from('plan_tasks')
+      .from("plan_tasks")
       .insert(tasks)
 
     if (tasksError) throw tasksError
 
     // 9. Update user state
     await supabase
-      .from('user_state')
+      .from("user_state")
       .update({
-        current_phase: 'PLAN_ACTIVE',
+        current_phase: "PLAN_ACTIVE",
         current_cycle_id: cycle.id,
         cycle_start_date: new Date().toISOString(),
       })
-      .eq('user_id', userId)
+      .eq("user_id", userId)
 
     // 10. Create cycle_start snapshot
-    await supabase.from('analytics_snapshots').insert({
+    await supabase.from("analytics_snapshots").insert({
       user_id: userId,
-      snapshot_type: 'cycle_start',
+      snapshot_type: "cycle_start",
       snapshot_context_id: cycle.id,
       readiness_score: snapshot?.readiness_score || 0,
       teliti_score: snapshot?.teliti_score || 50,
@@ -250,18 +261,15 @@ serve(async (req) => {
         required_count: cycle.required_task_count,
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     )
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    })
   }
 })
 
@@ -271,7 +279,7 @@ serve(async (req) => {
 function calculateTaskMix(
   totalTasks: number,
   daysRemaining: number,
-  weakSkillCount: number
+  weakSkillCount: number,
 ): {
   drill_focus: number
   drill_mixed: number

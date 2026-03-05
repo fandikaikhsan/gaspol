@@ -2,19 +2,20 @@
  * AnswerOptions Component
  * Phase 2: Question Runner & Assessment Engine
  *
- * MCQ5 format (A, B, C, D, E)
+ * Supports MCQ5 (A–E) and MCQ4 (A–D) formats
  */
 
-import { MCQ5Options } from "@/lib/assessment/types"
+import { MCQ5Options, MCQ4Options } from "@/lib/assessment/types"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface AnswerOptionsProps {
-  options: MCQ5Options
+  options: MCQ5Options | MCQ4Options
   selectedAnswer: string
   onAnswerChange: (answer: string) => void
   disabled?: boolean
   showCorrectAnswer?: string // For review mode
+  optionKeys?: readonly string[] // Override option keys (default: auto-detect from options)
 }
 
 export function AnswerOptions({
@@ -23,8 +24,14 @@ export function AnswerOptions({
   onAnswerChange,
   disabled = false,
   showCorrectAnswer,
+  optionKeys: overrideKeys,
 }: AnswerOptionsProps) {
-  const optionKeys = ['A', 'B', 'C', 'D', 'E'] as const
+  // Auto-detect keys: if E exists → MCQ5, otherwise MCQ4
+  const optionKeys =
+    overrideKeys ??
+    ("E" in options
+      ? (["A", "B", "C", "D", "E"] as const)
+      : (["A", "B", "C", "D"] as const))
 
   return (
     <RadioGroup
@@ -36,18 +43,21 @@ export function AnswerOptions({
       {optionKeys.map((key) => {
         const isSelected = selectedAnswer === key
         const isCorrect = showCorrectAnswer === key
-        const isWrong = showCorrectAnswer && selectedAnswer === key && selectedAnswer !== showCorrectAnswer
+        const isWrong =
+          showCorrectAnswer &&
+          selectedAnswer === key &&
+          selectedAnswer !== showCorrectAnswer
 
         return (
           <div
             key={key}
             className={`
               flex items-start gap-4 rounded-lg border-2 p-4 transition-all
-              ${!showCorrectAnswer && !isSelected ? 'border-border bg-background hover:bg-muted' : ''}
-              ${!showCorrectAnswer && isSelected ? 'border-primary bg-primary/10 shadow-brutal-sm' : ''}
-              ${showCorrectAnswer && isCorrect ? 'border-status-strong bg-status-strong/10' : ''}
-              ${showCorrectAnswer && isWrong ? 'border-destructive bg-destructive/10' : ''}
-              ${showCorrectAnswer && !isCorrect && !isWrong ? 'border-border bg-background opacity-60' : ''}
+              ${!showCorrectAnswer && !isSelected ? "border-border bg-background hover:bg-muted" : ""}
+              ${!showCorrectAnswer && isSelected ? "border-primary bg-primary/10 shadow-brutal-sm" : ""}
+              ${showCorrectAnswer && isCorrect ? "border-status-strong bg-status-strong/10" : ""}
+              ${showCorrectAnswer && isWrong ? "border-destructive bg-destructive/10" : ""}
+              ${showCorrectAnswer && !isCorrect && !isWrong ? "border-border bg-background opacity-60" : ""}
             `}
           >
             <RadioGroupItem
@@ -64,10 +74,10 @@ export function AnswerOptions({
               <div
                 className={`
                   flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold
-                  ${!showCorrectAnswer && !isSelected ? 'border-border bg-background' : ''}
-                  ${!showCorrectAnswer && isSelected ? 'border-primary bg-primary text-primary-foreground' : ''}
-                  ${showCorrectAnswer && isCorrect ? 'border-status-strong bg-status-strong text-white' : ''}
-                  ${showCorrectAnswer && isWrong ? 'border-destructive bg-destructive text-white' : ''}
+                  ${!showCorrectAnswer && !isSelected ? "border-border bg-background" : ""}
+                  ${!showCorrectAnswer && isSelected ? "border-primary bg-primary text-primary-foreground" : ""}
+                  ${showCorrectAnswer && isCorrect ? "border-status-strong bg-status-strong text-white" : ""}
+                  ${showCorrectAnswer && isWrong ? "border-destructive bg-destructive text-white" : ""}
                 `}
               >
                 {key}

@@ -9,9 +9,9 @@
  * @see /docs/TROUBLESHOOTING-JWT-ES256.md for why we use API route instead of Edge Function
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
+import { createClient as createServerClient } from "@/lib/supabase/server"
 
 interface FinalizeRequest {
   module_id: string
@@ -25,23 +25,27 @@ export async function POST(request: NextRequest) {
   try {
     // 1. AUTHENTICATION
     const supabaseAuth = await createServerClient()
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+        { error: "Authentication required" },
+        { status: 401 },
       )
     }
 
     // 2. PARSE REQUEST
     const body: FinalizeRequest = await request.json()
-    const { module_id, score, total_questions, correct_count, started_at } = body
+    const { module_id, score, total_questions, correct_count, started_at } =
+      body
 
     if (!module_id) {
       return NextResponse.json(
-        { error: 'Missing required field: module_id' },
-        { status: 400 }
+        { error: "Missing required field: module_id" },
+        { status: 400 },
       )
     }
 
@@ -52,23 +56,39 @@ export async function POST(request: NextRequest) {
       {
         auth: {
           autoRefreshToken: false,
-          persistSession: false
-        }
-      }
+          persistSession: false,
+        },
+      },
     )
 
     const now = new Date().toISOString()
     const totalTimeSec = started_at
-      ? Math.max(0, Math.floor((new Date().getTime() - new Date(started_at).getTime()) / 1000))
+      ? Math.max(
+          0,
+          Math.floor(
+            (new Date().getTime() - new Date(started_at).getTime()) / 1000,
+          ),
+        )
       : 0
 
-    // 4. RECORD MODULE COMPLETION
+    // 4. FETCH MODULE & CHECK PASS THRESHOLD (T-019)
+    const { data: moduleData } = await supabase
+      .from("modules")
+      .select("id, passing_threshold")
+      .eq("id", module_id)
+      .single()
+
+    const passingThreshold = moduleData?.passing_threshold ?? 0.7
+    const scoreRatio = total_questions > 0 ? correct_count / total_questions : 0
+    const passed = scoreRatio >= passingThreshold
+
+    // 5. RECORD MODULE COMPLETION
     const { data: completion, error: completionError } = await supabase
-      .from('module_completions')
+      .from("module_completions")
       .insert({
         user_id: user.id,
         module_id,
-        context_type: 'baseline',
+        context_type: "baseline",
         score: score || 0,
         total_questions: total_questions || 0,
         correct_count: correct_count || 0,
@@ -80,105 +100,230 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (completionError) {
-      console.error('[finalize-baseline] Failed to insert completion:', completionError)
+      console.error(
+        "[finalize-baseline] Failed to insert completion:",
+        completionError,
+      )
       return NextResponse.json(
-        { error: 'Failed to record completion' },
-        { status: 500 }
+        { error: "Failed to record completion" },
+        { status: 500 },
       )
     }
 
     // 5. COMPUTE CONSTRUCT PROFILE
     const { data: constructStates } = await supabase
-      .from('user_construct_state')
-      .select('*')
-      .eq('user_id', user.id)
+      .from("user_construct_state")
+      .select("*")
+      .eq("user_id", user.id)
 
     const constructProfile: Record<string, number> = {}
-    const constructs = ['teliti', 'speed', 'reasoning', 'computation', 'reading']
+    const constructs = [
+      "teliti",
+      "speed",
+      "reasoning",
+      "computation",
+      "reading",
+    ]
 
-    constructs.forEach(construct => {
-      const state = constructStates?.find(s => s.construct_name === construct)
+    constructs.forEach((construct) => {
+      const state = constructStates?.find((s) => s.construct_name === construct)
       constructProfile[`${construct}_score`] = state?.score || 50
     })
 
     // Simple readiness score = average of construct scores
-    const readinessScore = Object.values(constructProfile).reduce((a, b) => a + b, 0) / constructs.length
+    const readinessScore =
+      Object.values(constructProfile).reduce((a, b) => a + b, 0) /
+      constructs.length
 
     // 6. UPDATE COMPLETION WITH ANALYTICS
     await supabase
-      .from('module_completions')
+      .from("module_completions")
       .update({
         readiness_score: readinessScore,
         construct_profile: constructProfile,
       })
-      .eq('id', completion.id)
+      .eq("id", completion.id)
 
     // 7. CHECK IF ALL BASELINE MODULES ARE COMPLETE
     const { data: allBaselineModules } = await supabase
-      .from('baseline_modules')
-      .select('module_id')
-      .eq('is_active', true)
+      .from("baseline_modules")
+      .select("module_id")
+      .eq("is_active", true)
 
     const { data: completedModules } = await supabase
-      .from('module_completions')
-      .select('module_id')
-      .eq('user_id', user.id)
-      .eq('context_type', 'baseline')
+      .from("module_completions")
+      .select("module_id")
+      .eq("user_id", user.id)
+      .eq("context_type", "baseline")
 
-    const allModuleIds = (allBaselineModules || []).map(m => m.module_id)
-    const completedModuleIds = (completedModules || []).map(m => m.module_id)
-    const allComplete = allModuleIds.length > 0 && allModuleIds.every(id => completedModuleIds.includes(id))
+    const allModuleIds = (allBaselineModules || []).map((m) => m.module_id)
+    const completedModuleIds = (completedModules || []).map((m) => m.module_id)
+    const allComplete =
+      allModuleIds.length > 0 &&
+      allModuleIds.every((id) => completedModuleIds.includes(id))
 
     // 8. UPDATE USER STATE IF ALL COMPLETE
     if (allComplete) {
       // Create baseline_complete snapshot
-      await supabase.from('analytics_snapshots').insert({
+      await supabase.from("analytics_snapshots").insert({
         user_id: user.id,
         // Legacy columns
-        snapshot_type: 'baseline_complete',
+        snapshot_type: "baseline_complete",
         readiness_score: readinessScore,
         ...constructProfile,
         skills_tested: 0,
         skills_strong: 0,
         skills_weak: 0,
         // New JSONB columns
-        scope: 'full_baseline',
+        scope: "full_baseline",
         readiness: readinessScore,
         constructs: {
-          'C.ATTENTION': constructProfile.teliti_score || 50,
-          'C.SPEED': constructProfile.speed_score || 50,
-          'C.REASONING': constructProfile.reasoning_score || 50,
-          'C.COMPUTATION': constructProfile.computation_score || 50,
-          'C.READING': constructProfile.reading_score || 50,
+          "C.ATTENTION": constructProfile.teliti_score || 50,
+          "C.SPEED": constructProfile.speed_score || 50,
+          "C.REASONING": constructProfile.reasoning_score || 50,
+          "C.COMPUTATION": constructProfile.computation_score || 50,
+          "C.READING": constructProfile.reading_score || 50,
         },
       })
 
       // Update user phase
       await supabase
-        .from('user_state')
+        .from("user_state")
         .update({
-          current_phase: 'BASELINE_COMPLETE',
+          current_phase: "BASELINE_COMPLETE",
           baseline_completed_at: now,
         })
-        .eq('user_id', user.id)
+        .eq("user_id", user.id)
+
+      // 8b. INITIALIZE FLASHCARD SR STATE (V3-T-018)
+      // Create flashcard_user_state for ALL level-5 skills (idempotent)
+      try {
+        const { data: l5Skills } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .eq("level", 5)
+          .eq("is_active", true)
+
+        if (l5Skills && l5Skills.length > 0) {
+          // Check what already exists to avoid duplicates (idempotent)
+          const { data: existingStates } = await supabase
+            .from("flashcard_user_state")
+            .select("skill_id")
+            .eq("user_id", user.id)
+
+          const existingSkillIds = new Set(
+            (existingStates || []).map((s) => s.skill_id),
+          )
+
+          const newRecords = l5Skills
+            .filter((skill) => !existingSkillIds.has(skill.id))
+            .map((skill) => ({
+              user_id: user.id,
+              skill_id: skill.id,
+              ease_factor: 2.5,
+              interval_days: 0,
+              reps: 0,
+              due_at: now,
+              mastery_bucket: "forgot",
+              total_reviews: 0,
+            }))
+
+          if (newRecords.length > 0) {
+            const { error: fcError } = await supabase
+              .from("flashcard_user_state")
+              .insert(newRecords)
+
+            if (fcError) {
+              console.error(
+                "[finalize-baseline] Failed to init flashcard states:",
+                fcError,
+              )
+            } else if (process.env.NODE_ENV === "development") {
+              console.log(
+                `[finalize-baseline] Initialized ${newRecords.length} flashcard states for user=${user.id}`,
+              )
+            }
+          }
+        }
+      } catch (fcInitError) {
+        // Non-blocking: flashcard init failure shouldn't break baseline finalization
+        console.error("[finalize-baseline] Flashcard init error:", fcInitError)
+      }
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[finalize-baseline] Success: user=${user.id}, module=${module_id}, allComplete=${allComplete}`)
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[finalize-baseline] Success: user=${user.id}, module=${module_id}, passed=${passed}, score=${scoreRatio.toFixed(2)}, allComplete=${allComplete}`,
+      )
+    }
+
+    // 9. FETCH WEAK MATERIAL CARDS ON FAIL (T-020)
+    let weakMaterialCards: Array<Record<string, unknown>> = []
+
+    if (!passed) {
+      try {
+        // Get the incorrect attempts for this module to find weak skills
+        const { data: moduleAttempts } = await supabase
+          .from("attempts")
+          .select("question_id, is_correct")
+          .eq("user_id", user.id)
+          .eq("module_id", module_id)
+          .eq("is_correct", false)
+
+        if (moduleAttempts && moduleAttempts.length > 0) {
+          const wrongQuestionIds = moduleAttempts.map((a) => a.question_id)
+
+          // Get the micro_skill_ids for wrong questions
+          const { data: wrongQuestions } = await supabase
+            .from("questions")
+            .select("id, micro_skill_id")
+            .in("id", wrongQuestionIds)
+
+          const weakSkillIds = [
+            ...new Set(
+              (wrongQuestions || [])
+                .map((q) => q.micro_skill_id)
+                .filter(Boolean),
+            ),
+          ]
+
+          if (weakSkillIds.length > 0) {
+            // Fetch published material cards for those skills
+            const { data: cards } = await supabase
+              .from("material_cards")
+              .select(
+                "id, skill_id, title, core_idea, key_facts, common_mistakes, examples, status",
+              )
+              .in("skill_id", weakSkillIds)
+              .eq("status", "published")
+
+            weakMaterialCards = cards || []
+          }
+        }
+      } catch (mcError) {
+        console.error(
+          "[finalize-baseline] Failed to fetch weak Material Cards:",
+          mcError,
+        )
+        // Non-blocking
+      }
     }
 
     return NextResponse.json({
       success: true,
       completion,
+      passed,
+      score_ratio: Math.round(scoreRatio * 100) / 100,
+      passing_threshold: passingThreshold,
       all_complete: allComplete,
       readiness_score: readinessScore,
+      weak_material_cards: weakMaterialCards,
     })
-
   } catch (error) {
-    console.error('[finalize-baseline] Unexpected error:', error)
+    console.error("[finalize-baseline] Unexpected error:", error)
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     )
   }
 }

@@ -8,7 +8,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Menu, Target, Lock, Zap, BarChart2 } from "lucide-react"
+import { Menu, Target, Swords, BookOpen, BarChart2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,8 +23,8 @@ import { useTranslation } from "@/lib/i18n"
 
 const navigation = [
   { key: "plan", href: "/plan", icon: Target },
-  { key: "lockedIn", href: "/locked-in", icon: Lock },
-  { key: "taktis", href: "/taktis", icon: Zap },
+  { key: "drill", href: "/drill", icon: Swords },
+  { key: "review", href: "/review", icon: BookOpen },
   { key: "analytics", href: "/analytics", icon: BarChart2 },
 ] as const
 
@@ -33,7 +33,7 @@ export function BottomNav() {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [profile, setProfile] = useState<any>(null)
-  const { t } = useTranslation('common')
+  const { t } = useTranslation("common")
 
   useEffect(() => {
     loadProfile()
@@ -111,17 +111,19 @@ export function BottomNav() {
               <div className="flex items-center justify-center px-4 py-1 rounded-full border-2 border-transparent">
                 <Menu className="h-5 w-5" strokeWidth={2} />
               </div>
-              <span className="text-[10px] font-medium mt-1">{t('nav.menu')}</span>
+              <span className="text-[10px] font-medium mt-1">
+                {t("nav.menu")}
+              </span>
             </button>
           </SheetTrigger>
           <SheetContent side="bottom" className="h-[400px]">
             <SheetHeader>
-              <SheetTitle>{t('nav.profileSettings')}</SheetTitle>
+              <SheetTitle>{t("nav.profileSettings")}</SheetTitle>
             </SheetHeader>
             <div className="mt-6 space-y-4">
               <div className="p-4 bg-construct-speed rounded-lg border-2 border-border shadow-brutal-sm">
                 <p className="font-bold text-lg">
-                  {profile?.full_name || t('nav.user')}
+                  {profile?.full_name || t("nav.user")}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {profile?.email}
@@ -136,7 +138,7 @@ export function BottomNav() {
                   router.push("/settings")
                 }}
               >
-                {t('nav.profileSettings')}
+                {t("nav.profileSettings")}
               </Button>
 
               <Button
@@ -144,7 +146,7 @@ export function BottomNav() {
                 className="w-full"
                 onClick={handleLogout}
               >
-                {t('nav.logout')}
+                {t("nav.logout")}
               </Button>
             </div>
           </SheetContent>

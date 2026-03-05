@@ -8,7 +8,13 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -50,6 +56,7 @@ interface Module {
   time_limit_min: number | null
   is_published: boolean
   created_at: string
+  target_node_id?: string | null
   questions?: ModuleQuestion[]
 }
 
@@ -73,6 +80,12 @@ interface Question {
   difficulty: string
   time_estimate_seconds: number
   cognitive_level: string
+}
+
+interface TaxonomyNodeOption {
+  id: string
+  name: string
+  fullPath: string
 }
 
 const MODULE_TYPES = [
@@ -102,6 +115,7 @@ export default function AdminModulesPage() {
     description: "",
     module_type: "drill_focus",
     time_limit_min: null as number | null,
+    target_node_id: null as string | null,
   })
 
   // Composer state
@@ -109,10 +123,71 @@ export default function AdminModulesPage() {
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([])
   const [questionSearch, setQuestionSearch] = useState("")
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
+  const [taxonomyNodes, setTaxonomyNodes] = useState<TaxonomyNodeOption[]>([])
+  const [loadingTaxonomy, setLoadingTaxonomy] = useState(false)
 
   useEffect(() => {
     loadModules()
   }, [])
+
+  // Load taxonomy nodes for drill_focus target selection
+  useEffect(() => {
+    if (isDialogOpen && taxonomyNodes.length === 0) {
+      loadTaxonomyNodes()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDialogOpen])
+
+  const loadTaxonomyNodes = async () => {
+    setLoadingTaxonomy(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await (supabase as any)
+        .from("taxonomy_nodes")
+        .select("id, parent_id, level, code, name")
+        .eq("is_active", true)
+        .order("level")
+        .order("position")
+
+      if (error) throw error
+
+      // Build ancestry paths for L5 nodes
+      const allNodes = (data || []) as Array<{
+        id: string
+        parent_id: string | null
+        level: number
+        code: string
+        name: string
+      }>
+      const nodeMap = new Map<string, (typeof allNodes)[0]>()
+      for (const n of allNodes) nodeMap.set(n.id, n)
+
+      const l5Options: TaxonomyNodeOption[] = allNodes
+        .filter((n) => n.level === 5)
+        .map((n) => {
+          const path: string[] = []
+          let current: (typeof allNodes)[0] | undefined = n
+          while (current) {
+            path.unshift(current.name)
+            current = current.parent_id
+              ? nodeMap.get(current.parent_id)
+              : undefined
+          }
+          return {
+            id: n.id,
+            name: n.name,
+            fullPath: path.join(" \u203A "),
+          }
+        })
+        .sort((a, b) => a.fullPath.localeCompare(b.fullPath))
+
+      setTaxonomyNodes(l5Options)
+    } catch (error) {
+      console.error("Load taxonomy error:", error)
+    } finally {
+      setLoadingTaxonomy(false)
+    }
+  }
 
   const loadModules = async () => {
     setIsLoading(true)
@@ -121,7 +196,8 @@ export default function AdminModulesPage() {
 
       const { data, error } = await supabase
         .from("modules")
-        .select(`
+        .select(
+          `
           *,
           module_questions(
             id,
@@ -135,7 +211,8 @@ export default function AdminModulesPage() {
               time_estimate_seconds
             )
           )
-        `)
+        `,
+        )
         .order("created_at", { ascending: false })
 
       if (error) throw error
@@ -167,6 +244,7 @@ export default function AdminModulesPage() {
       description: "",
       module_type: "drill_focus",
       time_limit_min: null,
+      target_node_id: null,
     })
     setIsDialogOpen(true)
   }
@@ -179,6 +257,7 @@ export default function AdminModulesPage() {
       description: module.description || "",
       module_type: module.module_type,
       time_limit_min: module.time_limit_min,
+      target_node_id: module.target_node_id || null,
     })
     setIsDialogOpen(true)
   }
@@ -197,13 +276,19 @@ export default function AdminModulesPage() {
 
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
       const moduleData = {
         name: formData.name,
         description: formData.description || null,
         module_type: formData.module_type,
         time_limit_min: formData.time_limit_min,
+        target_node_id:
+          formData.module_type === "drill_focus"
+            ? formData.target_node_id
+            : null,
         is_published: false,
         created_by: user?.id,
       }
@@ -237,7 +322,8 @@ export default function AdminModulesPage() {
       toast({
         variant: "destructive",
         title: "Failed to Save",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
       })
     } finally {
       setIsSaving(false)
@@ -249,7 +335,10 @@ export default function AdminModulesPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("modules").delete().eq("id", module.id)
+      const { error } = await supabase
+        .from("modules")
+        .delete()
+        .eq("id", module.id)
 
       if (error) throw error
 
@@ -282,7 +371,9 @@ export default function AdminModulesPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from("questions")
-        .select("id, question_text, question_type, difficulty, time_estimate_seconds, cognitive_level")
+        .select(
+          "id, question_text, question_type, difficulty, time_estimate_seconds, cognitive_level",
+        )
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(100)
@@ -361,7 +452,10 @@ export default function AdminModulesPage() {
       const supabase = createClient()
 
       // Delete existing questions
-      await supabase.from("module_questions").delete().eq("module_id", selectedModule.id)
+      await supabase
+        .from("module_questions")
+        .delete()
+        .eq("module_id", selectedModule.id)
 
       // Insert new questions
       const questionsToInsert = moduleQuestions.map((mq) => ({
@@ -371,7 +465,9 @@ export default function AdminModulesPage() {
       }))
 
       if (questionsToInsert.length > 0) {
-        const { error } = await supabase.from("module_questions").insert(questionsToInsert)
+        const { error } = await supabase
+          .from("module_questions")
+          .insert(questionsToInsert)
         if (error) throw error
       }
 
@@ -387,7 +483,8 @@ export default function AdminModulesPage() {
       toast({
         variant: "destructive",
         title: "Failed to Save",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
       })
     } finally {
       setIsSaving(false)
@@ -497,10 +594,11 @@ export default function AdminModulesPage() {
       ) : (
         <div className="grid gap-4">
           {filteredModules.map((module) => {
-            const totalTime = module.questions?.reduce(
-              (sum, mq) => sum + (mq.question?.time_estimate_seconds || 0),
-              0
-            ) || 0
+            const totalTime =
+              module.questions?.reduce(
+                (sum, mq) => sum + (mq.question?.time_estimate_seconds || 0),
+                0,
+              ) || 0
             const estimatedMinutes = Math.ceil(totalTime / 60)
 
             return (
@@ -513,9 +611,17 @@ export default function AdminModulesPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline">
-                          {MODULE_TYPES.find((t) => t.value === module.module_type)?.label}
+                          {
+                            MODULE_TYPES.find(
+                              (t) => t.value === module.module_type,
+                            )?.label
+                          }
                         </Badge>
-                        <Badge variant={module.is_published ? "default" : "secondary"}>
+                        <Badge
+                          variant={
+                            module.is_published ? "default" : "secondary"
+                          }
+                        >
                           {module.is_published ? "Published" : "Draft"}
                         </Badge>
                       </div>
@@ -566,7 +672,11 @@ export default function AdminModulesPage() {
                       variant={module.is_published ? "outline" : "default"}
                       size="sm"
                       onClick={() => togglePublish(module)}
-                      className={module.is_published ? "" : "bg-green-600 hover:bg-green-700"}
+                      className={
+                        module.is_published
+                          ? ""
+                          : "bg-green-600 hover:bg-green-700"
+                      }
                     >
                       {module.is_published ? "Unpublish" : "Publish"}
                     </Button>
@@ -585,9 +695,7 @@ export default function AdminModulesPage() {
             <DialogTitle>
               {dialogMode === "create" ? "Create New Module" : "Edit Module"}
             </DialogTitle>
-            <DialogDescription>
-              Configure module settings
-            </DialogDescription>
+            <DialogDescription>Configure module settings</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -598,7 +706,9 @@ export default function AdminModulesPage() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="e.g., TPS Drill - Penalaran Umum"
               />
             </div>
@@ -646,13 +756,54 @@ export default function AdminModulesPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    time_limit_min: e.target.value ? parseInt(e.target.value) : null,
+                    time_limit_min: e.target.value
+                      ? parseInt(e.target.value)
+                      : null,
                   })
                 }
                 placeholder="Leave empty for no limit"
                 min="1"
               />
             </div>
+
+            {/* Target skill selector for drill_focus modules */}
+            {formData.module_type === "drill_focus" && (
+              <div className="space-y-2">
+                <Label htmlFor="target_node">Target Skill (L5 Node)</Label>
+                {loadingTaxonomy ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading taxonomy...
+                  </div>
+                ) : (
+                  <Select
+                    value={formData.target_node_id || "none"}
+                    onValueChange={(v) =>
+                      setFormData({
+                        ...formData,
+                        target_node_id: v === "none" ? null : v,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select target skill..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      <SelectItem value="none">— No target —</SelectItem>
+                      {taxonomyNodes.map((node) => (
+                        <SelectItem key={node.id} value={node.id}>
+                          {node.fullPath}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Required for drill_focus modules to correctly categorize in
+                  the student drill page.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -731,8 +882,8 @@ export default function AdminModulesPage() {
                                 mq.question.difficulty === "easy"
                                   ? "bg-green-100 text-green-800"
                                   : mq.question.difficulty === "medium"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
                               }`}
                             >
                               {mq.question.difficulty}
@@ -745,7 +896,9 @@ export default function AdminModulesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeQuestionFromModule(mq.question_id)}
+                          onClick={() =>
+                            removeQuestionFromModule(mq.question_id)
+                          }
                           className="text-red-600"
                         >
                           <X className="h-4 w-4" />
@@ -780,13 +933,15 @@ export default function AdminModulesPage() {
                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
                   {filteredAvailableQuestions.map((question) => {
                     const isAlreadyAdded = moduleQuestions.some(
-                      (mq) => mq.question_id === question.id
+                      (mq) => mq.question_id === question.id,
                     )
 
                     return (
                       <div
                         key={question.id}
-                        onClick={() => !isAlreadyAdded && addQuestionToModule(question)}
+                        onClick={() =>
+                          !isAlreadyAdded && addQuestionToModule(question)
+                        }
                         className={`p-3 border-2 rounded-lg transition-colors ${
                           isAlreadyAdded
                             ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
@@ -802,8 +957,8 @@ export default function AdminModulesPage() {
                               question.difficulty === "easy"
                                 ? "bg-green-100 text-green-800"
                                 : question.difficulty === "medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
                             }`}
                           >
                             {question.difficulty}

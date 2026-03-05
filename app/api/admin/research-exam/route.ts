@@ -3,15 +3,12 @@
  * @see /docs/TROUBLESHOOTING-JWT-ES256.md
  */
 import { NextRequest, NextResponse } from "next/server"
-import { createClient as createServerClient } from "@/lib/supabase/server"
+import { requireAdmin } from "@/lib/supabase/require-admin"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
+    const { user, errorResponse } = await requireAdmin()
+    if (errorResponse) return errorResponse
 
     const body = await request.json()
 
@@ -21,20 +18,21 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({ ...body, user_id: user.id }),
-      }
+      },
     )
 
     const data = await response.json()
-    if (!response.ok) return NextResponse.json(data, { status: response.status })
+    if (!response.ok)
+      return NextResponse.json(data, { status: response.status })
     return NextResponse.json(data)
   } catch (error) {
     console.error("[admin/research-exam] Error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

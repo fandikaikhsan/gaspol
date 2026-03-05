@@ -3,11 +3,11 @@
  * Phase 2: Question Runner & Assessment Engine
  */
 
-export type QuestionFormat = 'MCQ5' | 'MCK-Table' | 'Fill-in'
+export type QuestionFormat = "MCQ5" | "MCQ4" | "TF" | "MCK-Table" | "Fill-in"
 
-export type CognitiveLevel = 'L1' | 'L2' | 'L3'
+export type CognitiveLevel = "L1" | "L2" | "L3"
 
-export type Difficulty = 'easy' | 'medium' | 'hard'
+export type Difficulty = "easy" | "medium" | "hard"
 
 export interface Question {
   id: string
@@ -26,6 +26,8 @@ export interface Question {
 
 export type QuestionOptions =
   | MCQ5Options
+  | MCQ4Options
+  | TFOptions
   | MCKTableOptions
   | FillInOptions
 
@@ -35,6 +37,18 @@ export interface MCQ5Options {
   C: string
   D: string
   E: string
+}
+
+export interface MCQ4Options {
+  A: string
+  B: string
+  C: string
+  D: string
+}
+
+export interface TFOptions {
+  True: string
+  False: string
 }
 
 export interface MCKTableOptions {
@@ -49,7 +63,7 @@ export interface MCKTableOptions {
 }
 
 export interface FillInOptions {
-  type: 'numeric' | 'text'
+  type: "numeric" | "text"
   unit?: string
   placeholder?: string
 }
@@ -66,7 +80,13 @@ export interface Attempt {
   id: string
   user_id: string
   question_id: string
-  context_type: 'baseline' | 'drill' | 'mock' | 'recycle' | 'flashcard' | 'swipe'
+  context_type:
+    | "baseline"
+    | "drill"
+    | "mock"
+    | "recycle"
+    | "flashcard"
+    | "swipe"
   context_id: string
   module_id?: string
   user_answer: string
@@ -86,9 +106,12 @@ export interface AssessmentSession {
   questionIds: string[]
   currentIndex: number
   startedAt: Date
-  answers: Record<string, {
-    answer: string
-    timeSpent: number
-    timestamp: Date
-  }>
+  answers: Record<
+    string,
+    {
+      answer: string
+      timeSpent: number
+      timestamp: Date
+    }
+  >
 }

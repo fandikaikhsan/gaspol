@@ -18,21 +18,25 @@ import {
   Target,
   Bot,
   Sliders,
-  Activity
+  Activity,
+  BookOpen,
+  GraduationCap,
 } from "lucide-react"
 
 const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Debug', href: '/admin/debug', icon: Bug },
-  { name: 'Diagnostics', href: '/admin/diagnostics', icon: Activity },
-  { name: 'Exams', href: '/admin/exams', icon: FileText },
-  { name: 'Taxonomy', href: '/admin/taxonomy', icon: Network },
-  { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
-  { name: 'Flashcards', href: '/admin/flashcards', icon: Layers },
-  { name: 'Metadata', href: '/admin/metadata', icon: Sliders },
-  { name: 'Modules', href: '/admin/modules', icon: Package },
-  { name: 'Baseline', href: '/admin/baseline', icon: Target },
-  { name: 'AI Runs', href: '/admin/ai-runs', icon: Bot },
+  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { name: "Debug", href: "/admin/debug", icon: Bug },
+  { name: "Diagnostics", href: "/admin/diagnostics", icon: Activity },
+  { name: "Exams", href: "/admin/exams", icon: FileText },
+  { name: "Taxonomy", href: "/admin/taxonomy", icon: Network },
+  { name: "Questions", href: "/admin/questions", icon: HelpCircle },
+  { name: "Materials", href: "/admin/materials", icon: BookOpen },
+  { name: "Campus", href: "/admin/campus", icon: GraduationCap },
+  { name: "Flashcards", href: "/admin/flashcards", icon: Layers },
+  { name: "Metadata", href: "/admin/metadata", icon: Sliders },
+  { name: "Modules", href: "/admin/modules", icon: Package },
+  { name: "Baseline", href: "/admin/baseline", icon: Target },
+  { name: "AI Runs", href: "/admin/ai-runs", icon: Bot },
 ]
 
 export default function AdminLayout({
@@ -75,9 +79,7 @@ export default function AdminLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   )
