@@ -247,10 +247,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (fcInitError) {
         // Non-blocking: flashcard init failure shouldn't break baseline finalization
-        console.error(
-          "[finalize-baseline] Flashcard init error:",
-          fcInitError,
-        )
+        console.error("[finalize-baseline] Flashcard init error:", fcInitError)
       }
     }
 

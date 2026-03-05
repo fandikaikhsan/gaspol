@@ -8,7 +8,13 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -190,7 +196,8 @@ export default function AdminModulesPage() {
 
       const { data, error } = await supabase
         .from("modules")
-        .select(`
+        .select(
+          `
           *,
           module_questions(
             id,
@@ -204,7 +211,8 @@ export default function AdminModulesPage() {
               time_estimate_seconds
             )
           )
-        `)
+        `,
+        )
         .order("created_at", { ascending: false })
 
       if (error) throw error
@@ -268,7 +276,9 @@ export default function AdminModulesPage() {
 
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
       const moduleData = {
         name: formData.name,
@@ -312,7 +322,8 @@ export default function AdminModulesPage() {
       toast({
         variant: "destructive",
         title: "Failed to Save",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
       })
     } finally {
       setIsSaving(false)
@@ -324,7 +335,10 @@ export default function AdminModulesPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("modules").delete().eq("id", module.id)
+      const { error } = await supabase
+        .from("modules")
+        .delete()
+        .eq("id", module.id)
 
       if (error) throw error
 
@@ -357,7 +371,9 @@ export default function AdminModulesPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from("questions")
-        .select("id, question_text, question_type, difficulty, time_estimate_seconds, cognitive_level")
+        .select(
+          "id, question_text, question_type, difficulty, time_estimate_seconds, cognitive_level",
+        )
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(100)
@@ -436,7 +452,10 @@ export default function AdminModulesPage() {
       const supabase = createClient()
 
       // Delete existing questions
-      await supabase.from("module_questions").delete().eq("module_id", selectedModule.id)
+      await supabase
+        .from("module_questions")
+        .delete()
+        .eq("module_id", selectedModule.id)
 
       // Insert new questions
       const questionsToInsert = moduleQuestions.map((mq) => ({
@@ -446,7 +465,9 @@ export default function AdminModulesPage() {
       }))
 
       if (questionsToInsert.length > 0) {
-        const { error } = await supabase.from("module_questions").insert(questionsToInsert)
+        const { error } = await supabase
+          .from("module_questions")
+          .insert(questionsToInsert)
         if (error) throw error
       }
 
@@ -462,7 +483,8 @@ export default function AdminModulesPage() {
       toast({
         variant: "destructive",
         title: "Failed to Save",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
       })
     } finally {
       setIsSaving(false)
@@ -572,10 +594,11 @@ export default function AdminModulesPage() {
       ) : (
         <div className="grid gap-4">
           {filteredModules.map((module) => {
-            const totalTime = module.questions?.reduce(
-              (sum, mq) => sum + (mq.question?.time_estimate_seconds || 0),
-              0
-            ) || 0
+            const totalTime =
+              module.questions?.reduce(
+                (sum, mq) => sum + (mq.question?.time_estimate_seconds || 0),
+                0,
+              ) || 0
             const estimatedMinutes = Math.ceil(totalTime / 60)
 
             return (
@@ -588,9 +611,17 @@ export default function AdminModulesPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline">
-                          {MODULE_TYPES.find((t) => t.value === module.module_type)?.label}
+                          {
+                            MODULE_TYPES.find(
+                              (t) => t.value === module.module_type,
+                            )?.label
+                          }
                         </Badge>
-                        <Badge variant={module.is_published ? "default" : "secondary"}>
+                        <Badge
+                          variant={
+                            module.is_published ? "default" : "secondary"
+                          }
+                        >
                           {module.is_published ? "Published" : "Draft"}
                         </Badge>
                       </div>
@@ -641,7 +672,11 @@ export default function AdminModulesPage() {
                       variant={module.is_published ? "outline" : "default"}
                       size="sm"
                       onClick={() => togglePublish(module)}
-                      className={module.is_published ? "" : "bg-green-600 hover:bg-green-700"}
+                      className={
+                        module.is_published
+                          ? ""
+                          : "bg-green-600 hover:bg-green-700"
+                      }
                     >
                       {module.is_published ? "Unpublish" : "Publish"}
                     </Button>
@@ -660,9 +695,7 @@ export default function AdminModulesPage() {
             <DialogTitle>
               {dialogMode === "create" ? "Create New Module" : "Edit Module"}
             </DialogTitle>
-            <DialogDescription>
-              Configure module settings
-            </DialogDescription>
+            <DialogDescription>Configure module settings</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -673,7 +706,9 @@ export default function AdminModulesPage() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="e.g., TPS Drill - Penalaran Umum"
               />
             </div>
@@ -721,7 +756,9 @@ export default function AdminModulesPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    time_limit_min: e.target.value ? parseInt(e.target.value) : null,
+                    time_limit_min: e.target.value
+                      ? parseInt(e.target.value)
+                      : null,
                   })
                 }
                 placeholder="Leave empty for no limit"
@@ -762,7 +799,8 @@ export default function AdminModulesPage() {
                   </Select>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Required for drill_focus modules to correctly categorize in the student drill page.
+                  Required for drill_focus modules to correctly categorize in
+                  the student drill page.
                 </p>
               </div>
             )}
@@ -844,8 +882,8 @@ export default function AdminModulesPage() {
                                 mq.question.difficulty === "easy"
                                   ? "bg-green-100 text-green-800"
                                   : mq.question.difficulty === "medium"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
                               }`}
                             >
                               {mq.question.difficulty}
@@ -858,7 +896,9 @@ export default function AdminModulesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeQuestionFromModule(mq.question_id)}
+                          onClick={() =>
+                            removeQuestionFromModule(mq.question_id)
+                          }
                           className="text-red-600"
                         >
                           <X className="h-4 w-4" />
@@ -893,13 +933,15 @@ export default function AdminModulesPage() {
                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
                   {filteredAvailableQuestions.map((question) => {
                     const isAlreadyAdded = moduleQuestions.some(
-                      (mq) => mq.question_id === question.id
+                      (mq) => mq.question_id === question.id,
                     )
 
                     return (
                       <div
                         key={question.id}
-                        onClick={() => !isAlreadyAdded && addQuestionToModule(question)}
+                        onClick={() =>
+                          !isAlreadyAdded && addQuestionToModule(question)
+                        }
                         className={`p-3 border-2 rounded-lg transition-colors ${
                           isAlreadyAdded
                             ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
@@ -915,8 +957,8 @@ export default function AdminModulesPage() {
                               question.difficulty === "easy"
                                 ? "bg-green-100 text-green-800"
                                 : question.difficulty === "medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
                             }`}
                           >
                             {question.difficulty}

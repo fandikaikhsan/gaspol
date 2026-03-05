@@ -164,7 +164,11 @@ export async function POST(request: NextRequest) {
     const correctAnswer = question.correct_answer
     const questionFormat =
       question.question_format || question.question_type || "MCQ5"
-    const isCorrect = checkCorrectness(questionFormat, selected_answer, correctAnswer)
+    const isCorrect = checkCorrectness(
+      questionFormat,
+      selected_answer,
+      correctAnswer,
+    )
 
     // 8. CALCULATE POINTS AWARDED (T-014) — using shared scoring lib
     const difficultyLevel = question.difficulty_level || "L1"
@@ -483,7 +487,10 @@ export async function POST(request: NextRequest) {
               .eq("id", existingConstruct.id)
           } else {
             // Insert new construct state starting at 50 ± impact
-            const initialScore = Math.max(0, Math.min(100, Math.round((50 + impact) * 100) / 100))
+            const initialScore = Math.max(
+              0,
+              Math.min(100, Math.round((50 + impact) * 100) / 100),
+            )
             await supabaseAdmin.from("user_construct_state").insert({
               user_id: userId,
               construct_name: construct,

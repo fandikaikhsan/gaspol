@@ -73,10 +73,7 @@ export function MasteryStacks({
   const now = useMemo(() => new Date().toISOString(), [])
 
   const stats = useMemo(() => {
-    const result: Record<
-      string,
-      { total: number; due: number }
-    > = {}
+    const result: Record<string, { total: number; due: number }> = {}
 
     for (const b of BUCKETS) {
       result[b.key] = { total: 0, due: 0 }
@@ -142,11 +139,7 @@ export function MasteryStacks({
 
               {/* Status */}
               <p className="text-xs text-muted-foreground mt-1">
-                {due > 0
-                  ? "Siap review"
-                  : total > 0
-                    ? "Belum due"
-                    : "Kosong"}
+                {due > 0 ? "Siap review" : total > 0 ? "Belum due" : "Kosong"}
               </p>
             </button>
           )
@@ -178,13 +171,7 @@ export function MasteryStacks({
 /**
  * Visual stack of cards — empty / 3-layer / 5-layer based on count.
  */
-function StackVisual({
-  count,
-  color,
-}: {
-  count: number
-  color: string
-}) {
+function StackVisual({ count, color }: { count: number; color: string }) {
   if (count === 0) {
     return (
       <div

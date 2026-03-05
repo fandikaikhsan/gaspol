@@ -226,9 +226,7 @@ function MaterialCardDetailContent() {
             <Button
               variant="brutal"
               className="flex-1 gap-2"
-              onClick={() =>
-                router.push(`/drill?tab=topic&node=${skillId}`)
-              }
+              onClick={() => router.push(`/drill?tab=topic&node=${skillId}`)}
             >
               <Target className="h-4 w-4" />
               Latihan Skill Ini

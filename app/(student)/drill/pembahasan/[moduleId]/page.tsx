@@ -55,9 +55,7 @@ interface PembahasanData {
 
 /* ── Data fetcher ──────────────────────────────────────── */
 
-async function fetchPembahasanData(
-  moduleId: string,
-): Promise<PembahasanData> {
+async function fetchPembahasanData(moduleId: string): Promise<PembahasanData> {
   const supabase = createClient()
   const {
     data: { user },
@@ -128,7 +126,8 @@ async function fetchPembahasanData(
   const correctCount = questions.filter(
     (q) => attempts.get(q.id)?.is_correct,
   ).length
-  const score = questions.length > 0 ? (correctCount / questions.length) * 100 : 0
+  const score =
+    questions.length > 0 ? (correctCount / questions.length) * 100 : 0
 
   return {
     moduleName: moduleData.name,
@@ -227,17 +226,13 @@ export default function PembahasanPage() {
           const isCorrect = attempt?.is_correct ?? false
           const userAnswer = attempt?.user_answer || ""
           const format = normalizeFormat(question.question_format)
-          const materialCard = data.materialCards.get(
-            question.micro_skill_id,
-          )
+          const materialCard = data.materialCards.get(question.micro_skill_id)
 
           return (
             <Card
               key={question.id}
               className={`border-2 ${
-                isCorrect
-                  ? "border-status-strong/40"
-                  : "border-destructive/40"
+                isCorrect ? "border-status-strong/40" : "border-destructive/40"
               } overflow-hidden`}
             >
               {/* Status banner */}
@@ -280,9 +275,7 @@ export default function PembahasanPage() {
                       disabled
                       showCorrectAnswer={question.correct_answer}
                       optionKeys={
-                        format === "mcq4"
-                          ? ["A", "B", "C", "D"]
-                          : undefined
+                        format === "mcq4" ? ["A", "B", "C", "D"] : undefined
                       }
                     />
                   )}
@@ -308,7 +301,9 @@ export default function PembahasanPage() {
                         </span>
                         <span
                           className={
-                            isCorrect ? "text-status-strong" : "text-destructive"
+                            isCorrect
+                              ? "text-status-strong"
+                              : "text-destructive"
                           }
                         >
                           {userAnswer || "(kosong)"}
@@ -390,10 +385,7 @@ export default function PembahasanPage() {
           >
             Coba Lagi
           </Button>
-          <Button
-            className="flex-1"
-            onClick={() => router.push("/drill")}
-          >
+          <Button className="flex-1" onClick={() => router.push("/drill")}>
             Kembali ke Drill
           </Button>
         </div>

@@ -19,13 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
-import {
-  Send,
-  Loader2,
-  Coins,
-  MessageCircle,
-  Frown,
-} from "lucide-react"
+import { Send, Loader2, Coins, MessageCircle, Frown } from "lucide-react"
 
 // Preset questions per blueprint spec
 const PRESET_QUESTIONS = [
@@ -186,9 +180,7 @@ export default function TanyaGaspolChat({
             setIsQuotaExhausted(true)
             setRemainingTokens(data.remaining_tokens ?? 0)
             // Remove the optimistic user message
-            setMessages((prev) =>
-              prev.filter((m) => m.id !== userMsg.id),
-            )
+            setMessages((prev) => prev.filter((m) => m.id !== userMsg.id))
             return
           }
           throw new Error(data.error || "Gagal mengirim pesan")
@@ -214,8 +206,7 @@ export default function TanyaGaspolChat({
           {
             id: `temp-err-${Date.now()}`,
             role: "assistant",
-            message:
-              "Maaf, terjadi kesalahan. Coba lagi nanti ya! 😅",
+            message: "Maaf, terjadi kesalahan. Coba lagi nanti ya! 😅",
             created_at: new Date().toISOString(),
           },
         ])
@@ -248,10 +239,7 @@ export default function TanyaGaspolChat({
               Tanya Gaspol
             </DialogTitle>
             {remainingTokens !== null && (
-              <Badge
-                variant="outline"
-                className="gap-1 text-xs flex-shrink-0"
-              >
+              <Badge variant="outline" className="gap-1 text-xs flex-shrink-0">
                 <Coins className="h-3 w-3" />
                 {remainingTokens} / {totalTokens}
               </Badge>
@@ -273,9 +261,7 @@ export default function TanyaGaspolChat({
                   🤖
                 </div>
                 <div className="bg-muted rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%]">
-                  <p className="text-sm leading-relaxed">
-                    {greeting.current}
-                  </p>
+                  <p className="text-sm leading-relaxed">{greeting.current}</p>
                 </div>
               </div>
 

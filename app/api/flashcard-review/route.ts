@@ -107,10 +107,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (insertError) {
-        console.error(
-          "[flashcard-review] Failed to insert state:",
-          insertError,
-        )
+        console.error("[flashcard-review] Failed to insert state:", insertError)
         return NextResponse.json(
           { error: "Failed to create flashcard state" },
           { status: 500 },

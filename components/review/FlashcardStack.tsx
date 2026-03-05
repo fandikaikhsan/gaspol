@@ -69,7 +69,8 @@ export function FlashcardStack({ cards, onComplete }: FlashcardStackProps) {
   const [animating, setAnimating] = useState<MasteryResponse | null>(null)
 
   const currentCard = cards[currentIndex]
-  const progress = cards.length > 0 ? ((currentIndex + 1) / cards.length) * 100 : 0
+  const progress =
+    cards.length > 0 ? ((currentIndex + 1) / cards.length) * 100 : 0
 
   const handleResponse = useCallback(
     async (response: MasteryResponse) => {
@@ -109,7 +110,9 @@ export function FlashcardStack({ cards, onComplete }: FlashcardStackProps) {
     return (
       <div className="text-center py-12">
         <p className="text-2xl mb-4">✅</p>
-        <p className="text-lg font-semibold mb-2">Tidak ada kartu untuk review</p>
+        <p className="text-lg font-semibold mb-2">
+          Tidak ada kartu untuk review
+        </p>
         <p className="text-muted-foreground">Semua kartu sudah diperbarui!</p>
       </div>
     )

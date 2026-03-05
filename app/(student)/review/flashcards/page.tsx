@@ -48,15 +48,21 @@ function FlashcardsContent() {
 
   const [user, setUser] = useState<any>(null)
   const [phase, setPhase] = useState<string | null>(null)
-  const [flashcardStates, setFlashcardStates] = useState<FlashcardUserState[]>([])
+  const [flashcardStates, setFlashcardStates] = useState<FlashcardUserState[]>(
+    [],
+  )
   const [materialCards, setMaterialCards] = useState<MaterialCard[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [reviewMode, setReviewMode] = useState(false)
-  const [reviewCards, setReviewCards] = useState<Array<FlashcardUserState & { material?: MaterialCard }>>([])
+  const [reviewCards, setReviewCards] = useState<
+    Array<FlashcardUserState & { material?: MaterialCard }>
+  >([])
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser()
 
     if (!currentUser) {
       router.push("/login")
@@ -119,14 +125,10 @@ function FlashcardsContent() {
   const startReview = useCallback(
     (bucket?: MasteryResponse) => {
       const now = new Date().toISOString()
-      let cardsToReview = flashcardStates.filter(
-        (s) => s.due_at <= now,
-      )
+      let cardsToReview = flashcardStates.filter((s) => s.due_at <= now)
 
       if (bucket) {
-        cardsToReview = cardsToReview.filter(
-          (s) => s.mastery_bucket === bucket,
-        )
+        cardsToReview = cardsToReview.filter((s) => s.mastery_bucket === bucket)
       }
 
       // Attach material card content
@@ -143,7 +145,12 @@ function FlashcardsContent() {
 
   // Auto-start review if bucket filter in URL
   useEffect(() => {
-    if (!isLoading && filterBucket && flashcardStates.length > 0 && !reviewMode) {
+    if (
+      !isLoading &&
+      filterBucket &&
+      flashcardStates.length > 0 &&
+      !reviewMode
+    ) {
       startReview(filterBucket)
     }
   }, [isLoading, filterBucket, flashcardStates, reviewMode, startReview])
@@ -182,12 +189,14 @@ function FlashcardsContent() {
   }
 
   // ──────────── BASELINE GATING (V3-T-019) ────────────
-  const baselineComplete = phase && [
-    "BASELINE_COMPLETE",
-    "PLAN_ACTIVE",
-    "RECYCLE_UNLOCKED",
-    "RECYCLE_ASSESSMENT_IN_PROGRESS",
-  ].includes(phase)
+  const baselineComplete =
+    phase &&
+    [
+      "BASELINE_COMPLETE",
+      "PLAN_ACTIVE",
+      "RECYCLE_UNLOCKED",
+      "RECYCLE_ASSESSMENT_IN_PROGRESS",
+    ].includes(phase)
 
   if (!baselineComplete) {
     return (
@@ -199,7 +208,8 @@ function FlashcardsContent() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Flashcards Terkunci</h2>
             <p className="text-muted-foreground">
-              Flashcards akan terbuka setelah kamu menyelesaikan Baseline Assessment.
+              Flashcards akan terbuka setelah kamu menyelesaikan Baseline
+              Assessment.
             </p>
           </div>
           <Button

@@ -14,10 +14,7 @@ import { Suspense, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -96,9 +93,7 @@ async function fetchDrillData() {
       // 1. All published drill modules
       supabase
         .from("modules")
-        .select(
-          "id, name, module_type, question_count, target_node_id, status",
-        )
+        .select("id, name, module_type, question_count, target_node_id, status")
         .in("module_type", ["drill_focus", "drill_mixed"])
         .eq("status", "published")
         .order("name"),
@@ -351,22 +346,17 @@ function DrillHubContent() {
 
   // Split modules by type
   const topicModules = useMemo(
-    () =>
-      (data?.modules || []).filter((m) => m.module_type === "drill_focus"),
+    () => (data?.modules || []).filter((m) => m.module_type === "drill_focus"),
     [data],
   )
   const mixedModules = useMemo(
-    () =>
-      (data?.modules || []).filter((m) => m.module_type === "drill_mixed"),
+    () => (data?.modules || []).filter((m) => m.module_type === "drill_mixed"),
     [data],
   )
 
   // Mandatory (required + incomplete) tasks — pinned at top
   const mandatoryTasks = useMemo(
-    () =>
-      (data?.modules || []).filter(
-        (m) => m.is_required && !m.is_completed,
-      ),
+    () => (data?.modules || []).filter((m) => m.is_required && !m.is_completed),
     [data],
   )
 
@@ -379,10 +369,7 @@ function DrillHubContent() {
 
     for (const m of mods) {
       if (m.l3_name) l3s.add(m.l3_name)
-      if (
-        m.l4_name &&
-        (l3Filter === "all" || m.l3_name === l3Filter)
-      )
+      if (m.l4_name && (l3Filter === "all" || m.l3_name === l3Filter))
         l4s.add(m.l4_name)
       if (
         m.l5_name &&
@@ -414,17 +401,13 @@ function DrillHubContent() {
   function filterModules(modules: DrillModule[]) {
     let list = modules
 
-    if (statusFilter === "required")
-      list = list.filter((m) => m.is_required)
+    if (statusFilter === "required") list = list.filter((m) => m.is_required)
     else if (statusFilter === "completed")
       list = list.filter((m) => m.is_completed)
 
-    if (l3Filter !== "all")
-      list = list.filter((m) => m.l3_name === l3Filter)
-    if (l4Filter !== "all")
-      list = list.filter((m) => m.l4_name === l4Filter)
-    if (l5Filter !== "all")
-      list = list.filter((m) => m.l5_name === l5Filter)
+    if (l3Filter !== "all") list = list.filter((m) => m.l3_name === l3Filter)
+    if (l4Filter !== "all") list = list.filter((m) => m.l4_name === l4Filter)
+    if (l5Filter !== "all") list = list.filter((m) => m.l5_name === l5Filter)
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
@@ -447,10 +430,7 @@ function DrillHubContent() {
       string,
       {
         l2_name: string
-        l3_groups: Record<
-          string,
-          { l3_name: string; modules: DrillModule[] }
-        >
+        l3_groups: Record<string, { l3_name: string; modules: DrillModule[] }>
       }
     > = {}
 
@@ -473,10 +453,8 @@ function DrillHubContent() {
   // Group mixed modules: level-2 → modules
   const mixedGroups = useMemo(() => {
     const filtered = filterModules(mixedModules)
-    const groups: Record<
-      string,
-      { l2_name: string; modules: DrillModule[] }
-    > = {}
+    const groups: Record<string, { l2_name: string; modules: DrillModule[] }> =
+      {}
 
     for (const m of filtered) {
       const l2Key = m.l2_id || "unknown"
@@ -490,8 +468,7 @@ function DrillHubContent() {
   }, [mixedModules, statusFilter, searchQuery, l3Filter, l4Filter, l5Filter])
 
   // Counts
-  const activeModules =
-    activeTab === "topic" ? topicModules : mixedModules
+  const activeModules = activeTab === "topic" ? topicModules : mixedModules
   const requiredCount = activeModules.filter((m) => m.is_required).length
   const completedCount = activeModules.filter((m) => m.is_completed).length
 
@@ -551,10 +528,7 @@ function DrillHubContent() {
         </div>
 
         {/* ── Tab Switcher ── */}
-        <Tabs
-          value={activeTab}
-          onValueChange={handleTabChange}
-        >
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="topic" className="touch-target gap-1.5">
               <Target className="h-4 w-4" />
@@ -643,10 +617,7 @@ function DrillHubContent() {
                 </Select>
               )}
               {taxonomyOptions.l5.length > 0 && (
-                <Select
-                  value={l5Filter}
-                  onValueChange={(v) => setL5Filter(v)}
-                >
+                <Select value={l5Filter} onValueChange={(v) => setL5Filter(v)}>
                   <SelectTrigger className="w-[180px] h-8 text-xs border-2 border-border">
                     <Filter className="h-3 w-3 mr-1.5 shrink-0" />
                     <SelectValue placeholder="Skill (L5)" />
@@ -714,11 +685,7 @@ function DrillHubContent() {
                           </AccordionTrigger>
                           <AccordionContent className="px-3 pb-3 space-y-2">
                             {l3Group.modules.map((m) => (
-                              <ModuleCard
-                                key={m.id}
-                                module={m}
-                                showL4Badge
-                              />
+                              <ModuleCard key={m.id} module={m} showL4Badge />
                             ))}
                           </AccordionContent>
                         </AccordionItem>

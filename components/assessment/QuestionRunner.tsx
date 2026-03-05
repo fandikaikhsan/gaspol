@@ -554,10 +554,7 @@ export function QuestionRunner({
           {/* Action Buttons */}
           <div className="flex flex-col gap-3">
             {onViewPembahasan && (
-              <Button
-                onClick={onViewPembahasan}
-                className="w-full"
-              >
+              <Button onClick={onViewPembahasan} className="w-full">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Lihat Pembahasan
               </Button>
