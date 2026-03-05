@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import {
   QuestionRunner,
@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast"
 export default function DrillRunnerPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const taskId = params.taskId as string
 
@@ -106,6 +107,24 @@ export default function DrillRunnerPage() {
       setPlanTaskId(foundPlanTaskId)
       setModule(moduleData)
 
+      // If already completed and not retry, show result page instead of questions
+      const retry = searchParams.get("retry")
+      const { data: existingCompletion } = await supabase
+        .from("module_completions")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .eq("module_id", moduleData.id)
+        .eq("context_type", "drill")
+        .order("completed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (existingCompletion && retry !== "1" && retry !== "true") {
+        router.replace(`/drill/drill/${taskId}/result`)
+        setIsLoading(false)
+        return
+      }
+
       // Load questions in module order
       const questionIds = (moduleData.question_ids || []) as string[]
       if (questionIds.length === 0) {
@@ -144,7 +163,7 @@ export default function DrillRunnerPage() {
       const token = (await supabase.auth.getSession()).data.session
         ?.access_token
 
-      // Submit all attempts
+      // Submit all attempts (check response.ok so failed requests don't count as wrong)
       const results = await Promise.all(
         Object.entries(session.answers).map(async ([questionId, data]) => {
           const response = await fetch("/api/submit-attempt", {
@@ -156,13 +175,19 @@ export default function DrillRunnerPage() {
             body: JSON.stringify({
               question_id: questionId,
               selected_answer: data.answer,
-              time_spent_sec: data.timeSpent,
+              time_spent_sec: data.timeSpent ?? 0,
               context_type: "drill",
               context_id: planTaskId || module.id,
               module_id: module.id,
             }),
           })
-          return response.json()
+          const json = await response.json().catch(() => ({}))
+          if (!response.ok) {
+            throw new Error(
+              json?.error || json?.message || "Gagal mengirim jawaban",
+            )
+          }
+          return json
         }),
       )
 

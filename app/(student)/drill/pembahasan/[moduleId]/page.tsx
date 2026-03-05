@@ -145,6 +145,18 @@ function normalizeFormat(format?: string) {
   return (format || "").toLowerCase().replace(/[_\s-]/g, "")
 }
 
+/** Parse user_answer from attempts table (stored as JSON {"selected": "B"} or plain string) */
+function parseUserAnswer(raw: string | null | undefined): string {
+  if (raw == null || raw === "") return ""
+  try {
+    const parsed = JSON.parse(raw) as { selected?: string }
+    if (typeof parsed?.selected === "string") return parsed.selected
+  } catch {
+    /* not JSON, use as-is */
+  }
+  return String(raw)
+}
+
 /* ── Component ─────────────────────────────────────────── */
 
 export default function PembahasanPage() {
@@ -224,7 +236,7 @@ export default function PembahasanPage() {
         {data.questions.map((question, index) => {
           const attempt = data.attempts.get(question.id)
           const isCorrect = attempt?.is_correct ?? false
-          const userAnswer = attempt?.user_answer || ""
+          const userAnswer = parseUserAnswer(attempt?.user_answer)
           const format = normalizeFormat(question.question_format)
           const materialCard = data.materialCards.get(question.micro_skill_id)
 
@@ -268,30 +280,96 @@ export default function PembahasanPage() {
                 {/* Answer options in review mode */}
                 <div className="pointer-events-none">
                   {(format === "mcq5" || format === "mcq4") && (
-                    <AnswerOptions
-                      options={question.options as any}
-                      selectedAnswer={userAnswer}
-                      onAnswerChange={() => {}}
-                      disabled
-                      showCorrectAnswer={question.correct_answer}
-                      optionKeys={
-                        format === "mcq4" ? ["A", "B", "C", "D"] : undefined
-                      }
-                    />
+                    <>
+                      <AnswerOptions
+                        options={question.options as any}
+                        selectedAnswer={userAnswer}
+                        onAnswerChange={() => {}}
+                        disabled
+                        showCorrectAnswer={question.correct_answer}
+                        optionKeys={
+                          format === "mcq4" ? ["A", "B", "C", "D"] : undefined
+                        }
+                      />
+                      {!isCorrect && (
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                          <span className="text-muted-foreground">
+                            Jawabanmu:{" "}
+                            <span className="font-medium text-destructive">
+                              {userAnswer || "(kosong)"}
+                            </span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            Jawaban benar:{" "}
+                            <span className="font-medium text-status-strong">
+                              {question.correct_answer}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                   {format === "tf" && (
-                    <TrueFalseOptions
-                      options={question.options as any}
-                      selectedAnswer={userAnswer}
-                      onAnswerChange={() => {}}
-                    />
+                    <>
+                      <TrueFalseOptions
+                        options={question.options as any}
+                        selectedAnswer={userAnswer}
+                        onAnswerChange={() => {}}
+                        disabled
+                        showCorrectAnswer={question.correct_answer}
+                      />
+                      {!isCorrect && (
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                          <span className="text-muted-foreground">
+                            Jawabanmu:{" "}
+                            <span className="font-medium text-destructive">
+                              {userAnswer || "(kosong)"}
+                            </span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            Jawaban benar:{" "}
+                            <span className="font-medium text-status-strong">
+                              {question.correct_answer}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                   {(format === "mcktable" || format === "mctable") && (
-                    <TableOptions
-                      options={question.options as any}
-                      selectedAnswers={userAnswer.split(",")}
-                      onAnswerChange={() => {}}
-                    />
+                    <>
+                      <TableOptions
+                        options={question.options as any}
+                        selectedAnswers={
+                          userAnswer ? userAnswer.split(",").map((s) => s.trim()) : []
+                        }
+                        onAnswerChange={() => {}}
+                        disabled
+                        showCorrectAnswers={
+                          question.correct_answer
+                            ? question.correct_answer
+                                .split(",")
+                                .map((s) => s.trim())
+                            : undefined
+                        }
+                      />
+                      {!isCorrect && (
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                          <span className="text-muted-foreground">
+                            Jawabanmu:{" "}
+                            <span className="font-medium text-destructive">
+                              {userAnswer || "(kosong)"}
+                            </span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            Jawaban benar:{" "}
+                            <span className="font-medium text-status-strong">
+                              {question.correct_answer}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                   {format === "fillin" && (
                     <div className="space-y-2">

@@ -212,6 +212,23 @@ function ModuleCard({
 }) {
   const router = useRouter()
 
+  const handleCardClick = () => {
+    if (module.is_completed) {
+      router.push(`/drill/drill/${module.id}/result`)
+    } else {
+      router.push(`/drill/drill/${module.id}`)
+    }
+  }
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (module.is_completed) {
+      router.push(`/drill/drill/${module.id}?retry=1`)
+    } else {
+      router.push(`/drill/drill/${module.id}`)
+    }
+  }
+
   return (
     <Card
       className={`border-2 border-border shadow-brutal hover:shadow-brutal-lg transition-all cursor-pointer hover:-translate-y-0.5 ${
@@ -219,7 +236,7 @@ function ModuleCard({
           ? "ring-2 ring-primary/40"
           : ""
       } ${module.is_completed ? "opacity-70" : ""}`}
-      onClick={() => router.push(`/drill/drill/${module.id}`)}
+      onClick={handleCardClick}
     >
       <CardContent className="py-3 px-4">
         <div className="flex items-center gap-3">
@@ -291,6 +308,7 @@ function ModuleCard({
             variant="brutal"
             size="sm"
             className="shrink-0 touch-target text-xs h-8 px-3"
+            onClick={handleButtonClick}
           >
             {module.is_completed ? "Ulangi" : "Mulai"}
             <ChevronRight className="h-3.5 w-3.5 ml-1" />
