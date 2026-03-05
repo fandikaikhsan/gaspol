@@ -6,9 +6,14 @@
  * Modal chat interface for AI-assisted learning scoped to material cards.
  * Features: preset questions, free-form input, chat persistence,
  * token quota display, and quota exhaustion state.
+ * Renders assistant messages with Markdown + LaTeX (KaTeX).
  */
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
+import "katex/dist/katex.min.css"
 import {
   Dialog,
   DialogContent,
@@ -20,6 +25,32 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { Send, Loader2, Coins, MessageCircle, Frown } from "lucide-react"
+
+/**
+ * Normalize LaTeX delimiters so remark-math can parse them.
+ * remark-math uses $ and $$; AI often returns \( \) and \[ \].
+ */
+function normalizeMathDelimiters(text: string): string {
+  // Block: \[ ... \] -> $$ ... $$
+  let out = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `$$${math}$$`)
+  // Inline: \( ... \) -> $ ... $
+  out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math}$`)
+  return out
+}
+
+/** Renders chat message with Markdown (bold, lists, etc.) and LaTeX math (\( \), \[ \], $, $$) */
+function ChatMessageBody({ content, className = "" }: { content: string; className?: string }) {
+  const normalized = normalizeMathDelimiters(content)
+  return (
+    <div
+      className={`chat-markdown text-sm leading-relaxed [&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_.katex]:text-inherit ${className}`}
+    >
+      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+        {normalized}
+      </ReactMarkdown>
+    </div>
+  )
+}
 
 // Preset questions per blueprint spec
 const PRESET_QUESTIONS = [
@@ -230,13 +261,13 @@ export default function TanyaGaspolChat({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col p-0 gap-0 border-2 border-charcoal rounded-2xl">
-        {/* Header */}
-        <DialogHeader className="px-4 pt-4 pb-3 border-b border-border flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <MessageCircle className="h-5 w-5 text-primary" />
-              Tanya Gaspol
+      <DialogContent className="fixed left-0 top-0 right-0 bottom-0 z-50 w-screen h-screen max-w-none rounded-none translate-x-0 translate-y-0 flex flex-col p-0 gap-0 border-0 sm:left-[50%] sm:top-[50%] sm:right-auto sm:bottom-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:w-full sm:max-w-2xl sm:h-auto sm:max-h-[88vh] sm:min-h-[min(65vh,520px)] sm:rounded-2xl sm:border-2 sm:border-charcoal">
+        {/* Header: pr-12 so token badge doesn't overlap the close (X) button */}
+        <DialogHeader className="px-4 pr-12 pt-4 pb-3 border-b border-border flex-shrink-0">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <DialogTitle className="flex items-center gap-2 text-lg min-w-0 truncate">
+              <MessageCircle className="h-5 w-5 text-primary flex-shrink-0" />
+              <span className="truncate">Tanya Gaspol</span>
             </DialogTitle>
             {remainingTokens !== null && (
               <Badge variant="outline" className="gap-1 text-xs flex-shrink-0">
@@ -261,7 +292,7 @@ export default function TanyaGaspolChat({
                   🤖
                 </div>
                 <div className="bg-muted rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%]">
-                  <p className="text-sm leading-relaxed">{greeting.current}</p>
+                  <ChatMessageBody content={greeting.current} />
                 </div>
               </div>
 
@@ -304,9 +335,13 @@ export default function TanyaGaspolChat({
                         : "bg-muted rounded-tl-sm"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {msg.message}
-                    </p>
+                    {msg.role === "assistant" ? (
+                      <ChatMessageBody content={msg.message} />
+                    ) : (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {msg.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
