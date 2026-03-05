@@ -144,8 +144,33 @@ pnpm vitest run — 77/77 tests passed (59 existing + 18 new SM-2 tests)
 
 | Task | Status | Commit | Notes |
 |------|--------|--------|-------|
-| — | — | — | — |
+| V3-T-005 | ✅ Done | `b537dcf` | L3/L4/L5 cascading taxonomy filter dropdowns on drill page |
+| V3-T-020 | ✅ Done | `324bf91` | Admin drill_focus target_node_id selector — gap found + fixed |
 
 ### Open Blockers
 
-_None yet._
+_None._
+
+### Decisions Made
+
+| Decision | Rationale | Date |
+|----------|-----------|------|
+| Cascading filters derived from module data (no extra queries) | Taxonomy ancestry already resolved per module; avoids additional DB calls | V3-D |
+| Reset taxonomy filters on tab switch | L3/L4/L5 options differ between Topic and Mixed tabs | V3-D |
+| Admin drill_focus gap: target_node_id missing from create form | Without it modules couldn't show taxonomy ancestry on student drill page — fixed by adding L5 selector | V3-D |
+| Full ancestry path (L1 › L2 › L3 › L4 › L5) in admin selector | Prevents ambiguity when multiple L5 nodes share names | V3-D |
+
+### Commands Run
+
+```
+pnpm build — passed after every commit
+pnpm vitest run — 77/77 tests passed after every commit
+```
+
+### Verification Results
+
+| Check | Result | Date |
+|-------|--------|------|
+| Build | ✅ Pass | V3-D |
+| Tests (77/77) | ✅ Pass | V3-D |
+| Pending migrations | ⚠️ 033 + 034 still need `supabase db push` when remote reachable | V3-D |
