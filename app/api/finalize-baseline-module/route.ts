@@ -194,6 +194,64 @@ export async function POST(request: NextRequest) {
           baseline_completed_at: now,
         })
         .eq("user_id", user.id)
+
+      // 8b. INITIALIZE FLASHCARD SR STATE (V3-T-018)
+      // Create flashcard_user_state for ALL level-5 skills (idempotent)
+      try {
+        const { data: l5Skills } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .eq("level", 5)
+          .eq("is_active", true)
+
+        if (l5Skills && l5Skills.length > 0) {
+          // Check what already exists to avoid duplicates (idempotent)
+          const { data: existingStates } = await supabase
+            .from("flashcard_user_state")
+            .select("skill_id")
+            .eq("user_id", user.id)
+
+          const existingSkillIds = new Set(
+            (existingStates || []).map((s) => s.skill_id),
+          )
+
+          const newRecords = l5Skills
+            .filter((skill) => !existingSkillIds.has(skill.id))
+            .map((skill) => ({
+              user_id: user.id,
+              skill_id: skill.id,
+              ease_factor: 2.5,
+              interval_days: 0,
+              reps: 0,
+              due_at: now,
+              mastery_bucket: "forgot",
+              total_reviews: 0,
+            }))
+
+          if (newRecords.length > 0) {
+            const { error: fcError } = await supabase
+              .from("flashcard_user_state")
+              .insert(newRecords)
+
+            if (fcError) {
+              console.error(
+                "[finalize-baseline] Failed to init flashcard states:",
+                fcError,
+              )
+            } else if (process.env.NODE_ENV === "development") {
+              console.log(
+                `[finalize-baseline] Initialized ${newRecords.length} flashcard states for user=${user.id}`,
+              )
+            }
+          }
+        }
+      } catch (fcInitError) {
+        // Non-blocking: flashcard init failure shouldn't break baseline finalization
+        console.error(
+          "[finalize-baseline] Flashcard init error:",
+          fcInitError,
+        )
+      }
     }
 
     if (process.env.NODE_ENV === "development") {
