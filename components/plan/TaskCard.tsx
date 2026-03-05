@@ -44,17 +44,17 @@ const taskColors = {
 function getTaskHref(task: TaskCardProps["task"]): string {
   switch (task.task_type) {
     case "drill_focus":
-      return `/drill/drills/practice?mode=focused&node=${task.target_node_id || ""}&count=10&taskId=${task.id}`
+      return `/drill?tab=topic&node=${task.target_node_id || ""}&taskId=${task.id}`
     case "drill_mixed":
-      return `/drill/drills/practice?mode=mixed&count=10&taskId=${task.id}`
+      return `/drill?tab=mixed&taskId=${task.id}`
     case "mock":
-      return `/drill/mock?taskId=${task.id}`
+      return `/drill?tab=mixed&mode=mock&taskId=${task.id}`
     case "flashcard":
       return `/review/flashcards?taskId=${task.id}`
     case "review":
-      return `/drill/review?taskId=${task.id}`
+      return `/drill?tab=topic&taskId=${task.id}`
     default:
-      return `/drill/drills/practice?mode=mixed&count=10&taskId=${task.id}`
+      return `/drill?tab=mixed&taskId=${task.id}`
   }
 }
 

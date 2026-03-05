@@ -42,7 +42,7 @@ export function WeakSkillsList({ weakSkills }: WeakSkillsListProps) {
   const { t } = useTranslation("analytics")
 
   const handlePracticeSkill = (skill: WeakSkill) => {
-    router.push(`/drill/drills/practice?mode=focused&node=${skill.node_id}`)
+    router.push(`/drill?tab=topic&node=${skill.node_id}`)
   }
 
   // T-057: Navigate to Material Card for a skill
