@@ -5,8 +5,8 @@
  * Shows Core Idea, Key Facts, Common Mistakes, Examples for a micro-skill
  */
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   Circle,
   Loader2,
+  Target,
+  MessageCircle,
 } from "lucide-react"
 
 interface MaterialCard {
@@ -45,10 +47,27 @@ interface Coverage {
 }
 
 export default function MaterialCardDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <MaterialCardDetailContent />
+    </Suspense>
+  )
+}
+
+function MaterialCardDetailContent() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const skillId = params.skillId as string
+  const fromPembahasan = searchParams.get("from") === "pembahasan"
+  const pembahasanModuleId = searchParams.get("moduleId")
 
   const [isLoading, setIsLoading] = useState(true)
   const [card, setCard] = useState<MaterialCard | null>(null)
@@ -186,6 +205,42 @@ export default function MaterialCardDetailPage() {
               {skill.name} ({skill.code})
             </p>
           )}
+        </div>
+
+        {/* Action Buttons (F-004) */}
+        <div className="flex gap-3 mb-6">
+          {fromPembahasan && pembahasanModuleId ? (
+            <Button
+              variant="brutal"
+              className="flex-1 gap-2"
+              onClick={() =>
+                router.push(`/drill/pembahasan/${pembahasanModuleId}`)
+              }
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Kembali ke Pembahasan
+            </Button>
+          ) : (
+            <Button
+              variant="brutal"
+              className="flex-1 gap-2"
+              onClick={() =>
+                router.push(`/drill?tab=topic&node=${skillId}`)
+              }
+            >
+              <Target className="h-4 w-4" />
+              Latihan Skill Ini
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            className="flex-1 gap-2"
+            disabled
+            title="Segera hadir"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Tanya Gaspol
+          </Button>
         </div>
 
         {/* Core Idea */}
