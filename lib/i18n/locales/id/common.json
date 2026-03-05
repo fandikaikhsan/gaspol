@@ -68,7 +68,9 @@
     "quickNavigation": "Navigasi Cepat",
     "jump": "Lompat",
     "unsupported": "Format soal tidak didukung",
-    "unansweredWarning": "Kamu memiliki {{count}} soal belum dijawab. Tetap kirim?"
+    "unansweredWarning": "Kamu memiliki {{count}} soal belum dijawab. Tetap kirim?",
+    "reviewLater": "Tinjau Nanti",
+    "flagged": "Ditandai"
   },
   "assessment": {
     "baseline": "Baseline Assessment",
@@ -79,5 +81,15 @@
     "timeElapsed": "Waktu Berlalu",
     "timesUp": "Waktu Habis!",
     "timesUpDesc": "Jawaban kamu sedang dikirim otomatis..."
+  },
+  "result": {
+    "passed": "Modul Lulus!",
+    "passedDesc": "Keren! Kamu memenuhi batas lulus.",
+    "failed": "Belum Lulus",
+    "failedDesc": "Pelajari materi di bawah dan coba lagi.",
+    "yourScore": "Skor Kamu",
+    "correct": "benar",
+    "passingScore": "Batas lulus",
+    "reviewMaterials": "Pelajari Topik Ini"
   }
 }
