@@ -594,6 +594,32 @@ All tasks are drill modules. When user goes to **Drill** page, they see:
   - Filter: All / Required Tasks / Completed
   - Each module launches QuestionRunner
 
+@@ FEATURE: The drill page should show a drill that act as an mandatory task in the plan page in the top, and two tabs: the topics based modules and the mixed drills modules.
+
+When user click on the topics-based modules tab, it shows the list of modules that generated from admin that based on the level-5 (actually is not a topic, topic just for tab name. no need to confuse about this). This level-5 modules, is covered into accordion level-3 and all of accordion is grouped based on the level-2. The level-5 module card has this content: Level-5 name, level-4 tags, module number (if there is more then 1 module for the same level-5 skill), question count, estimated time, completion status.
+
+When user click on the mixed drills modules tab, it shows the list of modules that generated from admin. It's on the level-3 module that covered in the group based on the level-2. The level-3 module contains of mixed level-5 skills question that already defined by admin. Check is the admin is already able to create this kind of module or not. If, not, please create this functionality in module admin page.
+
+User can do filtering based on status (All, Required Tasks, and Completed). The required tasks is the module that already assigned in the plan page as a task. The completed is the module that user already completed. Can filter by level-3, level-4, and level-5. And user can search the module by name. User see the tick mark in the module card if the module is already completed. User see the warn mark in the module card if the module is assigned as a task in the plan page. User see nothing if the module is not assigned as a task in the plan page and also not completed yet.
+
+When user click on the module card, there will be 2 cases:
+
+If user has not completed the module, it will navigate to the question runner page with the question that already assigned to that module. The question in the module is not random, but it is the question that already assigned by admin in the admin console. So when user click on the module card, it will fetch the question that already assigned to that module and then render it in the question runner page.
+
+If user has already completed the module, it will show the result page (we talk about result page below). When user click on "retry" button in the result page, it will navigate to the question runner page with the question that already assigned to that module. And make the status is not completed, so user can do the drill again.
+
+@@ BUG: Currently we have /drill and /drill/drills. I think it will be redundant if we already implement the new approach. So we can just have /drill page.
+
+@@ BUG: There are some bugs in naming which still has the "variable" instead of the name, such as "filter.all", "flter.required", "filter.completed". Please fix those to "All", "Required Tasks", "Completed" respectively.
+
+@@ BUG: The answer check is not worked. User always has 0 points (all wrong answers). With this error msg: attempt failed: {"error":"Failed to save attempt"}.
+
+@@ FEATURE: After user finished the module / open the completed module, they will see the result page which shows the completion status based on defined treshold (we already did this), the score percentage (we already did this), the button to see "pembahasan" that will redirect to the pembahasan page. Also there are two buttons: retry and back to drill page. The retry button will redirect to the question runner page with the same question that already assigned to that module. The back to drill page will redirect to the drill page.
+
+@@ FEATURE: The pembahasan page will show the question and the answers that user already answered, and also the correct answer with the explanation on each question (i think we already have this, but please recheck -- If we don't have this, please add into the question generation pipeline). The pembahasan page will show the explanation for each question that already defined by admin in the admin console.
+
+On each question, which should be related to level-5, it should has the button to open the material card that already defined by admin in the admin console (dont show the button if the level-5 does not have material card). So user can redirected to the material card in the material page. The content in the material card is already defined by admin in the admin console, and it should has this content: core idea, key facts, common mistakes, and example(s). (see material part below for more details about the content in the material card).
+
 #### Review Page (`/review`)
 
 - **Purpose:** Review weak areas with Material Cards
@@ -612,6 +638,138 @@ All tasks are drill modules. When user goes to **Drill** page, they see:
     - Example(s)
 
 **Review Page Structure:**
+
+@@ FEATURE: Material card feature. User can open the material card from the review page or from the result page. Currently we have core idea, key facts, common mistakes, and example(s) in the material card. Now, we need to have 2 buttons. 1 button in the top to drill this material card, which when user click on it, it redirects to drill page with the filter in the level-5 that related to this material card. So user will see the module that related to this material card. This button will change to "back to pembahasan" if user open the material card from the pembahasan page. The second button is "tanya gaspol" that will open the chat modal which an ask to AI.
+
+@@ FEATURE: The tanya gaspol feature. When user click on the "tanya gaspol" button, it will open the chat modal. In the chat modal, user can see the "gaspol" character that ask the user (probably has several template that can randomly generated), then user can see the template common question that user can click on (we can generate the preset question such as "saya kurang paham dengan konsep ini, bisa jelaskan dengan bahasa yang lebih sederhana?" or "bisa jelaskan dengan contoh soal lain?") so when user click on it, it will send to the chat box. User can also input their own question in the input field. When user submit the question, it will send the question to the AI and then get the response from AI and then show it in the chat modal. The AI model should use based on what we defined in "AI Runs" page in the admin.
+
+User also see the token quota to show how many remaining question that user can ask to gaspol. Each user has 100 token, which each of question will cost 5 token. The chat will be stored, so when user revisit the specific level-5 material card, they can see their previous question and the response from gaspol. The token is universal, no matter which level-5 material card that user ask, the token will be deducted from the same quota. You will help me to define the prompt for the Tanya Gaspol feature. When user has run out of token, the user cannot ask any question to gaspol, and they will see the message "kuota tanya gaspol kamu sudah habis, selamat belajar ya!" with a sad gaspol character.
+
+@@ BUG: In the flashcard, the naming still "flashcards.cardOf" and "flashcards.tapToFlip". When the card clicked, there are lots of naming error such as "flashcards.tabToFlipBack", "flashcards.howWell", "flashcards.forgot", etc.
+
+@@ BUG: The button of status like forgot, hard, good, easy are overflowing outside the page.
+
+@@ FEATURE: Does currently the flashcards status which contains: forgot, hard, good, easy will be used for anything? Read below for full flashcard feature
+
+@@ FEATURE: The Flashcard Feature Revamp (Spaced Repetition + Mastery Stacks). Explanation starts here.
+
+This spec defines an Anki-like flashcard system for GASPOL UTBK that is **mobile-first**, **micro-skill (level-5) based**, and **last-minute exam aware**.
+
+1. Product Mental Model
+
+- **Flashcard = smallest learning unit** tied to exactly **1 micro-skill (level-5)**.
+- Each user has a **per-card state**: mastery bucket + spaced repetition scheduling.
+- The **Review page** is organized by **mastery stacks** (Forgot / Hard / Good / Easy).
+- A review session is simply cards filtered by a selected mastery stack (or all due).
+
+2. Unlocking / Gating (Baseline Required)
+
+Rule
+
+- Flashcards are **locked** until the user completes the **Baseline Assessment**.
+
+Locked UI
+
+- Title: **"Flashcards unlock after Baseline"**
+- Subtitle: **"We need your baseline to prioritize which micro-skills you should review first."**
+- Primary CTA: **"Start Baseline Assessment"**
+
+3. Review Page UI (Mastery Stacks)
+
+Layout
+Show **4 stacks** (2x2 grid):
+
+- Forgot
+- Hard
+- Good
+- Easy
+
+Each stack card includes:
+
+- Stack label
+- Big number: **Due count**
+- Optional small text: **Total count** (e.g., `12 due · 48 total`)
+- Status text: `Due now / Due today / All caught up / Not due yet`
+
+Stack Thickness (Visual Rules)
+
+- If `0` cards → show **empty deck** state/illustration.
+- If `1–9` cards → show **3-layer stack** (3 visible cards).
+- If `10+` cards → show **5-layer stack** (thicker stack).
+
+Count Meaning (Important)
+
+- Primary number should represent **Due cards**, not total cards.
+- If you show total, display it as a smaller secondary label.
+
+Tap Behavior
+
+- Tap a stack → starts a **review session filtered to that mastery bucket**.
+- Provide a primary CTA: **"Review All Due"** to avoid forcing a bucket choice.
+
+4. Flashcard Review UX (Anki-like)
+
+Card Flow
+
+1. Show **Front** (prompt / question / cloze)
+2. User taps **"Show answer"**
+3. Show **Back** (answer)
+4. User selects a mastery response:
+
+Buttons (fixed bottom):
+
+- Forgot
+- Hard
+- Good
+- Easy
+
+Micro-interaction
+
+- After selecting mastery, animate the card **flying into that stack lane** (reinforces mental model).
+
+Spaced Repetition Logic (SM-2 Inspired)
+
+Each card stores:
+
+- `ease_factor` (default `2.5`)
+- `interval_days` (default `0`)
+- `reps` (consecutive successful recalls)
+- `due_at`
+
+Button → Scheduling Updates
+
+Forgot
+
+- `reps = 0`
+- `interval_days = 0` (or short in-session delay, e.g., 5–10 minutes)
+- `ease_factor = max(1.3, ease_factor - 0.2)`
+- `due_at = now + short_delay`
+
+Hard
+
+- `reps += 1` (or keep reps but reduce interval growth)
+- `interval_days = max(1, round(interval_days * 1.2))`
+- `ease_factor = max(1.3, ease_factor - 0.15)`
+- `due_at = now + interval_days`
+
+Good
+
+- `reps += 1`
+- Interval rule:
+  - if `reps == 1` → `interval_days = 1`
+  - if `reps == 2` → `interval_days = 3`
+  - else → `interval_days = round(interval_days * ease_factor)`
+- `ease_factor += 0.0` (or `+0.05` optional)
+- `due_at = now + interval_days`
+
+Easy
+
+- `reps += 1`
+- `interval_days = round(interval_days * (ease_factor + 0.3))`
+- `ease_factor += 0.15`
+- `due_at = now + interval_days`
+
+@@ FEATURE: The flashcard explanation ends here
 
 ```
 ┌─────────────────────────────────────────────────┐
