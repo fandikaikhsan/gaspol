@@ -49,6 +49,8 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { Sparkles } from "lucide-react"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
+import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
 
 // Types
 interface MaterialCard {
@@ -129,7 +131,9 @@ export default function AdminMaterialsPage() {
   const [form, setForm] = useState(EMPTY_FORM)
 
   // Delete confirmation
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [cardToDelete, setCardToDelete] = useState<MaterialCard | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // AI Generation state (T-038)
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
@@ -266,18 +270,27 @@ export default function AdminMaterialsPage() {
   }
 
   // Delete
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (card: MaterialCard) => {
+    setCardToDelete(card)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!cardToDelete) return
+    setIsDeleting(true)
     try {
       const { error } = await supabase
         .from("material_cards")
         .delete()
-        .eq("id", id)
+        .eq("id", cardToDelete.id)
       if (error) throw error
       toast({ title: "Material Card deleted" })
-      setDeleteConfirmId(null)
+      setCardToDelete(null)
       fetchMaterials()
     } catch (error) {
       toast({ variant: "destructive", title: "Failed to delete" })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -502,12 +515,15 @@ export default function AdminMaterialsPage() {
                 <CardContent className="py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-semibold truncate">{card.title}</h3>
                         <Badge className={statusConfig.color} variant="outline">
                           <StatusIcon className="h-3 w-3 mr-1" />
                           {statusConfig.label}
                         </Badge>
+                        {!skills.some((s) => s.id === card.skill_id) && (
+                          <OrphanWarningBadge message="Skill/taxonomy node no longer exists. Reassign to a valid skill." />
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                         {card.core_idea}
@@ -565,7 +581,7 @@ export default function AdminMaterialsPage() {
                         size="sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => setDeleteConfirmId(card.id)}
+                        onClick={() => handleDeleteClick(card)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -778,35 +794,18 @@ export default function AdminMaterialsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <Dialog
-        open={!!deleteConfirmId}
-        onOpenChange={() => setDeleteConfirmId(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Material Card</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. The material card will be
-              permanently deleted.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="brutal-outline"
-              onClick={() => setDeleteConfirmId(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Material Card"
+        description={
+          cardToDelete
+            ? `Delete "${cardToDelete.title}"? This cannot be undone.`
+            : ""
+        }
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
 
       {/* AI Generation Dialog (T-038) */}
       <Dialog

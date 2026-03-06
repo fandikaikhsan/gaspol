@@ -30,10 +30,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
+import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
 
 interface Question {
   id: string
-  question_text: string
+  question_text?: string | null
+  stem?: string | null
+  micro_skill_id?: string | null
   question_type: string
   difficulty: string
   cognitive_level: string
@@ -88,6 +92,11 @@ export default function AdminQuestionsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all")
   const [filterType, setFilterType] = useState<string>("all")
+
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -231,7 +240,7 @@ export default function AdminQuestionsPage() {
     setDialogMode("edit")
     setSelectedQuestion(question)
     setFormData({
-      question_text: question.question_text,
+      question_text: question.question_text ?? question.stem ?? "",
       question_type: question.question_type,
       difficulty: question.difficulty,
       cognitive_level: question.cognitive_level,
@@ -400,20 +409,21 @@ export default function AdminQuestionsPage() {
     }
   }
 
-  const handleDelete = async (question: Question) => {
-    const text = question.question_text ?? question.stem ?? "(no text)"
-    const preview = text.substring(0, 50) + (text.length > 50 ? "..." : "")
-    if (!confirm(`Delete question: "${preview}"?`)) {
-      return
-    }
+  const handleDeleteClick = (question: Question) => {
+    setQuestionToDelete(question)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!questionToDelete) return
+    setIsDeleting(true)
     try {
       const supabase = createClient()
 
       const { error } = await supabase
         .from("questions")
         .delete()
-        .eq("id", question.id)
+        .eq("id", questionToDelete.id)
 
       if (error) throw error
 
@@ -421,7 +431,7 @@ export default function AdminQuestionsPage() {
         title: "Question Deleted",
         description: "Question removed successfully.",
       })
-
+      setQuestionToDelete(null)
       loadData()
     } catch (error) {
       console.error("Delete error:", error)
@@ -430,6 +440,8 @@ export default function AdminQuestionsPage() {
         title: "Failed to Delete",
         description: "Could not delete question.",
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -630,10 +642,13 @@ export default function AdminQuestionsPage() {
     setOptions(options.filter((_, i) => i !== index))
   }
 
+  const validTaxonomyIds = new Set(taxonomyNodes.map((n) => n.id))
+
   const filteredQuestions = questions.filter((q) => {
+    const text = (q.question_text ?? q.stem ?? "") as string
     const matchesSearch =
       searchQuery === "" ||
-      q.question_text.toLowerCase().includes(searchQuery.toLowerCase())
+      text.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesDifficulty =
       filterDifficulty === "all" || q.difficulty === filterDifficulty
@@ -774,8 +789,11 @@ export default function AdminQuestionsPage() {
                           {question.time_estimate_seconds}s
                         </Badge>
                         <Badge variant="outline">{question.points} pt</Badge>
+                        {question.micro_skill_id && !validTaxonomyIds.has(question.micro_skill_id) && (
+                          <OrphanWarningBadge message="Skill/taxonomy node no longer exists. Reassign taxonomy." />
+                        )}
                       </div>
-                      <p className="font-medium mb-2">{question.question_text}</p>
+                      <p className="font-medium mb-2">{question.question_text ?? question.stem ?? "(no text)"}</p>
                       {question.taxonomy_nodes && question.taxonomy_nodes.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {question.taxonomy_nodes.map((node, idx) => (
@@ -798,7 +816,7 @@ export default function AdminQuestionsPage() {
                         variant="outline"
                         size="sm"
                         className="text-red-600 hover:bg-red-50"
-                        onClick={() => handleDelete(question)}
+                        onClick={() => handleDeleteClick(question)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -810,6 +828,19 @@ export default function AdminQuestionsPage() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Question"
+        description={
+          questionToDelete
+            ? `Delete question "${(questionToDelete.question_text ?? questionToDelete.stem ?? "(no text)").substring(0, 50)}${(questionToDelete.question_text ?? questionToDelete.stem ?? "").length > 50 ? "..." : ""}"? This cannot be undone.`
+            : ""
+        }
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -1256,7 +1287,7 @@ export default function AdminQuestionsPage() {
                                 </Badge>
                                 <Badge variant="outline">{question.points} pt</Badge>
                               </div>
-                              <p className="font-medium mb-2">{question.question_text}</p>
+                              <p className="font-medium mb-2">{question.question_text ?? question.stem ?? "(no text)"}</p>
                               {question.options && question.options.length > 0 && (
                                 <div className="space-y-1 mt-2">
                                   {question.options.map((opt: any, optIdx: number) => (

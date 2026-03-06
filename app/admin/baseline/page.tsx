@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 
 interface BaselineModule {
   id: string
@@ -62,6 +63,11 @@ export default function AdminBaselinePage() {
   const [baselineModules, setBaselineModules] = useState<BaselineModule[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [checkpointToDelete, setCheckpointToDelete] = useState<BaselineModule | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -249,11 +255,14 @@ export default function AdminBaselinePage() {
     }
   }
 
-  const handleDeleteCheckpoint = async (checkpoint: BaselineModule) => {
-    if (!confirm(`Delete checkpoint "${checkpoint.title}"? This will reorder remaining checkpoints.`)) {
-      return
-    }
+  const handleDeleteCheckpointClick = (checkpoint: BaselineModule) => {
+    setCheckpointToDelete(checkpoint)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteCheckpointConfirm = async () => {
+    if (!checkpointToDelete) return
+    setIsDeleting(true)
     try {
       const supabase = createClient()
 
@@ -261,13 +270,13 @@ export default function AdminBaselinePage() {
       const { error: deleteError } = await supabase
         .from("baseline_modules")
         .delete()
-        .eq("id", checkpoint.id)
+        .eq("id", checkpointToDelete.id)
 
       if (deleteError) throw deleteError
 
       // Reorder remaining checkpoints
       const remaining = baselineModules
-        .filter((b) => b.id !== checkpoint.id)
+        .filter((b) => b.id !== checkpointToDelete.id)
         .sort((a, b) => a.checkpoint_order - b.checkpoint_order)
 
       for (let i = 0; i < remaining.length; i++) {
@@ -281,7 +290,7 @@ export default function AdminBaselinePage() {
         title: "Checkpoint Deleted",
         description: "Checkpoint removed and order updated.",
       })
-
+      setCheckpointToDelete(null)
       loadBaselineModules()
     } catch (error) {
       console.error("Delete error:", error)
@@ -290,6 +299,8 @@ export default function AdminBaselinePage() {
         title: "Failed to Delete",
         description: "Could not delete checkpoint.",
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -568,7 +579,7 @@ export default function AdminBaselinePage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteCheckpoint(baseline)}
+                          onClick={() => handleDeleteCheckpointClick(baseline)}
                           className="text-red-600 hover:bg-red-50 border-red-300 h-7 w-7 p-0"
                           title="Delete checkpoint"
                         >
@@ -605,6 +616,19 @@ export default function AdminBaselinePage() {
           <p>• Total baseline time: ~30-60 minutes recommended</p>
         </CardContent>
       </Card>
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Checkpoint"
+        description={
+          checkpointToDelete
+            ? `Delete checkpoint "${checkpointToDelete.title}"? Remaining checkpoints will be reordered.`
+            : ""
+        }
+        onConfirm={handleDeleteCheckpointConfirm}
+        isDeleting={isDeleting}
+      />
 
       {/* Add Checkpoint Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

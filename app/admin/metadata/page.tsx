@@ -217,9 +217,10 @@ export default function AdminMetadataPage() {
   }
 
   const filteredQuestions = questions.filter((q) => {
+    const text = (q.question_text ?? q.stem ?? "") as string
     const matchesSearch =
       searchQuery === "" ||
-      q.question_text.toLowerCase().includes(searchQuery.toLowerCase())
+      text.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesCompleteness =
       filterCompleteness === "all" || q.completeness_status === filterCompleteness
@@ -526,8 +527,8 @@ export default function AdminMetadataPage() {
           <DialogHeader>
             <DialogTitle>Manage Construct Weights</DialogTitle>
             <DialogDescription>
-              {selectedQuestion?.question_text.substring(0, 100)}
-              {selectedQuestion && selectedQuestion.question_text.length > 100 && "..."}
+              {(selectedQuestion?.question_text ?? selectedQuestion?.stem ?? "").substring(0, 100)}
+              {(selectedQuestion?.question_text ?? selectedQuestion?.stem ?? "").length > 100 && "..."}
             </DialogDescription>
           </DialogHeader>
 

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 
 interface TaxonomyNode {
   id: string
@@ -73,6 +74,11 @@ export default function AdminTaxonomyPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [nodeToDelete, setNodeToDelete] = useState<TaxonomyNode | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Bulk generation state
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
@@ -527,9 +533,8 @@ export default function AdminTaxonomyPage() {
     }
   }
 
-  const handleDelete = async (node: TaxonomyNode) => {
+  const handleDeleteClick = (node: TaxonomyNode) => {
     const hasChildren = node.children && node.children.length > 0
-
     if (hasChildren) {
       toast({
         variant: "destructive",
@@ -538,29 +543,33 @@ export default function AdminTaxonomyPage() {
       })
       return
     }
+    setNodeToDelete(node)
+    setDeleteDialogOpen(true)
+  }
 
-    if (!confirm(`Delete "${node.name}"? This cannot be undone.`)) {
-      return
-    }
-
+  const handleDeleteConfirm = async () => {
+    if (!nodeToDelete) return
+    setIsDeleting(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("taxonomy_nodes").delete().eq("id", node.id)
+      const { error } = await supabase.from("taxonomy_nodes").delete().eq("id", nodeToDelete.id)
 
       if (error) throw error
 
       toast({
         title: "Node Deleted",
-        description: `${node.name} has been removed.`,
+        description: `${nodeToDelete.name} has been removed.`,
       })
-
+      setNodeToDelete(null)
       loadData()
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete node.",
+        description: error instanceof Error ? error.message : "Failed to delete node.",
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -659,7 +668,7 @@ export default function AdminTaxonomyPage() {
               className="text-red-600 hover:bg-red-50"
               onClick={(e) => {
                 e.stopPropagation()
-                handleDelete(node)
+                handleDeleteClick(node)
               }}
             >
               <Trash2 className="h-3 w-3" />
@@ -728,6 +737,17 @@ export default function AdminTaxonomyPage() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Taxonomy Node"
+        description={`Permanently delete "${nodeToDelete?.name}" (${nodeToDelete?.code})?`}
+        requireTypeConfirm
+        criticalWarning="This will remove question-taxonomy links, material cards, and other content that reference this node. This cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Star, Eye, EyeOff, Calendar, BookOpen, Trash2 } from "lucide-react"
 import Link from "next/link"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 
 interface Exam {
   id: string
@@ -30,6 +31,9 @@ export default function AdminExamsPage() {
   const { toast } = useToast()
   const [exams, setExams] = useState<Exam[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [examToDelete, setExamToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     loadExams()
@@ -111,22 +115,25 @@ export default function AdminExamsPage() {
     }
   }
 
-  const deleteExam = async (examId: string, examName: string) => {
-    if (!confirm(`Are you sure you want to delete ${examName}? This will also delete all associated taxonomy data.`)) {
-      return
-    }
+  const handleDeleteClick = (exam: Exam) => {
+    setExamToDelete({ id: exam.id, name: exam.name })
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!examToDelete) return
+    setIsDeleting(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("exams").delete().eq("id", examId)
+      const { error } = await supabase.from("exams").delete().eq("id", examToDelete.id)
 
       if (error) throw error
 
       toast({
         title: "Exam Deleted",
-        description: `${examName} has been deleted.`,
+        description: `${examToDelete.name} has been deleted.`,
       })
-
+      setExamToDelete(null)
       loadExams()
     } catch (error) {
       toast({
@@ -134,6 +141,8 @@ export default function AdminExamsPage() {
         title: "Error",
         description: "Failed to delete exam. Please try again.",
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -214,6 +223,17 @@ export default function AdminExamsPage() {
           </CardContent>
         </Card>
       ) : (
+        <>
+        <DeleteConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Delete Exam"
+          description={examToDelete ? `Delete exam "${examToDelete.name}"?` : ""}
+          requireTypeConfirm
+          criticalWarning="This will delete all associated taxonomy nodes and research data. This cannot be undone."
+          onConfirm={handleDeleteConfirm}
+          isDeleting={isDeleting}
+        />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {exams.map((exam) => (
             <Card
@@ -299,7 +319,7 @@ export default function AdminExamsPage() {
                     variant="outline"
                     size="sm"
                     className="text-red-600 hover:bg-red-50"
-                    onClick={() => deleteExam(exam.id, exam.name)}
+                    onClick={() => handleDeleteClick(exam)}
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
                     Delete
@@ -309,6 +329,7 @@ export default function AdminExamsPage() {
             </Card>
           ))}
         </div>
+        </>
       )}
     </div>
   )

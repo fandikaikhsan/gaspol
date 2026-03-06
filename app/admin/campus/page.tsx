@@ -31,6 +31,7 @@ import {
   Save,
   X,
 } from "lucide-react"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 
 interface CampusScore {
   id: string
@@ -61,6 +62,9 @@ export default function AdminCampusPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [isSaving, setIsSaving] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [recordToDelete, setRecordToDelete] = useState<CampusScore | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const supabase = createClient()
 
@@ -149,9 +153,15 @@ export default function AdminCampusPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this campus score?")) return
-    const { error } = await supabase.from("campus_scores").delete().eq("id", id)
+  const handleDeleteClick = (record: CampusScore) => {
+    setRecordToDelete(record)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!recordToDelete) return
+    setIsDeleting(true)
+    const { error } = await supabase.from("campus_scores").delete().eq("id", recordToDelete.id)
     if (error) {
       toast({
         variant: "destructive",
@@ -160,8 +170,10 @@ export default function AdminCampusPage() {
       })
     } else {
       toast({ title: "Deleted", description: "Campus score removed." })
+      setRecordToDelete(null)
       fetchRecords()
     }
+    setIsDeleting(false)
   }
 
   const startEdit = (record: CampusScore) => {
@@ -205,6 +217,19 @@ export default function AdminCampusPage() {
           <Plus className="w-4 h-4 mr-2" /> Add Campus
         </Button>
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Campus Score"
+        description={
+          recordToDelete
+            ? `Delete ${recordToDelete.university_name} – ${recordToDelete.major}?`
+            : ""
+        }
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
 
       {/* Search */}
       <div className="relative max-w-md">
@@ -375,7 +400,7 @@ export default function AdminCampusPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(r.id)}
+                    onClick={() => handleDeleteClick(r)}
                     className="text-destructive"
                   >
                     <Trash2 className="w-4 h-4" />

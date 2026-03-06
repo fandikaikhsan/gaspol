@@ -23,6 +23,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
+import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
 import {
   Select,
   SelectContent,
@@ -72,6 +74,11 @@ export default function AdminFlashcardsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterMicroSkill, setFilterMicroSkill] = useState<string>("all")
+
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [flashcardToDelete, setFlashcardToDelete] = useState<Flashcard | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -236,18 +243,21 @@ export default function AdminFlashcardsPage() {
     }
   }
 
-  const handleDelete = async (flashcard: Flashcard) => {
-    if (!confirm(`Delete flashcard: "${flashcard.front_text.substring(0, 50)}..."?`)) {
-      return
-    }
+  const handleDeleteClick = (flashcard: Flashcard) => {
+    setFlashcardToDelete(flashcard)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!flashcardToDelete) return
+    setIsDeleting(true)
     try {
       const supabase = createClient()
 
       const { error } = await supabase
         .from("flashcards")
         .delete()
-        .eq("id", flashcard.id)
+        .eq("id", flashcardToDelete.id)
 
       if (error) throw error
 
@@ -255,7 +265,7 @@ export default function AdminFlashcardsPage() {
         title: "Flashcard Deleted",
         description: "Flashcard removed successfully.",
       })
-
+      setFlashcardToDelete(null)
       loadData()
     } catch (error) {
       console.error("Delete error:", error)
@@ -264,6 +274,8 @@ export default function AdminFlashcardsPage() {
         title: "Failed to Delete",
         description: "Could not delete flashcard.",
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -602,11 +614,14 @@ export default function AdminFlashcardsPage() {
                         {flashcard.taxonomy_node.code}
                       </Badge>
                     )}
+                    {flashcard.micro_skill_id && !flashcard.taxonomy_node && (
+                      <OrphanWarningBadge message="Skill/taxonomy node no longer exists. Reassign to a valid skill." />
+                    )}
                   </div>
                   <div className="space-y-2 mb-4">
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wide">Front</p>
-                      <p className="font-medium line-clamp-2">{flashcard.front_text}</p>
+                      <p className="font-medium line-clamp-2">{flashcard.front_text ?? "(no text)"}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wide">Back</p>
@@ -627,7 +642,7 @@ export default function AdminFlashcardsPage() {
                       variant="outline"
                       size="sm"
                       className="text-red-600 hover:bg-red-50"
-                      onClick={() => handleDelete(flashcard)}
+                      onClick={() => handleDeleteClick(flashcard)}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -638,6 +653,19 @@ export default function AdminFlashcardsPage() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Flashcard"
+        description={
+          flashcardToDelete
+            ? `Delete flashcard "${(flashcardToDelete.front_text ?? "(no text)").substring(0, 50)}${(flashcardToDelete.front_text ?? "").length > 50 ? "..." : ""}"?`
+            : ""
+        }
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

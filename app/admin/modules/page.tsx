@@ -47,6 +47,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
+import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
 
 interface Module {
   id: string
@@ -66,16 +68,17 @@ interface ModuleQuestion {
   order_index: number
   question: {
     id: string
-    question_text: string
-    question_type: string
-    difficulty: string
-    time_estimate_seconds: number
+    question_text?: string | null
+    question_type?: string
+    difficulty?: string
+    time_estimate_seconds?: number
   }
 }
 
 interface Question {
   id: string
-  question_text: string
+  question_text?: string | null
+  stem?: string | null
   question_type: string
   difficulty: string
   time_estimate_seconds: number
@@ -101,6 +104,11 @@ export default function AdminModulesPage() {
   const [modules, setModules] = useState<Module[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>("all")
+
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [moduleToDelete, setModuleToDelete] = useState<Module | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -330,15 +338,20 @@ export default function AdminModulesPage() {
     }
   }
 
-  const handleDelete = async (module: Module) => {
-    if (!confirm(`Delete module "${module.name}"?`)) return
+  const handleDeleteClick = (module: Module) => {
+    setModuleToDelete(module)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!moduleToDelete) return
+    setIsDeleting(true)
     try {
       const supabase = createClient()
       const { error } = await supabase
         .from("modules")
         .delete()
-        .eq("id", module.id)
+        .eq("id", moduleToDelete.id)
 
       if (error) throw error
 
@@ -346,15 +359,17 @@ export default function AdminModulesPage() {
         title: "Module Deleted",
         description: "Module removed successfully.",
       })
-
+      setModuleToDelete(null)
       loadModules()
     } catch (error) {
       console.error("Delete error:", error)
       toast({
         variant: "destructive",
         title: "Failed to Delete",
-        description: "Could not delete module.",
+        description: error instanceof Error ? error.message : "Could not delete module. It may be in use by plans or checkpoints.",
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -372,7 +387,7 @@ export default function AdminModulesPage() {
       const { data, error } = await supabase
         .from("questions")
         .select(
-          "id, question_text, question_type, difficulty, time_estimate_seconds, cognitive_level",
+          "id, question_text, stem, question_type, difficulty, time_estimate_seconds, cognitive_level",
         )
         .eq("is_active", true)
         .order("created_at", { ascending: false })
@@ -404,7 +419,7 @@ export default function AdminModulesPage() {
       order_index: moduleQuestions.length,
       question: {
         id: question.id,
-        question_text: question.question_text,
+        question_text: question.question_text ?? question.stem ?? "",
         question_type: question.question_type,
         difficulty: question.difficulty,
         time_estimate_seconds: question.time_estimate_seconds,
@@ -524,9 +539,12 @@ export default function AdminModulesPage() {
     return module.module_type === filter
   })
 
+  const validTaxonomyIds = new Set(taxonomyNodes.map((n) => n.id))
+
   const filteredAvailableQuestions = availableQuestions.filter((q) => {
     if (!questionSearch) return true
-    return q.question_text.toLowerCase().includes(questionSearch.toLowerCase())
+    const text = (q.question_text ?? q.stem ?? "") as string
+    return text.toLowerCase().includes(questionSearch.toLowerCase())
   })
 
   if (isLoading) {
@@ -580,6 +598,15 @@ export default function AdminModulesPage() {
         </CardContent>
       </Card>
 
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Module"
+        description={moduleToDelete ? `Delete module "${moduleToDelete.name}"? This cannot be undone.` : ""}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
+
       {/* Modules List */}
       {filteredModules.length === 0 ? (
         <Card>
@@ -624,6 +651,10 @@ export default function AdminModulesPage() {
                         >
                           {module.is_published ? "Published" : "Draft"}
                         </Badge>
+                        {module.target_node_id &&
+                          !validTaxonomyIds.has(module.target_node_id) && (
+                            <OrphanWarningBadge message="Target skill/taxonomy node no longer exists. Reassign or remove target." />
+                          )}
                       </div>
                       <CardTitle>{module.name}</CardTitle>
                       {module.description && (
@@ -649,7 +680,7 @@ export default function AdminModulesPage() {
                         variant="outline"
                         size="sm"
                         className="text-red-600 hover:bg-red-50"
-                        onClick={() => handleDelete(module)}
+                        onClick={() => handleDeleteClick(module)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -875,22 +906,22 @@ export default function AdminModulesPage() {
                               #{index + 1}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
-                              {mq.question.question_type}
+                              {mq.question?.question_type ?? "—"}
                             </Badge>
                             <Badge
                               className={`text-xs ${
-                                mq.question.difficulty === "easy"
+                                mq.question?.difficulty === "easy"
                                   ? "bg-green-100 text-green-800"
-                                  : mq.question.difficulty === "medium"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-red-100 text-red-800"
+                                  : mq.question?.difficulty === "medium"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {mq.question.difficulty}
+                              {mq.question?.difficulty ?? "—"}
                             </Badge>
                           </div>
                           <p className="text-sm font-medium">
-                            {mq.question.question_text.substring(0, 80)}...
+                            {(mq.question?.question_text ?? mq.question?.stem ?? "(no text)").substring(0, 80)}...
                           </p>
                         </div>
                         <Button
