@@ -401,7 +401,9 @@ export default function AdminQuestionsPage() {
   }
 
   const handleDelete = async (question: Question) => {
-    if (!confirm(`Delete question: "${question.question_text.substring(0, 50)}..."?`)) {
+    const text = question.question_text ?? question.stem ?? "(no text)"
+    const preview = text.substring(0, 50) + (text.length > 50 ? "..." : "")
+    if (!confirm(`Delete question: "${preview}"?`)) {
       return
     }
 

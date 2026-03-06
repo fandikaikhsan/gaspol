@@ -973,7 +973,7 @@ export default function AdminModulesPage() {
                           )}
                         </div>
                         <p className="text-sm">
-                          {question.question_text.substring(0, 100)}...
+                          {(question.question_text ?? question.stem ?? "").substring(0, 100)}...
                         </p>
                       </div>
                     )
