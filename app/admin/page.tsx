@@ -6,8 +6,29 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/server"
 
-export default function AdminDashboardPage() {
+async function fetchQuickStats() {
+  const supabase = await createClient()
+  const [questionsRes, studentsRes, modulesRes] = await Promise.all([
+    supabase.from("questions").select("id", { count: "exact", head: true }),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
+    supabase.from("modules").select("id", { count: "exact", head: true }),
+  ])
+  return {
+    questions: questionsRes.count ?? 0,
+    students: studentsRes.count ?? 0,
+    modules: modulesRes.count ?? 0,
+  }
+}
+
+export default async function AdminDashboardPage() {
+  let stats = { questions: 0, students: 0, modules: 0 }
+  try {
+    stats = await fetchQuickStats()
+  } catch {
+    // Keep defaults on error (e.g. unauthenticated)
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -86,15 +107,15 @@ export default function AdminDashboardPage() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Questions:</span>
-              <span className="font-bold">TBD</span>
+              <span className="font-bold">{stats.questions}</span>
             </div>
             <div className="flex justify-between">
               <span>Students:</span>
-              <span className="font-bold">TBD</span>
+              <span className="font-bold">{stats.students}</span>
             </div>
             <div className="flex justify-between">
               <span>Modules:</span>
-              <span className="font-bold">TBD</span>
+              <span className="font-bold">{stats.modules}</span>
             </div>
           </CardContent>
         </Card>

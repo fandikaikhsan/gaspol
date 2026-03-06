@@ -482,8 +482,8 @@ export default function AdminMetadataPage() {
                         </div>
 
                         <p className="font-medium mb-2">
-                          {question.question_text.substring(0, 100)}
-                          {question.question_text.length > 100 && "..."}
+                          {(question.question_text ?? question.stem ?? "").substring(0, 100)}
+                          {(question.question_text ?? question.stem ?? "").length > 100 && "..."}
                         </p>
 
                         {/* Metadata Status */}

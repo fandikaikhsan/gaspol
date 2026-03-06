@@ -183,7 +183,7 @@ INSERT INTO questions (
 -- MODULE
 -- ============================================
 
--- Sample baseline module
+-- Sample baseline module (question_count from module_questions trigger)
 INSERT INTO modules (
   id,
   name,
@@ -191,8 +191,8 @@ INSERT INTO modules (
   module_type,
   question_count,
   time_limit_min,
-  question_ids,
-  status
+  status,
+  is_published
 ) VALUES (
   'm1111111-1111-1111-1111-111111111111',
   'Baseline Math - Linear Equations',
@@ -200,9 +200,14 @@ INSERT INTO modules (
   'baseline',
   3,
   10,
-  '["q1111111-1111-1111-1111-111111111111", "q2222222-2222-2222-2222-222222222222", "q3333333-3333-3333-3333-333333333333"]',
-  'published'
+  'published',
+  true
 );
+
+INSERT INTO module_questions (module_id, question_id, order_index) VALUES
+  ('m1111111-1111-1111-1111-111111111111', 'q1111111-1111-1111-1111-111111111111', 0),
+  ('m1111111-1111-1111-1111-111111111111', 'q2222222-2222-2222-2222-222222222222', 1),
+  ('m1111111-1111-1111-1111-111111111111', 'q3333333-3333-3333-3333-333333333333', 2);
 
 -- ============================================
 -- BASELINE MODULE

@@ -62,16 +62,22 @@ async function fetchPembahasanData(moduleId: string): Promise<PembahasanData> {
   } = await supabase.auth.getUser()
   if (!user) throw new Error("Not authenticated")
 
-  // 1. Fetch module
+  // 1. Fetch module with module_questions (ordered)
   const { data: moduleData, error: moduleError } = await supabase
     .from("modules")
-    .select("name, question_ids")
+    .select(`
+      name,
+      module_questions(question_id, order_index)
+    `)
     .eq("id", moduleId)
     .single()
 
   if (moduleError || !moduleData) throw new Error("Module not found")
 
-  const questionIds = (moduleData.question_ids || []) as string[]
+  const mqs = (moduleData.module_questions || []) as { question_id: string; order_index: number }[]
+  const questionIds = mqs
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((mq) => mq.question_id)
 
   // 2. Parallel: questions, attempts, material cards
   const [questionsRes, attemptsRes] = await Promise.all([

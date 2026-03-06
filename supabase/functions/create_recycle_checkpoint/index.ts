@@ -112,21 +112,35 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .eq("cycle_id", userState.current_cycle_id)
 
-    // Create module
+    // Create module (without question_ids; we use module_questions)
     const { data: module, error: moduleError } = await supabase
       .from("modules")
       .insert({
         name: `Recycle Checkpoint #${(checkpointCount || 0) + 1}`,
         module_type: "recycle",
         question_count: questionIds.length,
-        question_ids: questionIds,
-        is_active: true,
+        status: "published",
+        is_published: true,
       })
       .select("id")
       .single()
 
     if (moduleError || !module) {
       throw new Error(`Failed to create module: ${moduleError?.message}`)
+    }
+
+    // Insert module_questions (order preserved by order_index)
+    const moduleQuestionRows = questionIds.map((qid, idx) => ({
+      module_id: module.id,
+      question_id: qid,
+      order_index: idx,
+    }))
+    const { error: mqError } = await supabase
+      .from("module_questions")
+      .insert(moduleQuestionRows)
+
+    if (mqError) {
+      throw new Error(`Failed to link questions to module: ${mqError.message}`)
     }
 
     // Create before snapshot reference

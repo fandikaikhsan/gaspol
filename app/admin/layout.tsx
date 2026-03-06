@@ -23,20 +23,36 @@ import {
   GraduationCap,
 } from "lucide-react"
 
-const navigation = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Debug", href: "/admin/debug", icon: Bug },
-  { name: "Diagnostics", href: "/admin/diagnostics", icon: Activity },
-  { name: "Exams", href: "/admin/exams", icon: FileText },
-  { name: "Taxonomy", href: "/admin/taxonomy", icon: Network },
-  { name: "Questions", href: "/admin/questions", icon: HelpCircle },
-  { name: "Materials", href: "/admin/materials", icon: BookOpen },
-  { name: "Campus", href: "/admin/campus", icon: GraduationCap },
-  { name: "Flashcards", href: "/admin/flashcards", icon: Layers },
-  { name: "Metadata", href: "/admin/metadata", icon: Sliders },
-  { name: "Modules", href: "/admin/modules", icon: Package },
-  { name: "Baseline", href: "/admin/baseline", icon: Target },
-  { name: "AI Runs", href: "/admin/ai-runs", icon: Bot },
+const navigationGroups = [
+  {
+    label: "Overview",
+    items: [{ name: "Dashboard", href: "/admin", icon: LayoutDashboard }],
+  },
+  {
+    label: "Content Pipeline",
+    items: [
+      { name: "Exams", href: "/admin/exams", icon: FileText },
+      { name: "Taxonomy", href: "/admin/taxonomy", icon: Network },
+      { name: "Questions", href: "/admin/questions", icon: HelpCircle },
+      { name: "Materials", href: "/admin/materials", icon: BookOpen },
+      { name: "Flashcards", href: "/admin/flashcards", icon: Layers },
+      { name: "Metadata", href: "/admin/metadata", icon: Sliders },
+      { name: "Modules", href: "/admin/modules", icon: Package },
+      { name: "Baseline", href: "/admin/baseline", icon: Target },
+    ],
+  },
+  {
+    label: "Distribution",
+    items: [{ name: "Campus", href: "/admin/campus", icon: GraduationCap }],
+  },
+  {
+    label: "Tools",
+    items: [
+      { name: "Debug", href: "/admin/debug", icon: Bug },
+      { name: "Diagnostics", href: "/admin/diagnostics", icon: Activity },
+      { name: "AI Runs", href: "/admin/ai-runs", icon: Bot },
+    ],
+  },
 ]
 
 export default function AdminLayout({
@@ -55,18 +71,27 @@ export default function AdminLayout({
             <p className="text-sm text-muted-foreground">Content Management</p>
           </div>
 
-          <nav className="space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Icon className="mr-2 h-5 w-5" />
-                    {item.name}
-                  </Button>
-                </Link>
-              )
-            })}
+          <nav className="space-y-6">
+            {navigationGroups.map((group) => (
+              <div key={group.label}>
+                <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {group.label}
+                </p>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link key={item.href} href={item.href}>
+                        <Button variant="ghost" className="w-full justify-start">
+                          <Icon className="mr-2 h-5 w-5" />
+                          {item.name}
+                        </Button>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
           <div className="mt-8 pt-8 border-t-2 border-border">

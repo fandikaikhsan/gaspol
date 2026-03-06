@@ -156,12 +156,24 @@ Deno.serve(async (req) => {
     let suggestion: MetadataSuggestion
 
     if (use_ai && researchProfiles.length > 0) {
-      // AI-powered suggestion using Claude
+      // AI-powered suggestion (uses centralized ai_settings)
+      const { data: aiSettings } = await supabase
+        .from("ai_settings")
+        .select("provider, api_key, model")
+        .eq("is_active", true)
+        .single()
+
+      if (!aiSettings) {
+        return new Response(
+          JSON.stringify({ error: "No active AI provider configured. Configure in Admin > AI Runs > Settings." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
       suggestion = await generateAISuggestion(
         question,
         taxonomyNodes,
         researchProfiles,
-        Deno.env.get("ANTHROPIC_API_KEY")!
+        aiSettings
       )
     } else {
       // Rule-based suggestion
@@ -287,52 +299,67 @@ function generateRuleBasedSuggestion(
   }
 }
 
+interface AISettings {
+  provider: string
+  api_key: string | null
+  model: string
+}
+
+async function callAI(settings: AISettings, systemPrompt: string, userPrompt: string): Promise<string> {
+  const { provider, api_key, model } = settings
+  const apiKey = api_key || (provider === "anthropic" ? Deno.env.get("ANTHROPIC_API_KEY") : provider === "openai" ? Deno.env.get("OPENAI_API_KEY") : Deno.env.get("GOOGLE_API_KEY"))
+  if (!apiKey) throw new Error(`${provider} API key not configured (set in AI Settings or env)`)
+
+  if (provider === "anthropic") {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model, max_tokens: 2000, temperature: 0.3, system: systemPrompt, messages: [{ role: "user", content: userPrompt }] }),
+    })
+    if (!res.ok) throw new Error(`Anthropic API error: ${await res.text()}`)
+    const data = await res.json()
+    return data.content[0].text
+  }
+  if (provider === "openai") {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, max_tokens: 2000, temperature: 0.3, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }] }),
+    })
+    if (!res.ok) throw new Error(`OpenAI API error: ${await res.text()}`)
+    const data = await res.json()
+    return data.choices[0].message.content
+  }
+  if (provider === "gemini") {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2000 } }),
+    })
+    if (!res.ok) throw new Error(`Gemini API error: ${await res.text()}`)
+    const data = await res.json()
+    return data.candidates[0].content.parts[0].text
+  }
+  throw new Error(`Unsupported provider: ${provider}`)
+}
+
 /**
- * Generate AI-powered metadata suggestion using Claude
+ * Generate AI-powered metadata suggestion (uses centralized ai_settings)
  */
 async function generateAISuggestion(
   question: any,
   taxonomyNodes: any[],
   researchProfiles: any[],
-  anthropicKey: string
+  aiSettings: AISettings
 ): Promise<MetadataSuggestion> {
   const prompt = buildAnalysisPrompt(question, taxonomyNodes, researchProfiles)
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": anthropicKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2000,
-      temperature: 0.3,
-      system: "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure.",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    }),
-  })
-
-  if (!response.ok) {
-    console.error("Anthropic API error:", await response.text())
-    // Fallback to rule-based on API error
-    return generateRuleBasedSuggestion(question, taxonomyNodes, researchProfiles)
-  }
-
-  const data = await response.json()
-  const aiOutput = data.content[0].text
+  const systemPrompt = "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure."
 
   try {
+    const aiOutput = await callAI(aiSettings, systemPrompt, prompt)
     return JSON.parse(aiOutput)
   } catch (e) {
-    console.error("Failed to parse AI output:", e)
-    // Fallback to rule-based on parse error
+    console.error("AI suggestion error:", e)
     return generateRuleBasedSuggestion(question, taxonomyNodes, researchProfiles)
   }
 }

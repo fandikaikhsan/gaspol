@@ -265,7 +265,6 @@ export interface Database {
           question_count: number
           time_limit_min: number | null
           passing_threshold: number | null
-          question_ids: Json
           status: string
           created_by: string | null
           created_at: string
@@ -280,7 +279,6 @@ export interface Database {
           question_count: number
           time_limit_min?: number | null
           passing_threshold?: number | null
-          question_ids?: Json
           status?: string
           created_by?: string | null
           created_at?: string
@@ -295,7 +293,6 @@ export interface Database {
           question_count?: number
           time_limit_min?: number | null
           passing_threshold?: number | null
-          question_ids?: Json
           status?: string
           created_by?: string | null
           created_at?: string

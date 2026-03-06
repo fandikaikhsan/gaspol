@@ -68,35 +68,40 @@ serve(async (req) => {
       throw new Error("exam_type and year are required")
     }
 
-    // Batch processing: Split research into three parts to avoid timeout
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY")
-    if (!anthropicKey) {
-      throw new Error("ANTHROPIC_API_KEY not configured")
+    // Get AI settings (centralized)
+    const { data: aiSettings } = await supabase
+      .from("ai_settings")
+      .select("provider, api_key, model")
+      .eq("is_active", true)
+      .single()
+
+    if (!aiSettings) {
+      throw new Error("No active AI provider configured. Configure in Admin > AI Runs > Settings.")
     }
 
     const startTime = Date.now()
 
     // PART 1: Basic exam structure, timing, and scoring
     const part1Prompt = buildStructurePrompt(exam_type, year, additional_info)
-    const part1Response = await callAnthropicAPI(anthropicKey, part1Prompt, 4000)
+    const part1Response = await callAI(aiSettings, part1Prompt, 4000)
     const part1Data = parseJSONOutput(part1Response)
 
     // PART 2: Detailed content areas and taxonomy
     const part2Prompt = buildContentPrompt(exam_type, year, additional_info, part1Data)
-    const part2Response = await callAnthropicAPI(anthropicKey, part2Prompt, 8000)
+    const part2Response = await callAI(aiSettings, part2Prompt, 8000)
     const part2Data = parseJSONOutput(part2Response)
 
     // PART 3: Construct profiling per taxonomy node
     const part3Prompt = buildConstructPrompt(exam_type, year, part1Data, part2Data)
-    const part3Response = await callAnthropicAPI(anthropicKey, part3Prompt, 8000)
+    const part3Response = await callAI(aiSettings, part3Prompt, 8000)
     const part3Data = parseJSONOutput(part3Response)
 
     // PART 4: Error pattern profiling
     const part4Prompt = buildErrorPatternPrompt(exam_type, year, part1Data, part2Data, part3Data)
-    const part4Response = await callAnthropicAPI(anthropicKey, part4Prompt, 8000)
+    const part4Response = await callAI(aiSettings, part4Prompt, 8000)
     const part4Data = parseJSONOutput(part4Response)
 
-    console.log("Completed 4-batch research via Anthropic API")
+    console.log(`Completed 4-batch research via ${aiSettings.provider} API`)
 
     // Combine results
     const parsedOutput = {
@@ -115,9 +120,9 @@ serve(async (req) => {
 
     const duration = Date.now() - startTime
     const totalTokens = part1Response.usage.input_tokens + part1Response.usage.output_tokens +
-                       part2Response.usage.input_tokens + part2Response.usage.output_tokens +
-                       part3Response.usage.input_tokens + part3Response.usage.output_tokens +
-                       part4Response.usage.input_tokens + part4Response.usage.output_tokens
+      part2Response.usage.input_tokens + part2Response.usage.output_tokens +
+      part3Response.usage.input_tokens + part3Response.usage.output_tokens +
+      part4Response.usage.input_tokens + part4Response.usage.output_tokens
 
     // Find or create exam record
     const { data: existingExam } = await supabase
@@ -196,7 +201,7 @@ serve(async (req) => {
       prompt: "Batch processing: Part 1 (Structure) + Part 2 (Content) + Part 3 (Constructs) + Part 4 (Error Patterns)",
       input_params: { exam_type, year, additional_info },
       output_result: parsedOutput,
-      model: "claude-sonnet-4-6",
+      model: aiSettings.model,
       tokens_used: totalTokens,
       duration_ms: duration,
       status: "success",
@@ -234,39 +239,56 @@ serve(async (req) => {
   }
 })
 
+interface AISettings { provider: string; api_key: string | null; model: string }
+
 /**
- * Helper: Call Anthropic API
+ * Call AI (centralized - uses ai_settings provider/model/api_key)
+ * Returns shape compatible with parseJSONOutput and usage tracking
  */
-async function callAnthropicAPI(apiKey: string, prompt: string, maxTokens: number): Promise<any> {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: maxTokens,
-      temperature: 0.3,
-      system: "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure.",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    }),
-  })
+async function callAI(settings: AISettings, prompt: string, maxTokens: number): Promise<{ content: { text: string }[]; usage: { input_tokens: number; output_tokens: number } }> {
+  const { provider, api_key, model } = settings
+  const apiKey = api_key || (provider === "anthropic" ? Deno.env.get("ANTHROPIC_API_KEY") : provider === "openai" ? Deno.env.get("OPENAI_API_KEY") : Deno.env.get("GOOGLE_API_KEY"))
+  if (!apiKey) throw new Error(`${provider} API key not configured (set in AI Settings or env)`)
 
-  if (!response.ok) {
-    const errorData = await response.text()
-    console.error("Anthropic API error:", errorData)
-    throw new Error(`Anthropic API error: ${response.statusText}`)
+  const systemPrompt = "You are a JSON-only API. You must ONLY output valid JSON with no additional text, explanations, or markdown. Never include ```json blocks or any text outside the JSON structure."
+
+  if (provider === "anthropic") {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model, max_tokens: maxTokens, temperature: 0.3, system: systemPrompt, messages: [{ role: "user", content: prompt }] }),
+    })
+    if (!res.ok) throw new Error(`Anthropic API error: ${await res.text()}`)
+    const data = await res.json()
+    return { content: data.content, usage: data.usage }
   }
-
-  const data = await response.json()
-  return data
+  if (provider === "openai") {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, max_tokens: maxTokens, temperature: 0.3, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: prompt }] }),
+    })
+    if (!res.ok) throw new Error(`OpenAI API error: ${await res.text()}`)
+    const data = await res.json()
+    const text = data.choices[0].message.content
+    return {
+      content: [{ text }],
+      usage: { input_tokens: data.usage?.prompt_tokens ?? 0, output_tokens: data.usage?.completion_tokens ?? 0 },
+    }
+  }
+  if (provider === "gemini") {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens } }),
+    })
+    if (!res.ok) throw new Error(`Gemini API error: ${await res.text()}`)
+    const data = await res.json()
+    const text = data.candidates[0].content.parts[0].text
+    const total = data.usageMetadata?.totalTokenCount ?? 0
+    return { content: [{ text }], usage: { input_tokens: Math.floor(total / 2), output_tokens: Math.ceil(total / 2) } }
+  }
+  throw new Error(`Unsupported provider: ${provider}`)
 }
 
 /**

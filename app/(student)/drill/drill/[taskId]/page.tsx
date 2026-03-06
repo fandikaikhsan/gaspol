@@ -53,7 +53,10 @@ export default function DrillRunnerPage() {
 
       const { data: directModule } = await supabase
         .from("modules")
-        .select("*")
+        .select(`
+          *,
+          module_questions(question_id, order_index)
+        `)
         .eq("id", taskId)
         .single()
 
@@ -88,7 +91,10 @@ export default function DrillRunnerPage() {
 
         const { data: md } = await supabase
           .from("modules")
-          .select("*")
+          .select(`
+            *,
+            module_questions(question_id, order_index)
+          `)
           .eq("id", taskData.module_id)
           .single()
 
@@ -125,8 +131,11 @@ export default function DrillRunnerPage() {
         return
       }
 
-      // Load questions in module order
-      const questionIds = (moduleData.question_ids || []) as string[]
+      // Load questions via module_questions (ordered by order_index)
+      const mqs = (moduleData.module_questions || []) as { question_id: string; order_index: number }[]
+      const questionIds = mqs
+        .sort((a, b) => a.order_index - b.order_index)
+        .map((mq) => mq.question_id)
       if (questionIds.length === 0) {
         toast({
           variant: "destructive",
