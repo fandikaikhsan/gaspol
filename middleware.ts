@@ -98,7 +98,7 @@ export async function middleware(request: NextRequest) {
           ONBOARDING: ['/onboarding'],
           BASELINE_ASSESSMENT_IN_PROGRESS: ['/baseline', '/analytics'],
           BASELINE_COMPLETE: ['/analytics', '/plan'],
-          PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics'],
+          PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics', '/recycle'],
           RECYCLE_UNLOCKED: ['/plan', '/drill', '/review', '/analytics', '/recycle'],
           RECYCLE_ASSESSMENT_IN_PROGRESS: ['/recycle', '/analytics'],
         }
