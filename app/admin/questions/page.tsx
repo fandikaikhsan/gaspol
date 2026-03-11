@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, Loader2, Search, Filter, Sparkles, Check, X } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2, Search, Filter, Sparkles, Check, X, FileJson } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -125,6 +125,12 @@ export default function AdminQuestionsPage() {
     { option_text: "", is_correct: false, position: 3 },
     { option_text: "", is_correct: false, position: 4 },
   ])
+
+  // Import JSON state
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
+  const [importJson, setImportJson] = useState("")
+  const [isImporting, setIsImporting] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
 
   // AI Generation state
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
@@ -315,13 +321,33 @@ export default function AdminQuestionsPage() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
 
+      // Build options JSONB and correct_answer for student-facing fetch
+      let optionsJson: Record<string, string> = {}
+      let correctAnswer = ""
+      if (formData.question_type.startsWith("MCQ") || formData.question_type === "MCK") {
+        const filled = options.filter((opt) => opt.option_text.trim())
+        filled.forEach((opt, idx) => {
+          const key = String.fromCharCode(65 + idx)
+          optionsJson[key] = opt.option_text
+          if (opt.is_correct) {
+            correctAnswer = formData.question_type === "MCK"
+              ? (correctAnswer ? `${correctAnswer},${key}` : key)
+              : key
+          }
+        })
+      }
+
       const questionData = {
+        stem: formData.question_text,
         question_text: formData.question_text,
         question_type: formData.question_type,
+        question_format: formData.question_type === "MCK" ? "MCQ5" : formData.question_type,
         difficulty: formData.difficulty,
         cognitive_level: formData.cognitive_level,
         time_estimate_seconds: formData.time_estimate_seconds,
         points: formData.points,
+        options: optionsJson,
+        correct_answer: correctAnswer,
         explanation: formData.explanation || null,
         media_url: formData.media_url || null,
         is_active: true,
@@ -362,6 +388,7 @@ export default function AdminQuestionsPage() {
           .filter((opt) => opt.option_text.trim())
           .map((opt, idx) => ({
             question_id: questionId,
+            option_key: String.fromCharCode(65 + idx),
             option_text: opt.option_text,
             is_correct: opt.is_correct,
             position: idx,
@@ -520,6 +547,51 @@ export default function AdminQuestionsPage() {
     setSelectedGenerated(new Set())
   }
 
+  const handleImportJson = async () => {
+    setImportError(null)
+    const trimmed = importJson.trim()
+    if (!trimmed) {
+      setImportError("Please paste JSON content")
+      return
+    }
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      setImportError("Invalid JSON")
+      return
+    }
+
+    setIsImporting(true)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/admin/import-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify(parsed),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        const msg = data.message || data.error || data.hint || "Import failed"
+        const details = data.details ? (typeof data.details === "string" ? data.details : JSON.stringify(data.details)) : ""
+        setImportError(details ? `${msg}: ${details}` : msg)
+        return
+      }
+      toast({
+        title: "Import successful",
+        description: `Imported ${data.imported} question(s).`,
+      })
+      setIsImportDialogOpen(false)
+      setImportJson("")
+      loadData()
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed")
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
   const importSelectedQuestions = async () => {
     if (selectedGenerated.size === 0) {
       toast({
@@ -676,6 +748,10 @@ export default function AdminQuestionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setIsImportDialogOpen(true); setImportJson(""); setImportError(null); }}>
+            <FileJson className="mr-2 h-4 w-4" />
+            Import JSON
+          </Button>
           <Button variant="outline" onClick={openGenerateDialog}>
             <Sparkles className="mr-2 h-4 w-4" />
             Generate with AI
@@ -1344,6 +1420,46 @@ export default function AdminQuestionsPage() {
                 Import {selectedGenerated.size} Questions
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import JSON Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileJson className="h-5 w-5" />
+              Import Questions from JSON
+            </DialogTitle>
+            <DialogDescription>
+              Paste structured JSON with skill_id or skill_code+exam_id and questions array. See docs/features/admin-question-import.features.md
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="import-json">Import JSON</Label>
+              <Textarea
+                id="import-json"
+                value={importJson}
+                onChange={(e) => { setImportJson(e.target.value); setImportError(null); }}
+                placeholder='{"skill_id": "uuid", "questions": [...]} or {"skill_code": "...", "exam_id": "uuid", "questions": [...]}'
+                rows={14}
+                className="font-mono text-sm"
+              />
+              {importError && (
+                <p className="text-sm text-red-600">{importError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleImportJson} disabled={isImporting}>
+              {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Import
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
