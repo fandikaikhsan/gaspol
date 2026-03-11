@@ -1,0 +1,736 @@
+{
+  "exam": {
+    "name": "UTBK-SNBT 2026",
+    "exam_type": "UTBK-SNBT",
+    "year": 2026,
+    "administered_by": "SNPMB",
+    "selection_path": "SNBT"
+  },
+  "research_summary": "UTBK-SNBT 2026 adalah seleksi masuk perguruan tinggi negeri berbasis Ujian Tulis Berbasis Komputer. Struktur publik resminya terdiri dari Tes Potensi Skolastik (TPS) dan Tes Literasi, dengan 7 subtes: Penalaran Umum, Pengetahuan dan Pemahaman Umum, Pemahaman Bacaan dan Menulis, Pengetahuan Kuantitatif, Literasi dalam Bahasa Indonesia, Literasi dalam Bahasa Inggris, dan Penalaran Matematika. Rincian publik terbaru yang dapat diverifikasi menunjukkan total 160 soal dengan durasi 195 menit. Format soal umum yang dipublikasikan mencakup pilihan ganda 5 opsi, pilihan majemuk kompleks berbentuk tabel, dan soal isian singkat. Hasil UTBK 2026 hanya berlaku untuk seleksi SNBT dan penerimaan PTN tahun 2026; peserta hanya boleh mengikuti UTBK sekali.",
+  "evidence_notes": {
+    "official_fields": [
+      "exam",
+      "structure.sections[].name",
+      "structure.sections[].code",
+      "structure.sections[].description",
+      "structure.total_duration_minutes",
+      "official_question_models",
+      "operational_notes"
+    ],
+    "public_framework_derived_fields": [
+      "structure.sections[].subsections[].question_count",
+      "structure.sections[].subsections[].time_minutes",
+      "structure.total_questions",
+      "content_areas"
+    ],
+    "inferred_fields": [
+      "structure.scoring",
+      "structure.difficulty_levels",
+      "structure.cognitive_levels",
+      "construct_profile",
+      "error_patterns"
+    ]
+  },
+  "structure": {
+    "official_question_models": ["MCQ5", "MCK-Table", "ShortFill"],
+    "sections": [
+      {
+        "name": "Tes Potensi Skolastik",
+        "code": "TPS",
+        "description": "Menguji kemampuan memahami dan bernalar yang diperlukan untuk pendidikan tinggi.",
+        "subsections": [
+          {
+            "name": "Penalaran Umum",
+            "code": "TPS-PU",
+            "question_count": 30,
+            "time_minutes": 30,
+            "question_formats_possible": ["MCQ5", "MCK-Table", "ShortFill"],
+            "components": [
+              {
+                "name": "Penalaran Induktif",
+                "question_count": 10,
+                "time_minutes": 10
+              },
+              {
+                "name": "Penalaran Deduktif",
+                "question_count": 10,
+                "time_minutes": 10
+              },
+              {
+                "name": "Penalaran Kuantitatif",
+                "question_count": 10,
+                "time_minutes": 10
+              }
+            ]
+          },
+          {
+            "name": "Pengetahuan dan Pemahaman Umum",
+            "code": "TPS-PPU",
+            "question_count": 20,
+            "time_minutes": 15,
+            "question_formats_possible": ["MCQ5", "MCK-Table", "ShortFill"]
+          },
+          {
+            "name": "Pemahaman Bacaan dan Menulis",
+            "code": "TPS-PBM",
+            "question_count": 20,
+            "time_minutes": 25,
+            "question_formats_possible": ["MCQ5", "MCK-Table", "ShortFill"]
+          },
+          {
+            "name": "Pengetahuan Kuantitatif",
+            "code": "TPS-PK",
+            "question_count": 20,
+            "time_minutes": 20,
+            "question_formats_possible": ["MCQ5", "MCK-Table", "ShortFill"]
+          }
+        ],
+        "total_questions": 90,
+        "total_time_minutes": 90
+      },
+      {
+        "name": "Tes Literasi",
+        "code": "LIT",
+        "description": "Menguji literasi membaca dalam Bahasa Indonesia dan Inggris serta penalaran matematika berbasis konteks.",
+        "subsections": [
+          {
+            "name": "Literasi dalam Bahasa Indonesia",
+            "code": "LIT-LBI",
+            "question_count": 30,
+            "time_minutes": 42.5,
+            "question_formats_possible": ["MCQ5", "MCK-Table", "ShortFill"]
+          },
+          {
+            "name": "Literasi dalam Bahasa Inggris",
+            "code": "LIT-LBE",
+            "question_count": 20,
+            "time_minutes": 20,
+            "question_formats_possible": ["MCQ5", "MCK-Table", "ShortFill"]
+          },
+          {
+            "name": "Penalaran Matematika",
+            "code": "LIT-PM",
+            "question_count": 20,
+            "time_minutes": 42.5,
+            "question_formats_possible": ["MCQ5", "MCK-Table", "ShortFill"]
+          }
+        ],
+        "total_questions": 70,
+        "total_time_minutes": 105
+      }
+    ],
+    "total_duration_minutes": 195,
+    "total_questions": 160,
+    "operational_notes": {
+      "attempt_limit": "Peserta hanya boleh mengikuti UTBK 2026 satu kali",
+      "score_validity": "Hasil UTBK 2026 hanya berlaku untuk SNBT dan penerimaan PTN tahun 2026",
+      "portfolio_rule": "Program studi seni dan/atau olahraga memerlukan portofolio tambahan"
+    },
+    "scoring": {
+      "method": "IRT-weighted scaled scoring",
+      "method_status": "best-supported public description",
+      "public_description": "Tidak ada skor minus untuk jawaban salah; bobot butir tidak dipublikasikan sebagai poin tetap per nomor dan diperlakukan berbasis karakteristik butir.",
+      "correct_points": null,
+      "wrong_penalty": 0,
+      "unanswered_points": 0,
+      "passing_grade_policy": "Tidak ada passing grade resmi; seleksi ditentukan oleh peringkat pada program studi yang dipilih.",
+      "notes": [
+        "Angka poin per-butir tidak dipublikasikan secara sederhana oleh panitia.",
+        "Representasi ini dibuat agar engine tidak memakai skema legacy 4/-1/0."
+      ]
+    },
+    "difficulty_levels": {
+      "status": "inferred_for_content_design",
+      "easy_percentage": 25,
+      "medium_percentage": 50,
+      "hard_percentage": 25
+    },
+    "cognitive_levels": {
+      "status": "inferred_for_content_design",
+      "L1_recall_percentage": 15,
+      "L2_application_percentage": 50,
+      "L3_analysis_percentage": 35
+    }
+  },
+  "content_areas": [
+    {
+      "section": "Penalaran Umum",
+      "code": "TPS-PU",
+      "main_topics": [
+        "Penalaran induktif",
+        "Penalaran deduktif",
+        "Penalaran kuantitatif"
+      ],
+      "key_skills": [
+        "Menarik simpulan logis",
+        "Mengenali hubungan sebab-akibat",
+        "Menganalisis pernyataan",
+        "Menggunakan informasi kuantitatif sederhana"
+      ],
+      "coverage_notes": "Subkomponen publik mencakup induktif, deduktif, dan kuantitatif; fokus utamanya adalah bernalar dalam situasi baru."
+    },
+    {
+      "section": "Pengetahuan dan Pemahaman Umum",
+      "code": "TPS-PPU",
+      "main_topics": [
+        "Sinonim",
+        "Ide pokok dan makna",
+        "Kata dan bentuk kata",
+        "Kesesuaian wacana",
+        "Hubungan antar paragraf"
+      ],
+      "key_skills": [
+        "Memahami makna kata",
+        "Menentukan ide pokok",
+        "Menilai kepaduan wacana",
+        "Menentukan relasi antargagasan"
+      ],
+      "coverage_notes": "Berat pada pemahaman verbal umum dan relasi makna dalam bahasa Indonesia."
+    },
+    {
+      "section": "Pemahaman Bacaan dan Menulis",
+      "code": "TPS-PBM",
+      "main_topics": [
+        "Simpulan",
+        "Ide pokok",
+        "Makna kata",
+        "Bentuk kata",
+        "Kalimat efektif",
+        "Ejaan dan konjungsi",
+        "Kepaduan wacana"
+      ],
+      "key_skills": [
+        "Memahami bacaan",
+        "Menyimpulkan isi teks",
+        "Menyunting kalimat",
+        "Menilai koherensi tulisan"
+      ],
+      "coverage_notes": "Menggabungkan reading comprehension dengan editing/writing quality judgment."
+    },
+    {
+      "section": "Pengetahuan Kuantitatif",
+      "code": "TPS-PK",
+      "main_topics": [
+        "Bilangan",
+        "Aljabar dan fungsi",
+        "Geometri",
+        "Statistika dan peluang"
+      ],
+      "key_skills": [
+        "Perhitungan dasar",
+        "Pemodelan matematika sederhana",
+        "Manipulasi simbol",
+        "Interpretasi data"
+      ],
+      "coverage_notes": "Berbeda dari Penalaran Kuantitatif di PU karena lebih menuntut fondasi numerasi dan konsep matematika dasar."
+    },
+    {
+      "section": "Literasi dalam Bahasa Indonesia",
+      "code": "LIT-LBI",
+      "main_topics": [
+        "Makna teks umum",
+        "Makna kontekstual kata",
+        "Menentukan inti bacaan",
+        "Menyimpulkan isi bacaan",
+        "Teks sastra",
+        "Teks eksplanatif",
+        "Bacaan argumentatif dan ulasan"
+      ],
+      "key_skills": [
+        "Memahami teks panjang",
+        "Menemukan gagasan utama",
+        "Membuat inferensi",
+        "Mengevaluasi argumen"
+      ],
+      "coverage_notes": "Menekankan reading literacy dengan ragam teks umum, sastra, saintek, dan humaniora."
+    },
+    {
+      "section": "Literasi dalam Bahasa Inggris",
+      "code": "LIT-LBE",
+      "main_topics": [
+        "Contextual vocabulary",
+        "Main idea",
+        "Inference",
+        "Argumentative reading",
+        "Explanatory text",
+        "Literary text"
+      ],
+      "key_skills": [
+        "Reading comprehension in English",
+        "Context-based vocabulary judgment",
+        "Inference making",
+        "Argument evaluation"
+      ],
+      "coverage_notes": "Secara karakter mirip LBI, tetapi dengan beban kebahasaan Inggris dan vocabulary sensitivity yang lebih tinggi."
+    },
+    {
+      "section": "Penalaran Matematika",
+      "code": "LIT-PM",
+      "main_topics": [
+        "Bilangan",
+        "Himpunan",
+        "Pola bilangan",
+        "Bentuk aljabar",
+        "Perbandingan dan rasio",
+        "Persamaan dan pertidaksamaan",
+        "Persamaan garis lurus",
+        "Bangun datar",
+        "Bangun ruang",
+        "Garis dan sudut",
+        "Statistika deskriptif",
+        "Aturan pencacahan",
+        "Teori peluang"
+      ],
+      "key_skills": [
+        "Formulate",
+        "Employ",
+        "Interpret",
+        "Modeling with context",
+        "Reasoning from data and quantity"
+      ],
+      "coverage_notes": "Berbasis konteks seperti AKM/PISA-style numeracy; fokus pada formulasi, penggunaan, dan interpretasi matematika."
+    }
+  ],
+  "construct_profile": {
+    "TPS-PU": {
+      "status": "inferred_for_measurement_design",
+      "constructs": {
+        "C.ATTENTION": 0.16,
+        "C.SPEED": 0.26,
+        "C.REASONING": 0.36,
+        "C.COMPUTATION": 0.1,
+        "C.READING": 0.12
+      },
+      "cognitive_levels": {
+        "L1": 10,
+        "L2": 55,
+        "L3": 35
+      },
+      "time_expectations": {
+        "average": 60,
+        "fast": 40,
+        "slow": 90
+      },
+      "difficulty_distribution": {
+        "easy": 20,
+        "medium": 50,
+        "hard": 30
+      }
+    },
+    "TPS-PPU": {
+      "status": "inferred_for_measurement_design",
+      "constructs": {
+        "C.ATTENTION": 0.18,
+        "C.SPEED": 0.28,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.0,
+        "C.READING": 0.34
+      },
+      "cognitive_levels": {
+        "L1": 15,
+        "L2": 55,
+        "L3": 30
+      },
+      "time_expectations": {
+        "average": 45,
+        "fast": 30,
+        "slow": 70
+      },
+      "difficulty_distribution": {
+        "easy": 25,
+        "medium": 50,
+        "hard": 25
+      }
+    },
+    "TPS-PBM": {
+      "status": "inferred_for_measurement_design",
+      "constructs": {
+        "C.ATTENTION": 0.17,
+        "C.SPEED": 0.16,
+        "C.REASONING": 0.22,
+        "C.COMPUTATION": 0.0,
+        "C.READING": 0.45
+      },
+      "cognitive_levels": {
+        "L1": 10,
+        "L2": 50,
+        "L3": 40
+      },
+      "time_expectations": {
+        "average": 75,
+        "fast": 55,
+        "slow": 110
+      },
+      "difficulty_distribution": {
+        "easy": 20,
+        "medium": 50,
+        "hard": 30
+      }
+    },
+    "TPS-PK": {
+      "status": "inferred_for_measurement_design",
+      "constructs": {
+        "C.ATTENTION": 0.16,
+        "C.SPEED": 0.22,
+        "C.REASONING": 0.22,
+        "C.COMPUTATION": 0.34,
+        "C.READING": 0.06
+      },
+      "cognitive_levels": {
+        "L1": 20,
+        "L2": 50,
+        "L3": 30
+      },
+      "time_expectations": {
+        "average": 60,
+        "fast": 40,
+        "slow": 90
+      },
+      "difficulty_distribution": {
+        "easy": 25,
+        "medium": 50,
+        "hard": 25
+      }
+    },
+    "LIT-LBI": {
+      "status": "inferred_for_measurement_design",
+      "constructs": {
+        "C.ATTENTION": 0.16,
+        "C.SPEED": 0.12,
+        "C.REASONING": 0.22,
+        "C.COMPUTATION": 0.0,
+        "C.READING": 0.5
+      },
+      "cognitive_levels": {
+        "L1": 15,
+        "L2": 50,
+        "L3": 35
+      },
+      "time_expectations": {
+        "average": 85,
+        "fast": 60,
+        "slow": 125
+      },
+      "difficulty_distribution": {
+        "easy": 25,
+        "medium": 50,
+        "hard": 25
+      }
+    },
+    "LIT-LBE": {
+      "status": "inferred_for_measurement_design",
+      "constructs": {
+        "C.ATTENTION": 0.18,
+        "C.SPEED": 0.18,
+        "C.REASONING": 0.22,
+        "C.COMPUTATION": 0.0,
+        "C.READING": 0.42
+      },
+      "cognitive_levels": {
+        "L1": 15,
+        "L2": 50,
+        "L3": 35
+      },
+      "time_expectations": {
+        "average": 60,
+        "fast": 40,
+        "slow": 90
+      },
+      "difficulty_distribution": {
+        "easy": 25,
+        "medium": 50,
+        "hard": 25
+      }
+    },
+    "LIT-PM": {
+      "status": "inferred_for_measurement_design",
+      "constructs": {
+        "C.ATTENTION": 0.14,
+        "C.SPEED": 0.08,
+        "C.REASONING": 0.34,
+        "C.COMPUTATION": 0.3,
+        "C.READING": 0.14
+      },
+      "cognitive_levels": {
+        "L1": 10,
+        "L2": 45,
+        "L3": 45
+      },
+      "time_expectations": {
+        "average": 128,
+        "fast": 90,
+        "slow": 180
+      },
+      "difficulty_distribution": {
+        "easy": 20,
+        "medium": 45,
+        "hard": 35
+      }
+    }
+  },
+  "error_patterns": {
+    "status": "inferred_for_diagnostic_engine",
+    "summary": "Pola di bawah bukan statistik resmi panitia, tetapi diagnostic taxonomy yang diturunkan dari karakter subtes, tekanan waktu, dan tipe operasi kognitif yang dominan pada UTBK modern.",
+    "patterns": {
+      "ERR.UTBK.MISREAD_NEGATION": {
+        "name": "Melewatkan Kata Negasi atau Pembatas",
+        "description": "Peserta gagal menangkap kata seperti TIDAK, BUKAN, KECUALI, PALING TEPAT, atau kecenderungan scope limiter lain pada stem/opsi.",
+        "category": "comprehension",
+        "detection_signals": [
+          {
+            "signal": "negation_in_stem",
+            "description": "Stem mengandung negasi atau pembatas eksplisit.",
+            "threshold": 1.0
+          },
+          {
+            "signal": "selected_directly_true_option",
+            "description": "Peserta memilih opsi yang benar secara umum tetapi bertentangan dengan instruksi negasi.",
+            "threshold": 0.8
+          }
+        ],
+        "prevalence": {
+          "TPS-PU": 0.18,
+          "TPS-PPU": 0.16,
+          "TPS-PBM": 0.18,
+          "LIT-LBI": 0.14,
+          "LIT-LBE": 0.16
+        },
+        "tips": [
+          "Tandai kata negasi sebelum membaca opsi.",
+          "Ulangi pertanyaan inti dengan kata sendiri.",
+          "Cek kembali apakah soal menanya yang benar atau yang tidak benar."
+        ],
+        "remediation": "Latihan stem with negation highlighting dan forced paraphrase sebelum menjawab."
+      },
+      "ERR.UTBK.INFERENCE_LEAP": {
+        "name": "Lompatan Inferensi",
+        "description": "Peserta memilih simpulan yang terlalu jauh dari premis atau teks, biasanya karena menambahkan asumsi yang tidak diberikan.",
+        "category": "reasoning",
+        "detection_signals": [
+          {
+            "signal": "answer_more_extreme_than_premise",
+            "description": "Jawaban bersifat absolut padahal premis bersifat terbatas atau probabilistik.",
+            "threshold": 0.8
+          },
+          {
+            "signal": "confuses_supported_with_proven",
+            "description": "Mencampur bukti yang mendukung dengan bukti yang memastikan.",
+            "threshold": 0.75
+          }
+        ],
+        "prevalence": {
+          "TPS-PU": 0.24,
+          "TPS-PBM": 0.12,
+          "LIT-LBI": 0.16,
+          "LIT-LBE": 0.18
+        },
+        "tips": [
+          "Pisahkan 'pasti benar', 'mungkin benar', dan 'tidak didukung'.",
+          "Hindari jawaban ekstrem tanpa dasar eksplisit.",
+          "Kembali ke premis/teks saat memilih simpulan."
+        ],
+        "remediation": "Latihan klasifikasi certainty level dan justification-by-evidence."
+      },
+      "ERR.UTBK.KEYWORD_OVERMATCH": {
+        "name": "Terjebak Kecocokan Kata Kunci",
+        "description": "Peserta memilih opsi karena ada kata yang mirip dengan teks/stem, meskipun hubungan logis atau maknanya tidak tepat.",
+        "category": "attention",
+        "detection_signals": [
+          {
+            "signal": "high_lexical_overlap_wrong_option",
+            "description": "Opsi salah memiliki overlap kata tinggi dengan teks.",
+            "threshold": 0.85
+          },
+          {
+            "signal": "quick_selection_on_verbal_item",
+            "description": "Jawaban dipilih sangat cepat pada soal verbal yang membutuhkan pembacaan relasi.",
+            "threshold": 0.7
+          }
+        ],
+        "prevalence": {
+          "TPS-PPU": 0.22,
+          "TPS-PBM": 0.16,
+          "LIT-LBI": 0.2,
+          "LIT-LBE": 0.22
+        },
+        "tips": [
+          "Cek relasi makna, bukan sekadar kata yang sama.",
+          "Bandingkan inti opsi dengan inti teks, bukan permukaannya.",
+          "Waspadai opsi yang terasa terlalu familiar."
+        ],
+        "remediation": "Latihan semantic match vs surface match dan eliminasi berbasis relasi."
+      },
+      "ERR.UTBK.ARITHMETIC_SLIP": {
+        "name": "Kecerobohan Aritmetika",
+        "description": "Peserta memahami model soal, tetapi salah pada operasi hitung dasar, urutan operasi, atau transkripsi angka.",
+        "category": "computation",
+        "detection_signals": [
+          {
+            "signal": "near_miss_numeric_answer",
+            "description": "Jawaban salah namun sangat dekat dengan hasil benar dari model yang tepat.",
+            "threshold": 0.85
+          },
+          {
+            "signal": "single_step_error_pattern",
+            "description": "Distraktor sesuai dengan satu kesalahan operasi dasar.",
+            "threshold": 0.8
+          }
+        ],
+        "prevalence": {
+          "TPS-PU": 0.1,
+          "TPS-PK": 0.22,
+          "LIT-PM": 0.18
+        },
+        "tips": [
+          "Tuliskan operasi antara, jangan mental semua.",
+          "Cek kembali hasil akhir dengan estimasi kasar.",
+          "Pisahkan fase model dan fase hitung."
+        ],
+        "remediation": "Latihan two-pass checking: model dulu, hitung kedua, estimasi ketiga."
+      },
+      "ERR.UTBK.UNIT_SCALE_CONFUSION": {
+        "name": "Salah Satuan atau Skala",
+        "description": "Peserta gagal menafsirkan persen, rasio, satuan, atau skala konteks secara konsisten.",
+        "category": "interpretation",
+        "detection_signals": [
+          {
+            "signal": "answer_in_wrong_unit",
+            "description": "Jawaban benar secara numerik tetapi salah satuan atau level representasi.",
+            "threshold": 0.85
+          },
+          {
+            "signal": "percent_total_swap",
+            "description": "Menukar bagian dengan total atau persen dengan nilai absolut.",
+            "threshold": 0.8
+          }
+        ],
+        "prevalence": {
+          "TPS-PU": 0.08,
+          "TPS-PK": 0.18,
+          "LIT-PM": 0.2
+        },
+        "tips": [
+          "Tulis satuan di setiap langkah.",
+          "Tentukan dulu apakah yang dicari bagian, total, selisih, atau rasio.",
+          "Gunakan estimasi untuk cek kewajaran hasil."
+        ],
+        "remediation": "Latihan konversi satuan, persentase, rasio, dan label output."
+      },
+      "ERR.UTBK.PASSAGE_SCOPE_ERROR": {
+        "name": "Salah Cakupan Bacaan",
+        "description": "Peserta menjawab berdasarkan satu bagian teks saja padahal pertanyaan menuntut cakupan paragraf penuh atau keseluruhan bacaan.",
+        "category": "reading",
+        "detection_signals": [
+          {
+            "signal": "local_detail_for_global_question",
+            "description": "Peserta memilih detail lokal untuk soal ide pokok/simpulan global.",
+            "threshold": 0.8
+          },
+          {
+            "signal": "global_summary_for_local_question",
+            "description": "Peserta memilih ringkasan umum untuk soal detail spesifik.",
+            "threshold": 0.8
+          }
+        ],
+        "prevalence": {
+          "TPS-PBM": 0.2,
+          "LIT-LBI": 0.22,
+          "LIT-LBE": 0.24
+        },
+        "tips": [
+          "Tentukan level soal: kalimat, paragraf, atau teks penuh.",
+          "Cari kata petunjuk cakupan seperti 'paragraf kedua' atau 'bacaan di atas'.",
+          "Jangan generalisasi satu detail menjadi inti teks."
+        ],
+        "remediation": "Latihan tagging scope level sebelum membaca opsi."
+      },
+      "ERR.UTBK.RUSHED_GUESS": {
+        "name": "Jawaban Terburu-buru karena Tekanan Waktu",
+        "description": "Peserta beralih ke tebakan cepat tanpa proses eliminasi yang cukup, terutama pada subtes berkecepatan tinggi.",
+        "category": "speed",
+        "detection_signals": [
+          {
+            "signal": "very_fast_response_wrong",
+            "description": "Waktu respons jauh di bawah median item dan jawaban salah.",
+            "threshold": 0.7
+          },
+          {
+            "signal": "streak_of_fast_errors",
+            "description": "Rangkaian jawaban cepat salah menjelang akhir blok waktu.",
+            "threshold": 0.75
+          }
+        ],
+        "prevalence": {
+          "TPS-PU": 0.16,
+          "TPS-PPU": 0.22,
+          "TPS-PK": 0.14,
+          "LIT-LBE": 0.14
+        },
+        "tips": [
+          "Gunakan cutoff time per nomor.",
+          "Lakukan eliminasi minimum sebelum menebak.",
+          "Jangan habiskan terlalu lama di satu nomor sulit."
+        ],
+        "remediation": "Latihan pacing, checkpoint waktu, dan quick-elimination routine."
+      }
+    },
+    "content_area_summary": {
+      "TPS-PU": {
+        "most_common_errors": [
+          "ERR.UTBK.INFERENCE_LEAP",
+          "ERR.UTBK.MISREAD_NEGATION",
+          "ERR.UTBK.RUSHED_GUESS"
+        ],
+        "error_rate_estimate": 0.24
+      },
+      "TPS-PPU": {
+        "most_common_errors": [
+          "ERR.UTBK.KEYWORD_OVERMATCH",
+          "ERR.UTBK.RUSHED_GUESS",
+          "ERR.UTBK.MISREAD_NEGATION"
+        ],
+        "error_rate_estimate": 0.27
+      },
+      "TPS-PBM": {
+        "most_common_errors": [
+          "ERR.UTBK.PASSAGE_SCOPE_ERROR",
+          "ERR.UTBK.MISREAD_NEGATION",
+          "ERR.UTBK.KEYWORD_OVERMATCH"
+        ],
+        "error_rate_estimate": 0.26
+      },
+      "TPS-PK": {
+        "most_common_errors": [
+          "ERR.UTBK.ARITHMETIC_SLIP",
+          "ERR.UTBK.UNIT_SCALE_CONFUSION",
+          "ERR.UTBK.RUSHED_GUESS"
+        ],
+        "error_rate_estimate": 0.25
+      },
+      "LIT-LBI": {
+        "most_common_errors": [
+          "ERR.UTBK.PASSAGE_SCOPE_ERROR",
+          "ERR.UTBK.KEYWORD_OVERMATCH",
+          "ERR.UTBK.INFERENCE_LEAP"
+        ],
+        "error_rate_estimate": 0.28
+      },
+      "LIT-LBE": {
+        "most_common_errors": [
+          "ERR.UTBK.PASSAGE_SCOPE_ERROR",
+          "ERR.UTBK.KEYWORD_OVERMATCH",
+          "ERR.UTBK.MISREAD_NEGATION"
+        ],
+        "error_rate_estimate": 0.3
+      },
+      "LIT-PM": {
+        "most_common_errors": [
+          "ERR.UTBK.UNIT_SCALE_CONFUSION",
+          "ERR.UTBK.ARITHMETIC_SLIP",
+          "ERR.UTBK.INFERENCE_LEAP"
+        ],
+        "error_rate_estimate": 0.27
+      }
+    }
+  }
+}

@@ -1,0 +1,1121 @@
+{
+  "exam_id": "UTBK-SNBT-2026-V1",
+  "subjects": [
+    {
+      "name": "Tes Potensi Skolastik",
+      "code": "TPS",
+      "description": "Mengukur kemampuan penalaran umum, pemahaman umum, pemahaman bacaan-menulis, dan kuantitatif.",
+      "level": 1,
+      "subtests": [
+        {
+          "name": "Penalaran Umum",
+          "code": "TPS-PU",
+          "description": "Mengukur kemampuan bernalar secara induktif, deduktif, dan kuantitatif dalam konteks baru.",
+          "level": 2,
+          "topics": [
+            {
+              "name": "Penalaran Induktif",
+              "code": "TPS-PU-IND",
+              "description": "Menemukan pola, relasi, dan generalisasi dari data atau contoh.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Analogi dan Relasi",
+                  "code": "TPS-PU-IND-01",
+                  "description": "Menentukan hubungan antarkonsep, kata, simbol, atau objek.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Mengidentifikasi Relasi Analogis",
+                      "code": "TPS-PU-IND-01-A",
+                      "description": "Menentukan hubungan yang konsisten antara dua pasangan konsep.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Melengkapi Analogi",
+                      "code": "TPS-PU-IND-01-B",
+                      "description": "Memilih pasangan yang paling sesuai untuk melengkapi pola analogi.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Pola dan Generalisasi",
+                  "code": "TPS-PU-IND-02",
+                  "description": "Menemukan pola berulang, aturan perubahan, dan generalisasi sederhana.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Mengidentifikasi Pola",
+                      "code": "TPS-PU-IND-02-A",
+                      "description": "Menentukan aturan perubahan pada barisan, susunan, atau representasi visual.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menarik Generalisasi",
+                      "code": "TPS-PU-IND-02-B",
+                      "description": "Menyimpulkan aturan umum dari beberapa contoh yang diberikan.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Inferensi dari Data Sederhana",
+                  "code": "TPS-PU-IND-03",
+                  "description": "Menyusun simpulan sementara berdasarkan tren atau kemunculan pola pada data.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Membaca Kecenderungan Data",
+                      "code": "TPS-PU-IND-03-A",
+                      "description": "Menentukan arah tren atau pola dominan dari data sederhana.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Memilih Simpulan Paling Didukung",
+                      "code": "TPS-PU-IND-03-B",
+                      "description": "Menentukan simpulan yang paling sesuai dengan data yang tersedia.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Penalaran Deduktif",
+              "code": "TPS-PU-DED",
+              "description": "Menarik kesimpulan logis dari premis, aturan, atau kondisi yang diberikan.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Silogisme dan Klasifikasi",
+                  "code": "TPS-PU-DED-01",
+                  "description": "Menilai validitas kesimpulan dari hubungan kategori dan himpunan.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menilai Validitas Silogisme",
+                      "code": "TPS-PU-DED-01-A",
+                      "description": "Menentukan apakah kesimpulan pasti benar, mungkin benar, atau salah.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menurunkan Kesimpulan Kategorik",
+                      "code": "TPS-PU-DED-01-B",
+                      "description": "Menarik implikasi logis dari relasi antarkelompok.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Implikasi dan Kondisi",
+                  "code": "TPS-PU-DED-02",
+                  "description": "Menangani pernyataan jika-maka, syarat perlu, dan syarat cukup.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menafsirkan Pernyataan Bersyarat",
+                      "code": "TPS-PU-DED-02-A",
+                      "description": "Memahami hubungan sebab-syarat pada pernyataan kondisional.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menggunakan Kontraposisi",
+                      "code": "TPS-PU-DED-02-B",
+                      "description": "Menentukan konsekuensi logis dari negasi atau kebalikan pernyataan bersyarat.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Argumen dan Asumsi",
+                  "code": "TPS-PU-DED-03",
+                  "description": "Mengevaluasi premis, asumsi tersembunyi, dan kesimpulan logis.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Mengidentifikasi Asumsi",
+                      "code": "TPS-PU-DED-03-A",
+                      "description": "Menemukan asumsi yang harus benar agar argumen berjalan.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menguji Kekuatan Kesimpulan",
+                      "code": "TPS-PU-DED-03-B",
+                      "description": "Menentukan apakah kesimpulan mengikuti premis secara logis.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Penalaran Kuantitatif dalam PU",
+              "code": "TPS-PU-MAT",
+              "description": "Penalaran numerik ringan dalam konteks logika, data, dan perbandingan.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Perbandingan dan Proporsi",
+                  "code": "TPS-PU-MAT-01",
+                  "description": "Menyelesaikan relasi kuantitatif sederhana berbasis rasio, persen, dan proporsi.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menghitung Rasio Sederhana",
+                      "code": "TPS-PU-MAT-01-A",
+                      "description": "Menentukan perbandingan dua atau lebih besaran dari data yang diberikan.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menafsirkan Persentase dan Proporsi",
+                      "code": "TPS-PU-MAT-01-B",
+                      "description": "Menentukan bagian, total, atau sisa dari relasi persen dan proporsi.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Aritmetika Kontekstual",
+                  "code": "TPS-PU-MAT-02",
+                  "description": "Masalah hitung dalam cerita dengan satu hingga beberapa langkah sederhana.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Mengekstrak Informasi Numerik",
+                      "code": "TPS-PU-MAT-02-A",
+                      "description": "Memilih data kuantitatif yang relevan dari narasi soal.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyusun Model Hitung Sederhana",
+                      "code": "TPS-PU-MAT-02-B",
+                      "description": "Mengubah narasi menjadi operasi hitung yang tepat.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Data dan Estimasi",
+                  "code": "TPS-PU-MAT-03",
+                  "description": "Membaca tabel, diagram, atau informasi ringkas untuk estimasi dan keputusan.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Membaca Data Ringkas",
+                      "code": "TPS-PU-MAT-03-A",
+                      "description": "Mengambil informasi penting dari tabel atau grafik sederhana.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Membuat Estimasi Masuk Akal",
+                      "code": "TPS-PU-MAT-03-B",
+                      "description": "Menentukan nilai pendekatan atau pilihan paling wajar berdasarkan data.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Pengetahuan dan Pemahaman Umum",
+          "code": "TPS-PPU",
+          "description": "Mengukur pemahaman makna, relasi antarkalimat, dan penalaran verbal umum.",
+          "level": 2,
+          "topics": [
+            {
+              "name": "Makna Kata dan Frasa",
+              "code": "TPS-PPU-MAK",
+              "description": "Memahami makna leksikal, kontekstual, dan hubungan semantik.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Sinonim, Antonim, dan Nuansa Makna",
+                  "code": "TPS-PPU-MAK-01",
+                  "description": "Menentukan padanan dan lawan kata sesuai konteks.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Padanan Makna",
+                      "code": "TPS-PPU-MAK-01-A",
+                      "description": "Memilih kata atau frasa yang paling mendekati makna target.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Membedakan Nuansa Kata",
+                      "code": "TPS-PPU-MAK-01-B",
+                      "description": "Menentukan pilihan kata berdasarkan tingkat keformalan atau konotasi.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Makna Kontekstual",
+                  "code": "TPS-PPU-MAK-02",
+                  "description": "Menafsirkan makna kata atau frasa berdasarkan konteks kalimat.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menafsirkan Makna dalam Konteks",
+                      "code": "TPS-PPU-MAK-02-A",
+                      "description": "Menentukan arti paling tepat berdasarkan kalimat atau paragraf.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Mengenali Pergeseran Makna",
+                      "code": "TPS-PPU-MAK-02-B",
+                      "description": "Membedakan makna literal, figuratif, atau idiomatis.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Hubungan Kalimat dan Paragraf",
+              "code": "TPS-PPU-HKP",
+              "description": "Menganalisis koherensi, kohesi, dan hubungan logis dalam wacana pendek.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Hubungan Antar Kalimat",
+                  "code": "TPS-PPU-HKP-01",
+                  "description": "Mengidentifikasi hubungan sebab-akibat, perbandingan, penjelasan, dan penegasan.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Relasi Logis",
+                      "code": "TPS-PPU-HKP-01-A",
+                      "description": "Menentukan hubungan logis antarkalimat dalam paragraf.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Memilih Kalimat Penghubung",
+                      "code": "TPS-PPU-HKP-01-B",
+                      "description": "Menentukan kalimat yang paling tepat untuk menjaga koherensi.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Koherensi Paragraf",
+                  "code": "TPS-PPU-HKP-02",
+                  "description": "Menilai kepaduan ide di tingkat paragraf.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Kalimat Tidak Padu",
+                      "code": "TPS-PPU-HKP-02-A",
+                      "description": "Mengidentifikasi kalimat yang tidak mendukung gagasan utama.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyusun Urutan Logis",
+                      "code": "TPS-PPU-HKP-02-B",
+                      "description": "Menentukan urutan kalimat agar paragraf menjadi runtut.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Analogi dan Kategori Verbal",
+              "code": "TPS-PPU-ANL",
+              "description": "Mengolah hubungan verbal berbasis kategori, atribut, dan fungsi.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Analogi Verbal",
+                  "code": "TPS-PPU-ANL-01",
+                  "description": "Menentukan pasangan kata dengan hubungan sejenis.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Mengenali Tipe Hubungan Kata",
+                      "code": "TPS-PPU-ANL-01-A",
+                      "description": "Mengidentifikasi hubungan fungsi, bagian-keseluruhan, sebab-akibat, dan lain-lain.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Memilih Analogi Setara",
+                      "code": "TPS-PPU-ANL-01-B",
+                      "description": "Menentukan pasangan yang memiliki pola relasi paling setara.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Hierarki dan Klasifikasi Kata",
+                  "code": "TPS-PPU-ANL-02",
+                  "description": "Menentukan hubungan umum-khusus atau kategori-anggota.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Hipernim-Hiponim",
+                      "code": "TPS-PPU-ANL-02-A",
+                      "description": "Mengidentifikasi hubungan umum dan khusus antarkonsep.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Mengelompokkan Berdasarkan Ciri Semantik",
+                      "code": "TPS-PPU-ANL-02-B",
+                      "description": "Menentukan anggota yang tidak sekelompok atau paling sesuai dengan kategori.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Pemahaman Bacaan dan Menulis",
+          "code": "TPS-PBM",
+          "description": "Mengukur pemahaman isi bacaan dan kemampuan memperbaiki kualitas tulisan.",
+          "level": 2,
+          "topics": [
+            {
+              "name": "Pemahaman Isi Bacaan",
+              "code": "TPS-PBM-ISI",
+              "description": "Menangkap ide pokok, simpulan, dan informasi rinci dari teks.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Ide Pokok dan Gagasan Pendukung",
+                  "code": "TPS-PBM-ISI-01",
+                  "description": "Menentukan inti paragraf dan detail yang mendukung.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Ide Pokok",
+                      "code": "TPS-PBM-ISI-01-A",
+                      "description": "Mengidentifikasi pernyataan inti dalam paragraf atau teks singkat.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Mengenali Detail Pendukung",
+                      "code": "TPS-PBM-ISI-01-B",
+                      "description": "Menentukan informasi yang memperkuat gagasan utama.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Simpulan dan Inferensi",
+                  "code": "TPS-PBM-ISI-02",
+                  "description": "Menentukan makna tersirat dan simpulan yang didukung teks.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menarik Simpulan Teks",
+                      "code": "TPS-PBM-ISI-02-A",
+                      "description": "Menentukan simpulan paling tepat berdasarkan keseluruhan isi.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Membuat Inferensi Lokal",
+                      "code": "TPS-PBM-ISI-02-B",
+                      "description": "Menentukan informasi tersirat dari bagian tertentu dalam bacaan.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Struktur dan Koherensi Teks",
+              "code": "TPS-PBM-STR",
+              "description": "Menilai susunan, transisi, dan kepaduan wacana.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Urutan dan Posisi Kalimat",
+                  "code": "TPS-PBM-STR-01",
+                  "description": "Menentukan urutan kalimat atau paragraf yang logis.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menyusun Kalimat Menjadi Paragraf",
+                      "code": "TPS-PBM-STR-01-A",
+                      "description": "Menentukan urutan yang paling runtut berdasarkan relasi ide.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menentukan Posisi Kalimat Sisipan",
+                      "code": "TPS-PBM-STR-01-B",
+                      "description": "Menentukan letak kalimat yang paling sesuai dalam wacana.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Kohesi dan Penghubung",
+                  "code": "TPS-PBM-STR-02",
+                  "description": "Menentukan unsur penghubung yang menjaga kelancaran logika teks.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Memilih Konjungsi Tepat",
+                      "code": "TPS-PBM-STR-02-A",
+                      "description": "Memilih penghubung yang sesuai dengan hubungan logis antargagasan.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menilai Kepaduan Referensi",
+                      "code": "TPS-PBM-STR-02-B",
+                      "description": "Menentukan rujukan kata atau frasa agar teks tetap padu.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Perbaikan Penulisan",
+              "code": "TPS-PBM-TUL",
+              "description": "Memperbaiki kalimat agar efektif, jelas, dan sesuai kaidah umum.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Kalimat Efektif",
+                  "code": "TPS-PBM-TUL-01",
+                  "description": "Menghindari pemborosan, ambiguitas, dan ketidaklogisan kalimat.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menyunting Kalimat Tidak Efektif",
+                      "code": "TPS-PBM-TUL-01-A",
+                      "description": "Memilih revisi paling hemat, jelas, dan logis.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menghapus Unsur Mubazir",
+                      "code": "TPS-PBM-TUL-01-B",
+                      "description": "Menentukan kata atau frasa yang perlu dihilangkan agar kalimat efektif.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Diksi dan Ketepatan Ungkapan",
+                  "code": "TPS-PBM-TUL-02",
+                  "description": "Memilih kata yang paling tepat sesuai konteks dan tujuan.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Memilih Diksi Tepat",
+                      "code": "TPS-PBM-TUL-02-A",
+                      "description": "Menentukan kata paling akurat untuk menggantikan kata yang kurang tepat.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyesuaikan Ragam Bahasa",
+                      "code": "TPS-PBM-TUL-02-B",
+                      "description": "Menentukan bentuk ungkapan sesuai konteks formal atau akademik.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Pengetahuan Kuantitatif",
+          "code": "TPS-PK",
+          "description": "Mengukur penerapan konsep matematika dasar untuk menyelesaikan masalah kuantitatif.",
+          "level": 2,
+          "topics": [
+            {
+              "name": "Aritmetika dan Bilangan",
+              "code": "TPS-PK-ARI",
+              "description": "Operasi hitung, persen, rasio, dan sifat bilangan.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Operasi Bilangan dan Persentase",
+                  "code": "TPS-PK-ARI-01",
+                  "description": "Menghitung perubahan, bagian, total, dan nilai ekuivalen.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menghitung Persentase",
+                      "code": "TPS-PK-ARI-01-A",
+                      "description": "Menentukan persen dari nilai, nilai awal, atau perubahan persentase.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyelesaikan Rasio dan Proporsi",
+                      "code": "TPS-PK-ARI-01-B",
+                      "description": "Menentukan nilai berdasarkan perbandingan senilai atau berbalik nilai.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Sifat Bilangan",
+                  "code": "TPS-PK-ARI-02",
+                  "description": "Kelipatan, faktor, ganjil-genap, dan keterbagian.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Keterbagian",
+                      "code": "TPS-PK-ARI-02-A",
+                      "description": "Menggunakan sifat bilangan untuk memilih nilai yang memenuhi syarat.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menggunakan FPB dan KPK",
+                      "code": "TPS-PK-ARI-02-B",
+                      "description": "Menyelesaikan masalah konteks menggunakan FPB atau KPK.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Aljabar dan Fungsi",
+              "code": "TPS-PK-ALJ",
+              "description": "Persamaan, pertidaksamaan, pola aljabar, dan fungsi dasar.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Persamaan dan Pertidaksamaan",
+                  "code": "TPS-PK-ALJ-01",
+                  "description": "Menyelesaikan model aljabar satu atau lebih variabel secara dasar.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menyelesaikan Persamaan Linear",
+                      "code": "TPS-PK-ALJ-01-A",
+                      "description": "Menentukan nilai variabel pada persamaan linear sederhana.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menafsirkan Solusi Pertidaksamaan",
+                      "code": "TPS-PK-ALJ-01-B",
+                      "description": "Menentukan himpunan nilai yang memenuhi syarat pertidaksamaan.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Fungsi dan Relasi",
+                  "code": "TPS-PK-ALJ-02",
+                  "description": "Membaca representasi fungsi, pola input-output, dan perubahan nilai.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Mengevaluasi Nilai Fungsi",
+                      "code": "TPS-PK-ALJ-02-A",
+                      "description": "Menentukan keluaran fungsi dari input tertentu.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Membaca Hubungan Antar Variabel",
+                      "code": "TPS-PK-ALJ-02-B",
+                      "description": "Menentukan pola relasi dari representasi aljabar atau tabel.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Geometri dan Pengukuran",
+              "code": "TPS-PK-GEO",
+              "description": "Bangun datar, bangun ruang, sudut, luas, volume, dan skala.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Bangun Datar dan Sudut",
+                  "code": "TPS-PK-GEO-01",
+                  "description": "Menyelesaikan persoalan bentuk, keliling, luas, dan hubungan sudut.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menghitung Luas dan Keliling",
+                      "code": "TPS-PK-GEO-01-A",
+                      "description": "Menentukan ukuran bangun datar dari data yang diberikan.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menentukan Hubungan Sudut",
+                      "code": "TPS-PK-GEO-01-B",
+                      "description": "Menggunakan sifat sudut pada garis atau bangun sederhana.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Bangun Ruang dan Skala",
+                  "code": "TPS-PK-GEO-02",
+                  "description": "Menentukan volume, luas permukaan, dan perbandingan skala.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menghitung Volume Bangun Ruang",
+                      "code": "TPS-PK-GEO-02-A",
+                      "description": "Menentukan volume bangun ruang dasar dari ukuran yang tersedia.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menggunakan Konsep Skala",
+                      "code": "TPS-PK-GEO-02-B",
+                      "description": "Menentukan ukuran sebenarnya atau ukuran gambar dari perbandingan skala.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Statistika dan Peluang",
+              "code": "TPS-PK-DAT",
+              "description": "Pengolahan data sederhana, ukuran pemusatan, dan peluang dasar.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Statistika Deskriptif",
+                  "code": "TPS-PK-DAT-01",
+                  "description": "Membaca data dan menentukan mean, median, modus, atau rentang.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menghitung Ukuran Pemusatan",
+                      "code": "TPS-PK-DAT-01-A",
+                      "description": "Menentukan mean, median, atau modus dari data.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menafsirkan Data Tabel dan Diagram",
+                      "code": "TPS-PK-DAT-01-B",
+                      "description": "Mengambil informasi numerik dan tren dari penyajian data.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Peluang Dasar",
+                  "code": "TPS-PK-DAT-02",
+                  "description": "Menghitung kemungkinan kejadian sederhana.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Ruang Sampel",
+                      "code": "TPS-PK-DAT-02-A",
+                      "description": "Menghitung banyak kemungkinan hasil pada percobaan sederhana.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menghitung Peluang Kejadian",
+                      "code": "TPS-PK-DAT-02-B",
+                      "description": "Menentukan peluang kejadian tunggal dari ruang sampel seragam.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tes Literasi dan Penalaran Matematika",
+      "code": "LIT",
+      "description": "Mengukur literasi membaca dalam Bahasa Indonesia dan Bahasa Inggris serta penalaran matematika berbasis konteks.",
+      "level": 1,
+      "subtests": [
+        {
+          "name": "Literasi dalam Bahasa Indonesia",
+          "code": "LIT-LBI",
+          "description": "Memahami, menafsirkan, mengevaluasi, dan merefleksikan teks berbahasa Indonesia.",
+          "level": 2,
+          "topics": [
+            {
+              "name": "Informasi Eksplisit",
+              "code": "LIT-LBI-INF",
+              "description": "Mengambil informasi yang tertulis langsung di dalam teks.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Fakta dan Detail",
+                  "code": "LIT-LBI-INF-01",
+                  "description": "Menemukan rincian, tokoh, waktu, sebab, atau peristiwa dalam teks.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menemukan Detail Tersurat",
+                      "code": "LIT-LBI-INF-01-A",
+                      "description": "Mengambil informasi yang dinyatakan langsung dalam teks.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Mengidentifikasi Rujukan",
+                      "code": "LIT-LBI-INF-01-B",
+                      "description": "Menentukan acuan kata, frasa, atau kalimat dalam bacaan.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Inferensi dan Simpulan",
+              "code": "LIT-LBI-INFR",
+              "description": "Menyusun makna tersirat dan simpulan dari teks.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Inferensi Lokal dan Global",
+                  "code": "LIT-LBI-INFR-01",
+                  "description": "Menafsirkan bagian tertentu atau keseluruhan teks.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menarik Inferensi",
+                      "code": "LIT-LBI-INFR-01-A",
+                      "description": "Menentukan informasi yang tidak tertulis langsung namun didukung teks.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyusun Simpulan Bacaan",
+                      "code": "LIT-LBI-INFR-01-B",
+                      "description": "Menentukan simpulan paling kuat dari keseluruhan isi.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Makna dan Evaluasi Teks",
+              "code": "LIT-LBI-MEV",
+              "description": "Menilai pilihan kata, tujuan penulis, struktur, dan kualitas argumen.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Makna Kontekstual",
+                  "code": "LIT-LBI-MEV-01",
+                  "description": "Menafsirkan kata, frasa, atau ungkapan berdasarkan konteks.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menafsirkan Makna Kata",
+                      "code": "LIT-LBI-MEV-01-A",
+                      "description": "Menentukan arti yang sesuai dengan konteks kalimat atau paragraf.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Mengenali Sikap Penulis",
+                      "code": "LIT-LBI-MEV-01-B",
+                      "description": "Menentukan nada, tujuan, atau posisi penulis dalam teks.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Evaluasi Argumen",
+                  "code": "LIT-LBI-MEV-02",
+                  "description": "Menilai relevansi alasan, data, dan simpulan dalam teks argumentatif.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menilai Dukungan Argumen",
+                      "code": "LIT-LBI-MEV-02-A",
+                      "description": "Menentukan apakah data atau alasan mendukung gagasan utama.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menguji Ketepatan Simpulan",
+                      "code": "LIT-LBI-MEV-02-B",
+                      "description": "Menilai apakah simpulan penulis sejalan dengan isi teks.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Literasi dalam Bahasa Inggris",
+          "code": "LIT-LBE",
+          "description": "Comprehending, interpreting, and evaluating English texts in academic and general contexts.",
+          "level": 2,
+          "topics": [
+            {
+              "name": "Explicit Information",
+              "code": "LIT-LBE-INF",
+              "description": "Retrieving directly stated information from texts.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Specific Details and Reference",
+                  "code": "LIT-LBE-INF-01",
+                  "description": "Identifying facts, details, and referents in a passage.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Locate Specific Information",
+                      "code": "LIT-LBE-INF-01-A",
+                      "description": "Find information explicitly stated in the text.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Identify Reference",
+                      "code": "LIT-LBE-INF-01-B",
+                      "description": "Determine what a pronoun or phrase refers to.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Inference and Main Idea",
+              "code": "LIT-LBE-INFR",
+              "description": "Inferring implied meaning and identifying central ideas.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Inference",
+                  "code": "LIT-LBE-INFR-01",
+                  "description": "Deriving implied meaning based on textual evidence.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Make Local Inference",
+                      "code": "LIT-LBE-INFR-01-A",
+                      "description": "Infer information from a sentence or paragraph.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Identify Main Idea",
+                      "code": "LIT-LBE-INFR-01-B",
+                      "description": "Determine the central point of the text or paragraph.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Vocabulary and Evaluation",
+              "code": "LIT-LBE-VEV",
+              "description": "Understanding contextual vocabulary and evaluating stance or argument.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Contextual Vocabulary",
+                  "code": "LIT-LBE-VEV-01",
+                  "description": "Understanding the meaning of words or expressions in context.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Interpret Word Meaning",
+                      "code": "LIT-LBE-VEV-01-A",
+                      "description": "Choose the best meaning of a word based on context.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Identify Tone and Purpose",
+                      "code": "LIT-LBE-VEV-01-B",
+                      "description": "Determine the writer's tone, attitude, or purpose.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Argument Evaluation",
+                  "code": "LIT-LBE-VEV-02",
+                  "description": "Assessing support, logic, and conclusion quality in a text.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Evaluate Supporting Evidence",
+                      "code": "LIT-LBE-VEV-02-A",
+                      "description": "Determine whether evidence adequately supports a claim.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Assess Conclusion Validity",
+                      "code": "LIT-LBE-VEV-02-B",
+                      "description": "Judge whether the conclusion follows from the passage.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Penalaran Matematika",
+          "code": "LIT-PM",
+          "description": "Pemecahan masalah matematika berbasis konteks dengan penekanan pada formulasi, penerapan, dan interpretasi.",
+          "level": 2,
+          "topics": [
+            {
+              "name": "Bilangan dan Operasi dalam Konteks",
+              "code": "LIT-PM-NUM",
+              "description": "Menggunakan konsep bilangan, persen, rasio, dan operasi dasar dalam situasi nyata.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Formulasi Masalah Bilangan",
+                  "code": "LIT-PM-NUM-01",
+                  "description": "Menerjemahkan konteks ke model numerik atau aritmetika.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Memilih Informasi Relevan",
+                      "code": "LIT-PM-NUM-01-A",
+                      "description": "Menentukan data kuantitatif yang dibutuhkan dari konteks soal.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyusun Model Bilangan",
+                      "code": "LIT-PM-NUM-01-B",
+                      "description": "Mengubah konteks menjadi operasi hitung atau relasi numerik.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Interpretasi Hasil Numerik",
+                  "code": "LIT-PM-NUM-02",
+                  "description": "Menafsirkan hasil hitung agar sesuai makna konteks.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menafsirkan Jawaban dalam Konteks",
+                      "code": "LIT-PM-NUM-02-A",
+                      "description": "Memilih jawaban yang paling masuk akal terhadap situasi nyata.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Mengecek Kewajaran Hasil",
+                      "code": "LIT-PM-NUM-02-B",
+                      "description": "Menilai apakah hasil perhitungan wajar secara konteks.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Aljabar dan Relasi",
+              "code": "LIT-PM-ALG",
+              "description": "Menggunakan model aljabar, relasi, dan perubahan kuantitas dalam konteks.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Model Aljabar Kontekstual",
+                  "code": "LIT-PM-ALG-01",
+                  "description": "Membentuk persamaan atau relasi dari informasi tekstual.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Membentuk Persamaan dari Cerita",
+                      "code": "LIT-PM-ALG-01-A",
+                      "description": "Menyatakan hubungan variabel dalam model aljabar.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyelesaikan Model Sederhana",
+                      "code": "LIT-PM-ALG-01-B",
+                      "description": "Menentukan nilai variabel yang memenuhi model.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Geometri dan Pengukuran",
+              "code": "LIT-PM-GEO",
+              "description": "Menggunakan konsep ruang, bentuk, ukuran, dan skala pada masalah sehari-hari.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Pengukuran Kontekstual",
+                  "code": "LIT-PM-GEO-01",
+                  "description": "Menentukan panjang, luas, volume, atau skala dalam situasi nyata.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menyusun Model Pengukuran",
+                      "code": "LIT-PM-GEO-01-A",
+                      "description": "Memilih rumus atau relasi geometris yang sesuai konteks.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menafsirkan Hasil Pengukuran",
+                      "code": "LIT-PM-GEO-01-B",
+                      "description": "Menggunakan hasil hitung untuk mengambil keputusan pada konteks.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Data, Statistika, dan Ketidakpastian",
+              "code": "LIT-PM-DAT",
+              "description": "Menafsirkan data, kecenderungan, dan peluang sederhana dalam konteks.",
+              "level": 3,
+              "subtopics": [
+                {
+                  "name": "Interpretasi Data",
+                  "code": "LIT-PM-DAT-01",
+                  "description": "Membaca tabel, grafik, dan ringkasan statistik untuk membuat keputusan.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Membaca Representasi Data",
+                      "code": "LIT-PM-DAT-01-A",
+                      "description": "Menentukan nilai, tren, atau perbandingan dari tabel dan grafik.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menyimpulkan dari Data",
+                      "code": "LIT-PM-DAT-01-B",
+                      "description": "Menentukan simpulan atau keputusan yang paling didukung data.",
+                      "level": 5
+                    }
+                  ]
+                },
+                {
+                  "name": "Peluang Kontekstual",
+                  "code": "LIT-PM-DAT-02",
+                  "description": "Menentukan kemungkinan kejadian sederhana dalam situasi nyata.",
+                  "level": 4,
+                  "micro_skills": [
+                    {
+                      "name": "Menentukan Ruang Kemungkinan",
+                      "code": "LIT-PM-DAT-02-A",
+                      "description": "Mengidentifikasi hasil yang mungkin pada suatu situasi.",
+                      "level": 5
+                    },
+                    {
+                      "name": "Menafsirkan Probabilitas",
+                      "code": "LIT-PM-DAT-02-B",
+                      "description": "Menggunakan peluang untuk membandingkan atau memprediksi kejadian.",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
