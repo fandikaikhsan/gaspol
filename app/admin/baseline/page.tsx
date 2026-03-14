@@ -215,7 +215,7 @@ export default function AdminBaselinePage() {
         return
       }
 
-      // Get next checkpoint order for this exam
+      // Get next checkpoint order for this exam (order is per-exam, not global)
       const { data: maxOrder } = await (supabase as any)
         .from("baseline_modules")
         .select("checkpoint_order")
@@ -224,7 +224,7 @@ export default function AdminBaselinePage() {
         .limit(1)
         .maybeSingle()
 
-      const nextOrder = (maxOrder?.checkpoint_order || 0) + 1
+      const nextOrder = (maxOrder?.checkpoint_order ?? 0) + 1
 
       const { error } = await (supabase as any).from("baseline_modules").insert({
         module_id: formData.module_id,

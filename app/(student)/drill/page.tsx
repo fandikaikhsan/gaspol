@@ -62,7 +62,6 @@ interface DrillModule {
   module_type: "drill_focus" | "drill_mixed"
   question_count: number
   target_node_id: string | null
-  status: string
   // Resolved from taxonomy
   l5_name?: string
   l4_name?: string
@@ -98,9 +97,9 @@ async function fetchDrillData() {
       (() => {
         let q = supabase
           .from("modules")
-          .select("id, name, module_type, question_count, target_node_id, status, exam_id")
+          .select("id, name, module_type, question_count, target_node_id, exam_id")
           .in("module_type", ["drill_focus", "drill_mixed"])
-          .eq("status", "published")
+          .eq("is_published", true)
         q = activeExamId ? q.eq("exam_id", activeExamId) : q.in("exam_id", [])
         return q.order("name")
       })(),
@@ -198,7 +197,6 @@ async function fetchDrillData() {
       module_type: "drill_focus" | "drill_mixed"
       question_count: number
       target_node_id: string | null
-      status: string
     }) => {
       const ancestry = resolveAncestry(m.target_node_id)
       const planTask = planTasksByModule.get(m.id)
