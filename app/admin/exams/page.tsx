@@ -11,9 +11,21 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Star, Eye, EyeOff, Calendar, BookOpen, Trash2 } from "lucide-react"
+import { Plus, Star, Eye, EyeOff, Calendar, BookOpen, Trash2, FileJson, Loader2, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { ImportJsonExampleBlock } from "@/components/admin/ImportJsonExampleBlock"
+import { examTemplateJson } from "@/lib/import/templates"
 
 interface Exam {
   id: string
@@ -34,6 +46,10 @@ export default function AdminExamsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [examToDelete, setExamToDelete] = useState<{ id: string; name: string } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
+  const [importJson, setImportJson] = useState("")
+  const [isImporting, setIsImporting] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
 
   useEffect(() => {
     loadExams()
@@ -146,6 +162,46 @@ export default function AdminExamsPage() {
     }
   }
 
+  const handleImportJson = async () => {
+    setImportError(null)
+    const trimmed = importJson.trim()
+    if (!trimmed) {
+      setImportError("Please paste JSON content")
+      return
+    }
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      setImportError("Invalid JSON")
+      return
+    }
+    setIsImporting(true)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/admin/import-exam", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify(parsed),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        const msg = data.message || data.error || data.hint || "Import failed"
+        setImportError(msg)
+        return
+      }
+      toast({ title: "Import successful", description: `Created exam: ${data.name} (${data.year})` })
+      setIsImportDialogOpen(false)
+      setImportJson("")
+      loadExams()
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed")
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
   const getExamTypeBadgeColor = (type: string) => {
     const colors: Record<string, string> = {
       UTBK: "bg-pastel-pink",
@@ -172,12 +228,18 @@ export default function AdminExamsPage() {
             Configure exam types and let AI research their structure
           </p>
         </div>
-        <Link href="/admin/exams/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Exam
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setIsImportDialogOpen(true); setImportJson(""); setImportError(null); }}>
+            <FileJson className="mr-2 h-4 w-4" />
+            Import JSON
           </Button>
-        </Link>
+          <Link href="/admin/exams/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Exam
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Info Card */}
@@ -290,10 +352,16 @@ export default function AdminExamsPage() {
                 )}
 
                 <div className="flex gap-2 flex-wrap">
+                  <Link href={`/admin/exams/${exam.id}`}>
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      View Details
+                    </Button>
+                  </Link>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => toggleActive(exam.id, exam.is_active)}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleActive(exam.id, exam.is_active); }}
                   >
                     {exam.is_active ? (
                       <>
@@ -331,6 +399,46 @@ export default function AdminExamsPage() {
         </div>
         </>
       )}
+
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileJson className="h-5 w-5" />
+              Import Exam from JSON
+            </DialogTitle>
+            <DialogDescription>
+              Paste exam JSON (e.g. from docs/generated/exam.json). Requires exam, research_summary, structure.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <ImportJsonExampleBlock
+              template={examTemplateJson}
+              label="Example template"
+              onUseAsInput={() => setImportJson(examTemplateJson)}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="import-exam-json">Exam JSON</Label>
+              <Textarea
+                id="import-exam-json"
+                value={importJson}
+                onChange={(e) => { setImportJson(e.target.value); setImportError(null); }}
+                placeholder='{"exam": {"name": "...", "exam_type": "...", "year": 2026}, "research_summary": "...", "structure": {...}}'
+                rows={12}
+                className="font-mono text-sm"
+              />
+              {importError && <p className="text-sm text-red-600">{importError}</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleImportJson} disabled={isImporting}>
+              {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

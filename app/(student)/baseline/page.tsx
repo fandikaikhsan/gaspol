@@ -11,7 +11,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { useUserPhase } from "@/hooks/useUserPhase"
+import { getActiveExamId } from "@/lib/active-exam"
 import {
   Card,
   CardContent,
@@ -45,8 +45,6 @@ export default function BaselineHubPage() {
   const [modules, setModules] = useState<BaselineModule[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const { userState } = useUserPhase(user?.id)
-
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()
@@ -61,11 +59,19 @@ export default function BaselineHubPage() {
 
       setUser(currentUser)
 
-      // Fetch baseline modules
+      // Baseline is exam-specific: only show modules for the active exam
+      const activeExamId = await getActiveExamId(supabase, currentUser.id)
+      if (!activeExamId) {
+        setModules([])
+        setIsLoading(false)
+        return
+      }
+
       const { data: baselineModules, error } = await supabase
         .from("baseline_modules")
         .select("*")
         .eq("is_active", true)
+        .eq("exam_id", activeExamId)
         .order("checkpoint_order")
 
       if (error) {
@@ -147,7 +153,7 @@ export default function BaselineHubPage() {
               <Progress value={progress} className="h-3" />
             </div>
 
-            {completedCount === totalCount && (
+            {totalCount > 0 && completedCount === totalCount && (
               <div className="bg-background p-4 rounded-lg border-2 border-status-strong">
                 <p className="font-semibold text-status-strong mb-2">
                   {t("progress.allComplete")}

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, Loader2, Search, Filter, Sparkles, Check, X } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2, Search, Filter, Sparkles, Check, X, FileJson } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,10 @@ import {
 } from "@/components/ui/select"
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
+import { TaxonomyCascadingSelector } from "@/components/admin/TaxonomyCascadingSelector"
+import { TaxonomyFilterChips } from "@/components/admin/TaxonomyFilterChips"
+import { ImportJsonExampleBlock } from "@/components/admin/ImportJsonExampleBlock"
+import { questionTemplateJson } from "@/lib/import/templates"
 
 interface Question {
   id: string
@@ -88,10 +92,13 @@ export default function AdminQuestionsPage() {
   const { toast } = useToast()
   const [questions, setQuestions] = useState<Question[]>([])
   const [taxonomyNodes, setTaxonomyNodes] = useState<TaxonomyNode[]>([])
+  const [taxonomyTree, setTaxonomyTree] = useState<Array<{ id: string; parent_id: string | null; level: number }>>([])
+  const [exams, setExams] = useState<Array<{ id: string; name: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all")
   const [filterType, setFilterType] = useState<string>("all")
+  const [filterTaxonomyNodeId, setFilterTaxonomyNodeId] = useState<string | null>(null)
 
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -114,7 +121,7 @@ export default function AdminQuestionsPage() {
     points: 1,
     explanation: "",
     media_url: "",
-    taxonomy_node_ids: [] as string[],
+    taxonomy_node_id: null as string | null,
   })
 
   // Options state
@@ -125,6 +132,12 @@ export default function AdminQuestionsPage() {
     { option_text: "", is_correct: false, position: 3 },
     { option_text: "", is_correct: false, position: 4 },
   ])
+
+  // Import JSON state
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
+  const [importJson, setImportJson] = useState("")
+  const [isImporting, setIsImporting] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
 
   // AI Generation state
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
@@ -148,19 +161,48 @@ export default function AdminQuestionsPage() {
     try {
       const supabase = createClient()
 
-      // Load questions with joins
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("questions")
-        .select(`
-          *,
-          question_options(id, option_text, is_correct, position)
-        `)
+      // Get active exams (for filter dropdown)
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id, name")
+        .eq("is_active", true)
         .order("created_at", { ascending: false })
+      setExams(activeExams || [])
+      const activeExamIds = (activeExams || []).map((e) => e.id)
 
-      if (questionsError) throw questionsError
+      let questionIdsToLoad: string[] = []
+      if (activeExamIds.length > 0) {
+        const { data: activeNodes } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .in("exam_id", activeExamIds)
+        const activeNodeIds = (activeNodes || []).map((n) => n.id)
+        if (activeNodeIds.length > 0) {
+          const { data: qtData } = await supabase
+            .from("question_taxonomy")
+            .select("question_id")
+            .in("taxonomy_node_id", activeNodeIds)
+          questionIdsToLoad = [...new Set((qtData || []).map((r) => r.question_id))]
+        }
+      }
 
-      // Load taxonomy links separately
-      const questionIds = questionsData?.map((q) => q.id) || []
+      // Load questions (only those linked to active exam taxonomy)
+      let questionsData: any[] = []
+      if (questionIdsToLoad.length > 0) {
+        const { data, error: questionsError } = await supabase
+          .from("questions")
+          .select(`
+            *,
+            question_options(id, option_text, is_correct, position)
+          `)
+          .in("id", questionIdsToLoad)
+          .order("created_at", { ascending: false })
+
+        if (questionsError) throw questionsError
+        questionsData = data || []
+      }
+
+      const questionIds = questionsData.map((q) => q.id)
       let taxonomyMap: Record<string, any[]> = {}
 
       if (questionIds.length > 0) {
@@ -191,15 +233,22 @@ export default function AdminQuestionsPage() {
 
       setQuestions(transformedQuestions)
 
-      // Load taxonomy nodes for linking
-      const { data: nodesData } = await supabase
-        .from("taxonomy_nodes")
-        .select("id, name, code, level")
-        .eq("is_active", true)
-        .order("level")
-        .order("position")
-
-      setTaxonomyNodes(nodesData || [])
+      // Load taxonomy nodes for linking and filter (only from active exams)
+      let nodesData: TaxonomyNode[] = []
+      let treeData: Array<{ id: string; parent_id: string | null; level: number }> = []
+      if (activeExamIds.length > 0) {
+        const { data } = await supabase
+          .from("taxonomy_nodes")
+          .select("id, name, code, level, parent_id")
+          .eq("is_active", true)
+          .in("exam_id", activeExamIds)
+          .order("level")
+          .order("position")
+        nodesData = (data || []).map((n) => ({ id: n.id, name: n.name, code: n.code, level: n.level }))
+        treeData = (data || []).map((n) => ({ id: n.id, parent_id: n.parent_id, level: n.level }))
+      }
+      setTaxonomyNodes(nodesData)
+      setTaxonomyTree(treeData)
     } catch (error) {
       console.error("Load error:", error)
       toast({
@@ -224,7 +273,7 @@ export default function AdminQuestionsPage() {
       points: 1,
       explanation: "",
       media_url: "",
-      taxonomy_node_ids: [],
+      taxonomy_node_id: null,
     })
     setOptions([
       { option_text: "", is_correct: false, position: 0 },
@@ -248,7 +297,7 @@ export default function AdminQuestionsPage() {
       points: question.points,
       explanation: question.explanation || "",
       media_url: question.media_url || "",
-      taxonomy_node_ids: question.taxonomy_nodes?.map((n) => n.id) || [],
+      taxonomy_node_id: question.taxonomy_nodes?.[0]?.id ?? question.micro_skill_id ?? null,
     })
     setOptions(
       question.options && question.options.length > 0
@@ -307,6 +356,15 @@ export default function AdminQuestionsPage() {
       }
     }
 
+    if (!formData.taxonomy_node_id) {
+      toast({
+        variant: "destructive",
+        title: "Micro-skill Required",
+        description: "Please select a micro-skill (L5) taxonomy node.",
+      })
+      return
+    }
+
     setIsSaving(true)
 
     try {
@@ -315,13 +373,33 @@ export default function AdminQuestionsPage() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
 
+      // Build options JSONB and correct_answer for student-facing fetch
+      let optionsJson: Record<string, string> = {}
+      let correctAnswer = ""
+      if (formData.question_type.startsWith("MCQ") || formData.question_type === "MCK") {
+        const filled = options.filter((opt) => opt.option_text.trim())
+        filled.forEach((opt, idx) => {
+          const key = String.fromCharCode(65 + idx)
+          optionsJson[key] = opt.option_text
+          if (opt.is_correct) {
+            correctAnswer = formData.question_type === "MCK"
+              ? (correctAnswer ? `${correctAnswer},${key}` : key)
+              : key
+          }
+        })
+      }
+
       const questionData = {
+        stem: formData.question_text,
         question_text: formData.question_text,
         question_type: formData.question_type,
+        question_format: formData.question_type === "MCK" ? "MCQ5" : formData.question_type,
         difficulty: formData.difficulty,
         cognitive_level: formData.cognitive_level,
         time_estimate_seconds: formData.time_estimate_seconds,
         points: formData.points,
+        options: optionsJson,
+        correct_answer: correctAnswer,
         explanation: formData.explanation || null,
         media_url: formData.media_url || null,
         is_active: true,
@@ -362,6 +440,7 @@ export default function AdminQuestionsPage() {
           .filter((opt) => opt.option_text.trim())
           .map((opt, idx) => ({
             question_id: questionId,
+            option_key: String.fromCharCode(65 + idx),
             option_text: opt.option_text,
             is_correct: opt.is_correct,
             position: idx,
@@ -376,16 +455,14 @@ export default function AdminQuestionsPage() {
         }
       }
 
-      // Link taxonomy nodes
-      if (formData.taxonomy_node_ids.length > 0) {
-        const taxonomyLinks = formData.taxonomy_node_ids.map((nodeId) => ({
-          question_id: questionId,
-          taxonomy_node_id: nodeId,
-        }))
-
+      // Link to L5 taxonomy node (required, single)
+      if (formData.taxonomy_node_id) {
         const { error: taxonomyError } = await supabase
           .from("question_taxonomy")
-          .insert(taxonomyLinks)
+          .insert({
+            question_id: questionId,
+            taxonomy_node_id: formData.taxonomy_node_id,
+          })
 
         if (taxonomyError) throw taxonomyError
       }
@@ -520,6 +597,51 @@ export default function AdminQuestionsPage() {
     setSelectedGenerated(new Set())
   }
 
+  const handleImportJson = async () => {
+    setImportError(null)
+    const trimmed = importJson.trim()
+    if (!trimmed) {
+      setImportError("Please paste JSON content")
+      return
+    }
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      setImportError("Invalid JSON")
+      return
+    }
+
+    setIsImporting(true)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/admin/import-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify(parsed),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        const msg = data.message || data.error || data.hint || "Import failed"
+        const details = data.details ? (typeof data.details === "string" ? data.details : JSON.stringify(data.details)) : ""
+        setImportError(details ? `${msg}: ${details}` : msg)
+        return
+      }
+      toast({
+        title: "Import successful",
+        description: `Imported ${data.imported} question(s).`,
+      })
+      setIsImportDialogOpen(false)
+      setImportJson("")
+      loadData()
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed")
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
   const importSelectedQuestions = async () => {
     if (selectedGenerated.size === 0) {
       toast({
@@ -644,6 +766,29 @@ export default function AdminQuestionsPage() {
 
   const validTaxonomyIds = new Set(taxonomyNodes.map((n) => n.id))
 
+  // Get all L5 descendant node IDs for filter (when filterTaxonomyNodeId is set)
+  const getL5DescendantIds = (nodeId: string): Set<string> => {
+    const nodeMap = new Map(taxonomyTree.map((n) => [n.id, n]))
+    const byParent = new Map<string | null, typeof taxonomyTree>()
+    for (const n of taxonomyTree) {
+      const key = n.parent_id
+      if (!byParent.has(key)) byParent.set(key, [])
+      byParent.get(key)!.push(n)
+    }
+    const result = new Set<string>()
+    const collect = (id: string) => {
+      const n = nodeMap.get(id)
+      if (!n) return
+      if (n.level === 5) result.add(id)
+      const children = byParent.get(id) || []
+      for (const c of children) collect(c.id)
+    }
+    collect(nodeId)
+    return result
+  }
+
+  const filterL5Ids = filterTaxonomyNodeId ? getL5DescendantIds(filterTaxonomyNodeId) : null
+
   const filteredQuestions = questions.filter((q) => {
     const text = (q.question_text ?? q.stem ?? "") as string
     const matchesSearch =
@@ -655,7 +800,11 @@ export default function AdminQuestionsPage() {
 
     const matchesType = filterType === "all" || q.question_type === filterType
 
-    return matchesSearch && matchesDifficulty && matchesType
+    const qL5Id = q.micro_skill_id ?? q.taxonomy_nodes?.[0]?.id
+    const matchesTaxonomy =
+      !filterL5Ids || (qL5Id && filterL5Ids.has(qL5Id))
+
+    return matchesSearch && matchesDifficulty && matchesType && matchesTaxonomy
   })
 
   if (isLoading) {
@@ -676,6 +825,10 @@ export default function AdminQuestionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setIsImportDialogOpen(true); setImportJson(""); setImportError(null); }}>
+            <FileJson className="mr-2 h-4 w-4" />
+            Import JSON
+          </Button>
           <Button variant="outline" onClick={openGenerateDialog}>
             <Sparkles className="mr-2 h-4 w-4" />
             Generate with AI
@@ -694,9 +847,12 @@ export default function AdminQuestionsPage() {
             <Filter className="h-5 w-5" />
             Filters
           </CardTitle>
+          <CardDescription>
+            Select exam and drill down by taxonomy (L1–L5) to filter questions
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Search</Label>
               <div className="relative">
@@ -740,6 +896,13 @@ export default function AdminQuestionsPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2 lg:col-span-4">
+              <TaxonomyFilterChips
+                value={filterTaxonomyNodeId}
+                onChange={setFilterTaxonomyNodeId}
+                placeholder="Select exam, then drill down to filter"
+              />
             </div>
           </div>
         </CardContent>
@@ -1047,26 +1210,17 @@ export default function AdminQuestionsPage() {
               />
             </div>
 
-            {/* Taxonomy Linking */}
+            {/* Taxonomy Linking - L5 micro-skill (required) */}
             <div className="space-y-2">
-              <Label>Link to Taxonomy (Optional)</Label>
-              <Select
-                value={formData.taxonomy_node_ids[0] || ""}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, taxonomy_node_ids: [value] })
+              <TaxonomyCascadingSelector
+                value={formData.taxonomy_node_id}
+                onChange={(nodeId) =>
+                  setFormData({ ...formData, taxonomy_node_id: nodeId })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select taxonomy node" />
-                </SelectTrigger>
-                <SelectContent>
-                  {taxonomyNodes.map((node) => (
-                    <SelectItem key={node.id} value={node.id}>
-                      {"  ".repeat(node.level - 1)} {node.name} ({node.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                required
+                l5Only
+                placeholder="Select exam, then drill down to L5 micro-skill"
+              />
             </div>
           </div>
 
@@ -1102,27 +1256,19 @@ export default function AdminQuestionsPage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>
-                      Taxonomy Node <span className="text-red-500">*</span>
+                      Micro-skill (L5) <span className="text-red-500">*</span>
                     </Label>
-                    <Select
+                    <TaxonomyCascadingSelector
                       value={generationParams.taxonomy_node_id}
-                      onValueChange={(value) =>
-                        setGenerationParams({ ...generationParams, taxonomy_node_id: value })
+                      onChange={(nodeId) =>
+                        setGenerationParams({ ...generationParams, taxonomy_node_id: nodeId ?? "" })
                       }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select taxonomy node" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taxonomyNodes.map((node) => (
-                          <SelectItem key={node.id} value={node.id}>
-                            {"  ".repeat(node.level - 1)} {node.name} ({node.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      required
+                      l5Only
+                      placeholder="Select exam, then drill down to L5 micro-skill"
+                    />
                     <p className="text-xs text-muted-foreground">
-                      Questions will be generated based on this taxonomy node
+                      Questions will be generated based on this micro-skill
                     </p>
                   </div>
 
@@ -1344,6 +1490,51 @@ export default function AdminQuestionsPage() {
                 Import {selectedGenerated.size} Questions
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import JSON Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileJson className="h-5 w-5" />
+              Import Questions from JSON
+            </DialogTitle>
+            <DialogDescription>
+              Paste structured JSON with skill_id or skill_code+exam_id and questions array. See docs/features/admin-question-import.features.md
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <ImportJsonExampleBlock
+              template={questionTemplateJson}
+              label="Example template"
+              onUseAsInput={() => setImportJson(questionTemplateJson)}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="import-json">Import JSON</Label>
+              <Textarea
+                id="import-json"
+                value={importJson}
+                onChange={(e) => { setImportJson(e.target.value); setImportError(null); }}
+                placeholder='{"skill_id": "uuid", "questions": [...]} or {"skill_code": "...", "exam_id": "uuid", "questions": [...]}'
+                rows={14}
+                className="font-mono text-sm"
+              />
+              {importError && (
+                <p className="text-sm text-red-600">{importError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleImportJson} disabled={isImporting}>
+              {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Import
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

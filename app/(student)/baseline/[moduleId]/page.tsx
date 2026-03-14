@@ -129,6 +129,7 @@ export default function BaselineRunnerPage() {
               computation: 0.2,
               reading: 0.2,
             },
+          content: q.content ?? undefined,
         }
       }) as Question[]
 

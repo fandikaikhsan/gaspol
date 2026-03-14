@@ -1,0 +1,932 @@
+{
+  "skill_code": "TPS-PU-MAT-01-A",
+  "exam_id": "UTBK-SNBT-2026-V1",
+  "questions": [
+    {
+      "question_type": "MCQ5",
+      "difficulty": "easy",
+      "cognitive_level": "L1",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Di sebuah kelas ada 12 siswa laki-laki dan 8 siswa perempuan. Rasio laki-laki : perempuan adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "2:3", "is_correct": false },
+          { "key": "B", "text": "3:2", "is_correct": true },
+          { "key": "C", "text": "4:3", "is_correct": false },
+          { "key": "D", "text": "3:4", "is_correct": false },
+          { "key": "E", "text": "5:2", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rasio laki-laki : perempuan = 12 : 8. Sederhanakan dengan membagi keduanya oleh 4 sehingga diperoleh 3 : 2."
+          }
+        ]
+      },
+      "time_estimate_seconds": 35,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.2,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.35,
+        "C.READING": 0.1
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "easy",
+      "cognitive_level": "L1",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Dalam sebuah kotak terdapat 15 kelereng merah, 5 kelereng hijau, dan 10 kelereng biru. Rasio merah : hijau : biru dalam bentuk paling sederhana adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "15:5:10", "is_correct": false },
+          { "key": "B", "text": "5:1:2", "is_correct": false },
+          { "key": "C", "text": "3:1:2", "is_correct": true },
+          { "key": "D", "text": "3:2:1", "is_correct": false },
+          { "key": "E", "text": "1:3:2", "is_correct": false }
+        ],
+        "correct_answer": "C"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rasio awal 15 : 5 : 10. Semua bilangan dapat dibagi 5, sehingga menjadi 3 : 1 : 2."
+          }
+        ]
+      },
+      "time_estimate_seconds": 40,
+      "construct_weights": {
+        "C.ATTENTION": 0.1,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.45,
+        "C.READING": 0.1
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "easy",
+      "cognitive_level": "L1",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Perpustakaan menerima 24 buku fiksi dan 32 buku nonfiksi. Rasio jumlah buku fiksi terhadap jumlah seluruh buku adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "3:4", "is_correct": false },
+          { "key": "B", "text": "4:7", "is_correct": false },
+          { "key": "C", "text": "3:7", "is_correct": true },
+          { "key": "D", "text": "4:9", "is_correct": false },
+          { "key": "E", "text": "7:3", "is_correct": false }
+        ],
+        "correct_answer": "C"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Jumlah seluruh buku = 24 + 32 = 56. Rasio fiksi : seluruh buku = 24 : 56 = 3 : 7 setelah dibagi 8."
+          }
+        ]
+      },
+      "time_estimate_seconds": 45,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.3,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "easy",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Perhatikan data berikut." },
+          {
+            "type": "table",
+            "spec": {
+              "headers": ["Rak", "Novel", "Komik"],
+              "rows": [
+                ["P", 12, 18],
+                ["Q", 10, 12],
+                ["R", 15, 20],
+                ["S", 10, 25]
+              ]
+            }
+          },
+          {
+            "type": "text",
+            "content": "Rak yang memiliki rasio novel : komik = 2 : 3 adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "Rak P", "is_correct": true },
+          { "key": "B", "text": "Rak Q", "is_correct": false },
+          { "key": "C", "text": "Rak R", "is_correct": false },
+          { "key": "D", "text": "Rak S", "is_correct": false },
+          { "key": "E", "text": "Tidak ada", "is_correct": false }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rak P memiliki rasio 12 : 18 = 2 : 3. Rak Q = 10 : 12 = 5 : 6, Rak R = 15 : 20 = 3 : 4, dan Rak S = 10 : 25 = 2 : 5."
+          }
+        ]
+      },
+      "time_estimate_seconds": 55,
+      "construct_weights": {
+        "C.ATTENTION": 0.2,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.25,
+        "C.READING": 0.2
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "easy",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Seorang pedagang membawa 6 kg beras dan 9 kg gula. Rasio beras : gula dalam bentuk paling sederhana adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "2:3", "is_correct": true },
+          { "key": "B", "text": "3:2", "is_correct": false },
+          { "key": "C", "text": "6:9", "is_correct": false },
+          { "key": "D", "text": "1:2", "is_correct": false },
+          { "key": "E", "text": "3:4", "is_correct": false }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rasio beras : gula = 6 : 9. Keduanya dibagi 3 sehingga menjadi 2 : 3."
+          }
+        ]
+      },
+      "time_estimate_seconds": 40,
+      "construct_weights": {
+        "C.ATTENTION": 0.1,
+        "C.SPEED": 0.2,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.4,
+        "C.READING": 0.1
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Di area parkir terdapat 28 sepeda motor dan 21 mobil. Rasio mobil : sepeda motor adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "4:3", "is_correct": false },
+          { "key": "B", "text": "3:4", "is_correct": true },
+          { "key": "C", "text": "21:28", "is_correct": false },
+          { "key": "D", "text": "7:4", "is_correct": false },
+          { "key": "E", "text": "4:7", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Yang ditanya mobil : sepeda motor, jadi 21 : 28. Setelah dibagi 7 diperoleh 3 : 4. Opsi A adalah kebalikan urutannya."
+          }
+        ]
+      },
+      "time_estimate_seconds": 55,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.35,
+        "C.READING": 0.1
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Tabungan Ari, Bima, dan Citra berturut-turut adalah Rp75.000, Rp90.000, dan Rp60.000. Rasio tabungan Ari : Bima : Citra dalam bentuk paling sederhana adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "15:18:12", "is_correct": false },
+          { "key": "B", "text": "5:6:4", "is_correct": true },
+          { "key": "C", "text": "6:5:4", "is_correct": false },
+          { "key": "D", "text": "25:30:20", "is_correct": false },
+          { "key": "E", "text": "4:5:6", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rasio awal 75 : 90 : 60. Semua dapat dibagi 15 sehingga menjadi 5 : 6 : 4."
+          }
+        ]
+      },
+      "time_estimate_seconds": 65,
+      "construct_weights": {
+        "C.ATTENTION": 0.1,
+        "C.SPEED": 0.1,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.4,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Di laboratorium terdapat 1,5 liter larutan A dan 750 mL larutan B. Rasio A : B adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "1:2", "is_correct": false },
+          { "key": "B", "text": "2:1", "is_correct": true },
+          { "key": "C", "text": "3:2", "is_correct": false },
+          { "key": "D", "text": "1500:7500", "is_correct": false },
+          { "key": "E", "text": "750:1500", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Samakan satuan terlebih dahulu: 1,5 liter = 1500 mL. Maka rasio A : B = 1500 : 750 = 2 : 1."
+          }
+        ]
+      },
+      "time_estimate_seconds": 70,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.1,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.35,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Penjualan minuman selama empat hari ditunjukkan pada tabel berikut."
+          },
+          {
+            "type": "table",
+            "spec": {
+              "headers": ["Hari", "Teh", "Kopi"],
+              "rows": [
+                ["Senin", 24, 18],
+                ["Selasa", 20, 25],
+                ["Rabu", 14, 21],
+                ["Kamis", 30, 20]
+              ]
+            }
+          },
+          {
+            "type": "text",
+            "content": "Hari dengan rasio penjualan teh : kopi paling besar adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "Senin", "is_correct": false },
+          { "key": "B", "text": "Selasa", "is_correct": false },
+          { "key": "C", "text": "Rabu", "is_correct": false },
+          { "key": "D", "text": "Kamis", "is_correct": true },
+          { "key": "E", "text": "Semua sama", "is_correct": false }
+        ],
+        "correct_answer": "D"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Sederhanakan tiap rasio: Senin 24:18 = 4:3, Selasa 20:25 = 4:5, Rabu 14:21 = 2:3, Kamis 30:20 = 3:2. Nilai terbesar adalah 3:2, jadi jawabannya Kamis."
+          }
+        ]
+      },
+      "time_estimate_seconds": 80,
+      "construct_weights": {
+        "C.ATTENTION": 0.25,
+        "C.SPEED": 0.1,
+        "C.REASONING": 0.3,
+        "C.COMPUTATION": 0.2,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Sebuah kalung tersusun atas 8 manik merah, 12 manik biru, dan 20 manik putih. Rasio jumlah manik biru terhadap jumlah manik merah dan putih adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "3:5", "is_correct": false },
+          { "key": "B", "text": "3:7", "is_correct": true },
+          { "key": "C", "text": "7:3", "is_correct": false },
+          { "key": "D", "text": "12:28", "is_correct": false },
+          { "key": "E", "text": "2:5", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Jumlah manik merah dan putih = 8 + 20 = 28. Rasio biru : (merah + putih) = 12 : 28 = 3 : 7 setelah dibagi 4."
+          }
+        ]
+      },
+      "time_estimate_seconds": 65,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.1,
+        "C.REASONING": 0.3,
+        "C.COMPUTATION": 0.3,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "Fill-in",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Dalam sebuah klub olahraga terdapat 14 anggota futsal, 21 anggota basket, dan 35 anggota badminton. Tuliskan rasio futsal : basket : badminton dalam bentuk paling sederhana."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "fill_in",
+        "options": {
+          "type": "text",
+          "unit": null,
+          "placeholder": "Masukkan jawaban..."
+        },
+        "correct_answer": "2:3:5"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rasio awal adalah 14 : 21 : 35. Semua bilangan dapat dibagi 7, sehingga diperoleh 2 : 3 : 5."
+          }
+        ]
+      },
+      "time_estimate_seconds": 50,
+      "construct_weights": {
+        "C.ATTENTION": 0.1,
+        "C.SPEED": 0.1,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.45,
+        "C.READING": 0.1
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Sebuah resep menggunakan 250 g tepung, 150 g gula, dan 100 g mentega. Rasio tepung : gula : mentega dalam bentuk paling sederhana adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "25:15:10", "is_correct": false },
+          { "key": "B", "text": "5:3:2", "is_correct": true },
+          { "key": "C", "text": "3:5:2", "is_correct": false },
+          { "key": "D", "text": "10:6:5", "is_correct": false },
+          { "key": "E", "text": "2:3:5", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rasio awal 250 : 150 : 100. Semua dapat dibagi 50 sehingga menjadi 5 : 3 : 2."
+          }
+        ]
+      },
+      "time_estimate_seconds": 60,
+      "construct_weights": {
+        "C.ATTENTION": 0.1,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.35,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCK",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Di gudang terdapat 18 dus air mineral, 24 dus teh, dan 30 dus jus. Pilih semua pernyataan yang benar."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "multi_choice",
+        "options": [
+          {
+            "key": "A",
+            "text": "Rasio air mineral : teh = 3 : 4",
+            "is_correct": true
+          },
+          {
+            "key": "B",
+            "text": "Rasio teh : jus = 5 : 4",
+            "is_correct": false
+          },
+          {
+            "key": "C",
+            "text": "Rasio air mineral : jus = 3 : 5",
+            "is_correct": true
+          },
+          {
+            "key": "D",
+            "text": "Rasio total minuman : jus = 12 : 5",
+            "is_correct": true
+          },
+          {
+            "key": "E",
+            "text": "Rasio teh : total minuman = 1 : 2",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "A,C,D"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "A benar karena 18:24 = 3:4. B salah karena 24:30 = 4:5, bukan 5:4. C benar karena 18:30 = 3:5. D benar karena total minuman 72, jadi 72:30 = 12:5. E salah karena 24:72 = 1:3."
+          }
+        ]
+      },
+      "time_estimate_seconds": 110,
+      "construct_weights": {
+        "C.ATTENTION": 0.2,
+        "C.SPEED": 0.05,
+        "C.REASONING": 0.35,
+        "C.COMPUTATION": 0.25,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Grafik berikut menunjukkan jumlah buku yang dipinjam dari empat kategori."
+          },
+          {
+            "type": "chart",
+            "spec": {
+              "$schema": "[https://vega.github.io/schema/vega-lite/v5.json](https://vega.github.io/schema/vega-lite/v5.json)",
+              "data": {
+                "values": [
+                  { "kategori": "Sains", "jumlah": 18 },
+                  { "kategori": "Sosial", "jumlah": 12 },
+                  { "kategori": "Bahasa", "jumlah": 9 },
+                  { "kategori": "Seni", "jumlah": 6 }
+                ]
+              },
+              "mark": "bar",
+              "encoding": {
+                "x": { "field": "kategori", "type": "nominal" },
+                "y": { "field": "jumlah", "type": "quantitative" }
+              }
+            }
+          },
+          {
+            "type": "text",
+            "content": "Rasio jumlah buku pada kategori dengan pinjaman tertinggi terhadap gabungan dua kategori dengan pinjaman terendah adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "5:6", "is_correct": false },
+          { "key": "B", "text": "6:5", "is_correct": true },
+          { "key": "C", "text": "3:2", "is_correct": false },
+          { "key": "D", "text": "2:1", "is_correct": false },
+          { "key": "E", "text": "18:15", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Kategori tertinggi adalah Sains = 18. Dua kategori terendah adalah Bahasa dan Seni, jumlahnya 9 + 6 = 15. Maka rasio 18 : 15 = 6 : 5."
+          }
+        ]
+      },
+      "time_estimate_seconds": 90,
+      "construct_weights": {
+        "C.ATTENTION": 0.25,
+        "C.SPEED": 0.1,
+        "C.REASONING": 0.3,
+        "C.COMPUTATION": 0.2,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "Fill-in",
+      "difficulty": "medium",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Di area parkir terdapat 18 mobil, 24 van, dan 30 motor. Tuliskan rasio kendaraan roda empat terhadap kendaraan roda dua dalam bentuk paling sederhana."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "fill_in",
+        "options": {
+          "type": "text",
+          "unit": null,
+          "placeholder": "Masukkan jawaban..."
+        },
+        "correct_answer": "7:5"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Kendaraan roda empat = mobil + van = 18 + 24 = 42. Kendaraan roda dua = 30. Jadi rasionya 42 : 30 = 7 : 5 setelah dibagi 6."
+          }
+        ]
+      },
+      "time_estimate_seconds": 75,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.05,
+        "C.REASONING": 0.3,
+        "C.COMPUTATION": 0.35,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "hard",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Gudang material menyimpan 0,75 ton pasir, 1.200 kg batu, dan 450 kg semen. Rasio pasir : batu : semen dalam bentuk paling sederhana adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "15:24:9", "is_correct": false },
+          { "key": "B", "text": "5:8:3", "is_correct": true },
+          { "key": "C", "text": "3:8:5", "is_correct": false },
+          { "key": "D", "text": "75:120:45", "is_correct": false },
+          { "key": "E", "text": "8:5:3", "is_correct": false }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Ubah semua ke kilogram: 0,75 ton = 750 kg. Maka rasio 750 : 1200 : 450. Semua dapat dibagi 150 sehingga menjadi 5 : 8 : 3."
+          }
+        ]
+      },
+      "time_estimate_seconds": 100,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.05,
+        "C.REASONING": 0.3,
+        "C.COMPUTATION": 0.4,
+        "C.READING": 0.1
+      }
+    },
+    {
+      "question_type": "MCK",
+      "difficulty": "hard",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Perhatikan data jumlah siswa berikut."
+          },
+          {
+            "type": "table",
+            "spec": {
+              "headers": ["Kelas", "Laki-laki", "Perempuan"],
+              "rows": [
+                ["X", 18, 12],
+                ["Y", 14, 21],
+                ["Z", 16, 20],
+                ["W", 27, 18]
+              ]
+            }
+          },
+          {
+            "type": "text",
+            "content": "Pilih semua pernyataan yang benar tentang rasio laki-laki : perempuan."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "multi_choice",
+        "options": [
+          {
+            "key": "A",
+            "text": "Kelas X memiliki rasio 3 : 2",
+            "is_correct": true
+          },
+          {
+            "key": "B",
+            "text": "Kelas Y memiliki rasio 2 : 3",
+            "is_correct": true
+          },
+          {
+            "key": "C",
+            "text": "Kelas Z memiliki rasio yang sama dengan kelas X",
+            "is_correct": false
+          },
+          {
+            "key": "D",
+            "text": "Kelas W memiliki rasio yang sama dengan kelas X",
+            "is_correct": true
+          },
+          {
+            "key": "E",
+            "text": "Kelas Z memiliki rasio 5 : 4",
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "A,B,D"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Kelas X: 18:12 = 3:2, jadi A benar. Kelas Y: 14:21 = 2:3, jadi B benar. Kelas Z: 16:20 = 4:5, sehingga tidak sama dengan kelas X dan bukan 5:4, maka C dan E salah. Kelas W: 27:18 = 3:2, sama dengan kelas X, jadi D benar."
+          }
+        ]
+      },
+      "time_estimate_seconds": 120,
+      "construct_weights": {
+        "C.ATTENTION": 0.25,
+        "C.SPEED": 0.05,
+        "C.REASONING": 0.35,
+        "C.COMPUTATION": 0.2,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCQ5",
+      "difficulty": "hard",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Paket A berisi 12 bolpoin dan 18 pensil, sedangkan Paket B berisi 20 bolpoin dan 25 pensil. Jika seluruh isi kedua paket digabung, rasio bolpoin : pensil adalah ..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "32:43", "is_correct": true },
+          { "key": "B", "text": "43:32", "is_correct": false },
+          { "key": "C", "text": "16:21", "is_correct": false },
+          { "key": "D", "text": "8:11", "is_correct": false },
+          { "key": "E", "text": "7:9", "is_correct": false }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Jumlah bolpoin = 12 + 20 = 32 dan jumlah pensil = 18 + 25 = 43. Jadi rasio bolpoin : pensil = 32 : 43. Rasio ini sudah paling sederhana."
+          }
+        ]
+      },
+      "time_estimate_seconds": 95,
+      "construct_weights": {
+        "C.ATTENTION": 0.1,
+        "C.SPEED": 0.05,
+        "C.REASONING": 0.35,
+        "C.COMPUTATION": 0.35,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCK",
+      "difficulty": "hard",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Di dalam kotak alat tulis terdapat 18 pena, 24 pensil, dan 30 penghapus. Pilih semua rasio yang ekuivalen dengan rasio pena : pensil : penghapus."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "multi_choice",
+        "options": [
+          { "key": "A", "text": "6:8:10", "is_correct": true },
+          { "key": "B", "text": "9:12:15", "is_correct": true },
+          { "key": "C", "text": "12:16:21", "is_correct": false },
+          { "key": "D", "text": "15:20:25", "is_correct": true },
+          { "key": "E", "text": "3:5:4", "is_correct": false }
+        ],
+        "correct_answer": "A,B,D"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rasio 18 : 24 : 30 disederhanakan menjadi 3 : 4 : 5. Opsi A, B, dan D semuanya merupakan kelipatan dari 3 : 4 : 5. Opsi C tidak sebanding karena suku terakhir 21, dan E salah urutan nilainya."
+          }
+        ]
+      },
+      "time_estimate_seconds": 120,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.05,
+        "C.REASONING": 0.4,
+        "C.COMPUTATION": 0.25,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "question_type": "MCK-Table",
+      "difficulty": "hard",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Data penjualan roti di empat kios ditunjukkan pada tabel berikut."
+          },
+          {
+            "type": "table",
+            "spec": {
+              "headers": ["Kios", "Roti Tawar", "Roti Manis"],
+              "rows": [
+                ["A", 12, 18],
+                ["B", 20, 15],
+                ["C", 14, 21],
+                ["D", 18, 12]
+              ]
+            }
+          },
+          {
+            "type": "text",
+            "content": "Tandai semua pasangan (kios, rasio sederhana roti tawar : roti manis) yang benar."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "table_select",
+        "options": {
+          "rows": [
+            { "id": "R1", "label": "Kios A" },
+            { "id": "R2", "label": "Kios B" },
+            { "id": "R3", "label": "Kios C" },
+            { "id": "R4", "label": "Kios D" }
+          ],
+          "columns": [
+            { "id": "C1", "label": "2:3" },
+            { "id": "C2", "label": "3:2" },
+            { "id": "C3", "label": "4:3" }
+          ]
+        },
+        "correct_answer": "R1-C1,R2-C3,R3-C1,R4-C2"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Kios A: 12:18 = 2:3, Kios B: 20:15 = 4:3, Kios C: 14:21 = 2:3, dan Kios D: 18:12 = 3:2. Jadi hanya empat pasangan tersebut yang benar."
+          }
+        ]
+      },
+      "time_estimate_seconds": 135,
+      "construct_weights": {
+        "C.ATTENTION": 0.3,
+        "C.SPEED": 0.05,
+        "C.REASONING": 0.35,
+        "C.COMPUTATION": 0.15,
+        "C.READING": 0.15
+      }
+    }
+  ]
+}

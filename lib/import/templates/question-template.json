@@ -1,0 +1,31 @@
+{
+  "skill_code": "TPS-PU-LOG-01-A",
+  "exam_id": "uuid-of-exam-or-exam-name",
+  "questions": [
+    {
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [{ "type": "text", "content": "Question text here..." }]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          { "key": "A", "text": "Option A", "is_correct": false },
+          { "key": "B", "content": { "blocks": [{ "type": "text", "content": "Option B" }] }, "is_correct": true }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": { "blocks": [{ "type": "text", "content": "Explanation..." }] },
+      "time_estimate_seconds": 60,
+      "construct_weights": {
+        "C.ATTENTION": 0.2,
+        "C.SPEED": 0.2,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.2,
+        "C.READING": 0.2
+      }
+    }
+  ]
+}

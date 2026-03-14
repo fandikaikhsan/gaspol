@@ -143,6 +143,7 @@ export async function getCurrentUserExam(): Promise<{ examId: string; examType: 
       .from('exams')
       .select('id, exam_type')
       .eq('id', userState.current_exam_id)
+      .eq('is_active', true)
       .single()
 
     if (exam) {

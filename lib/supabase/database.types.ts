@@ -17,7 +17,7 @@ export type Json =
   | Json[]
 
 export type DifficultyLevel = "L1" | "L2" | "L3"
-export type MaterialCardStatus = "draft" | "review" | "published"
+export type MaterialCardStatus = "draft" | "published"
 export type UserPhase =
   | "ONBOARDING"
   | "BASELINE_ASSESSMENT_IN_PROGRESS"
@@ -412,32 +412,62 @@ export interface Database {
       campus_scores: {
         Row: {
           id: string
+          university_id: number | null
           university_name: string
           major: string | null
+          program_id: number | null
+          program_type: string | null
           min_score: number
           year: number
           source_url: string | null
           verified: boolean
+          interest: number | null
+          capacity: number | null
+          acceptance_rate: number | null
+          interest_capacity_error: number | null
+          interest_negative_error: number | null
+          confidence_level: number | null
+          confidence_level_label: string | null
           created_at: string
         }
         Insert: {
           id?: string
+          university_id?: number | null
           university_name: string
           major?: string | null
+          program_id?: number | null
+          program_type?: string | null
           min_score: number
           year: number
           source_url?: string | null
           verified?: boolean
+          interest?: number | null
+          capacity?: number | null
+          acceptance_rate?: number | null
+          interest_capacity_error?: number | null
+          interest_negative_error?: number | null
+          confidence_level?: number | null
+          confidence_level_label?: string | null
           created_at?: string
         }
         Update: {
           id?: string
+          university_id?: number | null
           university_name?: string
           major?: string | null
+          program_id?: number | null
+          program_type?: string | null
           min_score?: number
           year?: number
           source_url?: string | null
           verified?: boolean
+          interest?: number | null
+          capacity?: number | null
+          acceptance_rate?: number | null
+          interest_capacity_error?: number | null
+          interest_negative_error?: number | null
+          confidence_level?: number | null
+          confidence_level_label?: string | null
           created_at?: string
         }
         Relationships: []

@@ -73,7 +73,57 @@ serve(async (req) => {
       )
     }
 
-    // 2. Get latest analytics snapshot
+    // 2. Resolve active exam — plan must target an active exam
+    const { data: userState } = await supabase
+      .from("user_state")
+      .select("current_exam_id")
+      .eq("user_id", userId)
+      .single()
+
+    let activeExamId = userState?.current_exam_id
+
+    if (activeExamId) {
+      const { data: exam } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("id", activeExamId)
+        .eq("is_active", true)
+        .single()
+      if (!exam) activeExamId = null
+    }
+
+    if (!activeExamId) {
+      const { data: defaultExam } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+      activeExamId = defaultExam?.id ?? null
+    }
+
+    if (!activeExamId) {
+      return new Response(
+        JSON.stringify({
+          error: "No active exam",
+          detail: "No exam is currently active. Please contact your administrator.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      )
+    }
+
+    if (!userState?.current_exam_id) {
+      await supabase
+        .from("user_state")
+        .update({ current_exam_id: activeExamId })
+        .eq("user_id", userId)
+    }
+
+    // 3. Get latest analytics snapshot
     const { data: snapshot } = await supabase
       .from("analytics_snapshots")
       .select("*")
@@ -82,7 +132,7 @@ serve(async (req) => {
       .limit(1)
       .single()
 
-    // 3. Identify weak/uncovered skills (T-061: total_points < 20)
+    // 4. Identify weak/uncovered skills (T-061: total_points < 20)
     const { data: weakSkills } = await supabase
       .from("user_skill_state")
       .select("micro_skill_id, accuracy, total_points")
@@ -93,7 +143,7 @@ serve(async (req) => {
 
     const weakSkillIds = (weakSkills || []).map((s) => s.micro_skill_id)
 
-    // 4. Calculate plan parameters
+    // 5. Calculate plan parameters
     const daysRemaining = profile.package_days
     const dailyTimeBudget = profile.time_budget_min
 
@@ -105,14 +155,14 @@ serve(async (req) => {
     else if (dailyTimeBudget >= 60) taskCount = 5
     else if (dailyTimeBudget >= 30) taskCount = 4
 
-    // 5. Calculate task mix
+    // 6. Calculate task mix
     const taskMix = calculateTaskMix(
       taskCount,
       daysRemaining,
       weakSkillIds.length,
     )
 
-    // 6. Get current cycle number
+    // 7. Get current cycle number
     const { data: existingCycles } = await supabase
       .from("plan_cycles")
       .select("cycle_number")
@@ -125,7 +175,7 @@ serve(async (req) => {
         ? existingCycles[0].cycle_number + 1
         : 1
 
-    // 7. Create plan cycle
+    // 8. Create plan cycle
     const { data: cycle, error: cycleError } = await supabase
       .from("plan_cycles")
       .insert({
@@ -142,13 +192,14 @@ serve(async (req) => {
         flashcard_count: taskMix.flashcard,
         review_count: taskMix.review,
         required_task_count: Math.ceil(taskCount * 0.7), // 70% required
+        exam_id: activeExamId,
       })
       .select()
       .single()
 
     if (cycleError) throw cycleError
 
-    // 8. Create individual tasks
+    // 9. Create individual tasks
     const tasks = []
     let taskOrder = 1
 
@@ -230,7 +281,7 @@ serve(async (req) => {
 
     if (tasksError) throw tasksError
 
-    // 9. Update user state
+    // 10. Update user state
     await supabase
       .from("user_state")
       .update({
@@ -240,7 +291,7 @@ serve(async (req) => {
       })
       .eq("user_id", userId)
 
-    // 10. Create cycle_start snapshot
+    // 11. Create cycle_start snapshot
     await supabase.from("analytics_snapshots").insert({
       user_id: userId,
       snapshot_type: "cycle_start",

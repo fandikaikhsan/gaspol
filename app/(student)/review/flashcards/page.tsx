@@ -15,6 +15,7 @@ import { FlashcardStack } from "@/components/review/FlashcardStack"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Lock } from "lucide-react"
+import { getActiveExamId } from "@/lib/active-exam"
 import type { MasteryResponse } from "@/lib/assessment/flashcard-sm2"
 
 interface FlashcardUserState {
@@ -48,6 +49,8 @@ function FlashcardsContent() {
 
   const [user, setUser] = useState<any>(null)
   const [phase, setPhase] = useState<string | null>(null)
+  const [baselineCompleteForActiveExam, setBaselineCompleteForActiveExam] =
+    useState<boolean | null>(null)
   const [flashcardStates, setFlashcardStates] = useState<FlashcardUserState[]>(
     [],
   )
@@ -71,7 +74,38 @@ function FlashcardsContent() {
 
     setUser(currentUser)
 
-    // Check user phase for baseline gating
+    const activeExamId = await getActiveExamId(supabase, currentUser.id)
+
+    // Baseline is exam-specific: must complete baseline for active exam
+    let baselineCompleteForActiveExam = false
+    if (activeExamId) {
+      const { data: baselineModules } = await (supabase as any)
+        .from("baseline_modules")
+        .select("module_id")
+        .eq("is_active", true)
+        .eq("exam_id", activeExamId)
+
+      const requiredIds = new Set(
+        (baselineModules || []).map((m: { module_id: string }) => m.module_id),
+      )
+      if (requiredIds.size > 0) {
+        const { data: completed } = await (supabase as any)
+          .from("module_completions")
+          .select("module_id")
+          .eq("user_id", currentUser.id)
+          .eq("context_type", "baseline")
+          .in("module_id", Array.from(requiredIds))
+        const completedIds = new Set(
+          (completed || []).map((m: { module_id: string }) => m.module_id),
+        )
+        baselineCompleteForActiveExam = Array.from(requiredIds).every((id) =>
+          completedIds.has(id),
+        )
+      }
+    }
+    setBaselineCompleteForActiveExam(baselineCompleteForActiveExam)
+
+    // Check user phase for display
     const { data: userState } = await supabase
       .from("user_state")
       .select("current_phase")
@@ -81,15 +115,15 @@ function FlashcardsContent() {
     const currentPhase = userState?.current_phase ?? "ONBOARDING"
     setPhase(currentPhase)
 
-    // If baseline not complete, stop here
-    const baselineComplete = [
+    const phaseAllowsFlashcards = [
       "BASELINE_COMPLETE",
       "PLAN_ACTIVE",
       "RECYCLE_UNLOCKED",
       "RECYCLE_ASSESSMENT_IN_PROGRESS",
     ].includes(currentPhase)
 
-    if (!baselineComplete) {
+    // Lock if phase doesn't allow or baseline for active exam not complete
+    if (!phaseAllowsFlashcards || !baselineCompleteForActiveExam) {
       setIsLoading(false)
       return
     }
@@ -100,11 +134,32 @@ function FlashcardsContent() {
       .select("*")
       .eq("user_id", currentUser.id)
 
-    setFlashcardStates(states || [])
+    const rawStates = states || []
 
-    // Fetch material cards for skills that have flashcard states
-    if (states && states.length > 0) {
-      const skillIds = states.map((s) => s.skill_id)
+    // Filter to only skills belonging to the active exam (exclude exam_id null)
+    let filteredStates = rawStates
+
+    if (activeExamId && rawStates.length > 0) {
+      const skillIds = [...new Set(rawStates.map((s) => s.skill_id))]
+      const { data: taxonomyNodes } = await (supabase as any)
+        .from("taxonomy_nodes")
+        .select("id, exam_id")
+        .in("id", skillIds)
+
+      const activeExamSkillIds = new Set(
+        (taxonomyNodes || []).filter(
+          (n: { id: string; exam_id: string | null }) =>
+            n.exam_id === activeExamId,
+        ).map((n: { id: string }) => n.id),
+      )
+      filteredStates = rawStates.filter((s) => activeExamSkillIds.has(s.skill_id))
+    }
+
+    setFlashcardStates(filteredStates)
+
+    // Fetch material cards for skills that have flashcard states (active exam only)
+    if (filteredStates.length > 0) {
+      const skillIds = filteredStates.map((s) => s.skill_id)
       const { data: cards } = await supabase
         .from("material_cards")
         .select("id, skill_id, title, core_idea, key_facts")
@@ -189,7 +244,7 @@ function FlashcardsContent() {
   }
 
   // ──────────── BASELINE GATING (V3-T-019) ────────────
-  const baselineComplete =
+  const phaseAllowsFlashcards =
     phase &&
     [
       "BASELINE_COMPLETE",
@@ -197,8 +252,10 @@ function FlashcardsContent() {
       "RECYCLE_UNLOCKED",
       "RECYCLE_ASSESSMENT_IN_PROGRESS",
     ].includes(phase)
+  const canAccessFlashcards =
+    phaseAllowsFlashcards && baselineCompleteForActiveExam === true
 
-  if (!baselineComplete) {
+  if (!canAccessFlashcards) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-md mx-auto text-center py-20 space-y-6">

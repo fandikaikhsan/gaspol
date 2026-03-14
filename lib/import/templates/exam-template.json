@@ -1,0 +1,21 @@
+{
+  "exam": {
+    "name": "UTBK-SNBT 2026",
+    "exam_type": "UTBK-SNBT",
+    "year": 2026
+  },
+  "research_summary": "Brief description of the exam...",
+  "structure": { "sections": [] },
+  "construct_profile": {
+    "TPS-PU": {
+      "constructs": {
+        "C.ATTENTION": 0.2,
+        "C.SPEED": 0.2,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.2,
+        "C.READING": 0.2
+      },
+      "time_expectations": { "average": 120 }
+    }
+  }
+}

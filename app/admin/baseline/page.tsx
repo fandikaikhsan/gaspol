@@ -90,12 +90,26 @@ export default function AdminBaselinePage() {
     setIsLoading(true)
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
+
+      // Only show baseline checkpoints for active exams
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e) => e.id)
+
+      if (activeExamIds.length === 0) {
+        setBaselineModules([])
+        return
+      }
+
+      const { data, error } = await (supabase as any)
         .from("baseline_modules")
         .select(`
           *,
-          module:modules(name, question_count, status)
+          module:modules(name, question_count, status, exam_id)
         `)
+        .in("exam_id", activeExamIds)
         .order("checkpoint_order")
 
       if (error) throw error
@@ -119,10 +133,24 @@ export default function AdminBaselinePage() {
   const loadAvailableModules = async () => {
     try {
       const supabase = createClient()
+
+      // Only show modules from active exams (baseline checkpoints are exam-specific)
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e) => e.id)
+
+      if (activeExamIds.length === 0) {
+        setAvailableModules([])
+        return
+      }
+
       const { data, error } = await supabase
         .from("modules")
-        .select("id, name, question_count, module_type, is_published")
+        .select("id, name, question_count, module_type, is_published, exam_id")
         .eq("is_published", true)
+        .in("exam_id", activeExamIds)
         .order("created_at", { ascending: false })
 
       if (error) throw error
@@ -170,18 +198,37 @@ export default function AdminBaselinePage() {
     try {
       const supabase = createClient()
 
-      // Get next checkpoint order
-      const { data: maxOrder } = await supabase
+      // Get module's exam_id (baseline is exam-specific)
+      const { data: moduleData, error: moduleError } = await supabase
+        .from("modules")
+        .select("exam_id")
+        .eq("id", formData.module_id)
+        .single()
+
+      if (moduleError || !moduleData?.exam_id) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Module",
+          description: "Selected module must belong to an exam. Create the module under an exam in Module Management.",
+        })
+        setIsSaving(false)
+        return
+      }
+
+      // Get next checkpoint order for this exam (order is per-exam, not global)
+      const { data: maxOrder } = await (supabase as any)
         .from("baseline_modules")
         .select("checkpoint_order")
+        .eq("exam_id", moduleData.exam_id)
         .order("checkpoint_order", { ascending: false })
         .limit(1)
         .maybeSingle()
 
-      const nextOrder = (maxOrder?.checkpoint_order || 0) + 1
+      const nextOrder = (maxOrder?.checkpoint_order ?? 0) + 1
 
-      const { error } = await supabase.from("baseline_modules").insert({
+      const { error } = await (supabase as any).from("baseline_modules").insert({
         module_id: formData.module_id,
+        exam_id: moduleData.exam_id,
         checkpoint_order: nextOrder,
         title: formData.title,
         subtitle: formData.subtitle || null,

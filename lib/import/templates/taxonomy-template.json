@@ -1,0 +1,19 @@
+{
+  "exam_id": "uuid-of-exam",
+  "subjects": [
+    {
+      "name": "Tes Potensi Skolastik",
+      "code": "TPS",
+      "description": "Mengukur kemampuan penalaran.",
+      "level": 1,
+      "subtests": [
+        {
+          "name": "Penalaran Umum",
+          "code": "TPS-PU",
+          "description": "Mengukur penalaran induktif, deduktif.",
+          "level": 2
+        }
+      ]
+    }
+  ]
+}

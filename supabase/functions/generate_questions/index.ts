@@ -200,6 +200,10 @@ serve(async (req) => {
       throw new Error("Taxonomy node not found")
     }
 
+    if (taxonomyNode.level !== 5) {
+      throw new Error("Questions must be generated for a level-5 (micro-skill) taxonomy node. Please select an L5 node.")
+    }
+
     const researchProfile = taxonomyNode.exam?.construct_profile?.[taxonomyNode.code] || null
 
     // Get parent nodes for context

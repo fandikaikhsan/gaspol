@@ -23,6 +23,7 @@ import {
   Brain,
   AlertCircle,
   RefreshCw,
+  Lock,
 } from "lucide-react"
 import {
   SkeletonCard,
@@ -40,6 +41,7 @@ import {
   calculateReadinessScore,
   type ReadinessMetrics,
 } from "@/lib/analytics/readiness-score"
+import { getActiveExamConfig } from "@/lib/active-exam"
 
 interface AnalyticsSnapshot {
   id: string
@@ -125,6 +127,8 @@ function computeBreakdown(snapshot: AnalyticsSnapshot) {
   }
 }
 
+const ALLOWED_ANALYTICS_PHASES = ["BASELINE_COMPLETE", "PLAN_ACTIVE", "RECYCLE_UNLOCKED", "RECYCLE_ASSESSMENT_IN_PROGRESS"] as const
+
 export default function AnalyticsPage() {
   const { toast } = useToast()
   const { t } = useTranslation("analytics")
@@ -132,13 +136,20 @@ export default function AnalyticsPage() {
   const [examConfig, setExamConfig] = useState<ExamConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [currentPhase, setCurrentPhase] = useState<string | null>(null)
+  const [baselineCompleteForActiveExam, setBaselineCompleteForActiveExam] =
+    useState<boolean | null>(null)
+  const canAccessAnalytics =
+    currentPhase &&
+    ALLOWED_ANALYTICS_PHASES.includes(currentPhase as any) &&
+    baselineCompleteForActiveExam === true
 
   useEffect(() => {
-    loadSnapshot()
+    loadPhaseAndSnapshot()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const loadSnapshot = async () => {
+  const loadPhaseAndSnapshot = async () => {
     setIsLoading(true)
     try {
       const supabase = createClient()
@@ -152,16 +163,69 @@ export default function AnalyticsPage() {
         throw new Error("Not authenticated")
       }
 
-      // Fetch snapshot and exam config in parallel
-      const [snapshotResult, examConfigResult] = await Promise.all([
-        (supabase.rpc as any)("get_latest_snapshot", {
-          p_user_id: user.id,
-          p_scope: null, // Get most recent of any type
-        }),
-        (supabase.rpc as any)("get_user_exam_config", {
-          p_user_id: user.id,
-        }),
-      ])
+      const examConfigResult = await getActiveExamConfig(supabase, user.id)
+      setExamConfig(examConfigResult)
+
+      if (!examConfigResult) {
+        setCurrentPhase(null)
+        setSnapshot(null)
+        setIsLoading(false)
+        return
+      }
+
+      // Baseline is exam-specific: analytics locked until baseline for active exam is complete
+      const { data: baselineModules } = await (supabase as any)
+        .from("baseline_modules")
+        .select("module_id")
+        .eq("is_active", true)
+        .eq("exam_id", examConfigResult.exam_id)
+
+      const requiredIds = new Set<string>(
+        (baselineModules || []).map((m: { module_id: string }) => m.module_id),
+      )
+
+      let completedIds = new Set<string>()
+      if (requiredIds.size > 0) {
+        const { data: completedForExam } = await (supabase as any)
+          .from("module_completions")
+          .select("module_id")
+          .eq("user_id", user.id)
+          .eq("context_type", "baseline")
+          .in("module_id", Array.from(requiredIds))
+        completedIds = new Set(
+          (completedForExam || []).map((m: { module_id: string }) => m.module_id),
+        )
+      }
+      const complete =
+        requiredIds.size > 0 &&
+        Array.from(requiredIds).every((id) => completedIds.has(id))
+      setBaselineCompleteForActiveExam(complete)
+
+      // Fetch user_state.current_phase for display
+      const { data: userState } = await supabase
+        .from("user_state")
+        .select("current_phase")
+        .eq("user_id", user.id)
+        .single()
+
+      const phase = userState?.current_phase ?? "ONBOARDING"
+      setCurrentPhase(phase)
+
+      // Lock analytics if baseline for active exam not complete (e.g. switched to new exam)
+      if (!complete) {
+        setIsLoading(false)
+        return
+      }
+
+      if (!ALLOWED_ANALYTICS_PHASES.includes(phase as any)) {
+        setIsLoading(false)
+        return
+      }
+
+      const snapshotResult = await (supabase.rpc as any)("get_latest_snapshot", {
+        p_user_id: user.id,
+        p_scope: null,
+      })
 
       if (snapshotResult.error) throw snapshotResult.error
 
@@ -169,11 +233,6 @@ export default function AnalyticsPage() {
         setSnapshot(snapshotResult.data[0])
       } else {
         setSnapshot(null)
-      }
-
-      // Set exam config (for passing to components)
-      if (examConfigResult.data && examConfigResult.data.length > 0) {
-        setExamConfig(examConfigResult.data[0])
       }
     } catch (error) {
       console.error("Load snapshot error:", error)
@@ -213,7 +272,7 @@ export default function AnalyticsPage() {
           title: t("toast.updated"),
           description: t("toast.updatedDesc"),
         })
-        loadSnapshot()
+        loadPhaseAndSnapshot()
       }
     } catch (error) {
       console.error("Generate snapshot error:", error)
@@ -226,6 +285,24 @@ export default function AnalyticsPage() {
     } finally {
       setIsRefreshing(false)
     }
+  }
+
+  // Locked state: baseline not complete
+  if (!isLoading && currentPhase && !canAccessAnalytics) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+          <Lock className="h-16 w-16 text-muted-foreground" />
+          <h2 className="text-2xl font-bold">Analytics Locked</h2>
+          <p className="text-muted-foreground text-center max-w-md">
+            Complete your baseline assessment to unlock analytics and see your readiness score, construct profile, and coverage map.
+          </p>
+          <Button asChild>
+            <a href="/baseline">Go to Baseline</a>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   if (isLoading) {
@@ -248,7 +325,22 @@ export default function AnalyticsPage() {
     )
   }
 
-  // No snapshot available
+  // No active exam → students only see analytics when exam is active
+  if (canAccessAnalytics && !examConfig) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+          <AlertCircle className="h-16 w-16 text-amber-500" />
+          <h2 className="text-2xl font-bold">No Active Exam</h2>
+          <p className="text-muted-foreground text-center max-w-md">
+            There is no exam currently active. Analytics are only shown when an exam is active. Please check back later or contact your administrator.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // No snapshot available (but we have active exam)
   if (!snapshot) {
     return (
       <div className="container mx-auto p-6">

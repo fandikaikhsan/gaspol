@@ -86,23 +86,64 @@ export default function AdminMetadataPage() {
     try {
       const supabase = createClient()
 
-      // Load metadata completeness view
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("question_metadata_completeness")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (questionsError) throw questionsError
-
-      setQuestions(questionsData || [])
-
-      // Load statistics
-      const { data: statsData, error: statsError } = await supabase
-        .rpc("get_metadata_completeness_stats")
-
-      if (!statsError && statsData && statsData.length > 0) {
-        setStats(statsData[0])
+      // Get question IDs for active exam taxonomy
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e) => e.id)
+      let questionIdsToLoad: string[] = []
+      if (activeExamIds.length > 0) {
+        const { data: activeNodes } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .in("exam_id", activeExamIds)
+        const activeNodeIds = (activeNodes || []).map((n) => n.id)
+        if (activeNodeIds.length > 0) {
+          const { data: qtData } = await supabase
+            .from("question_taxonomy")
+            .select("question_id")
+            .in("taxonomy_node_id", activeNodeIds)
+          questionIdsToLoad = [...new Set((qtData || []).map((r) => r.question_id))]
+        }
       }
+
+      // Load metadata completeness view (only active exam questions)
+      let questionsData: QuestionMetadata[] = []
+      if (questionIdsToLoad.length > 0) {
+        const { data, error: questionsError } = await supabase
+          .from("question_metadata_completeness")
+          .select("*")
+          .in("id", questionIdsToLoad)
+          .order("created_at", { ascending: false })
+
+        if (questionsError) throw questionsError
+        questionsData = data || []
+      }
+      setQuestions(questionsData)
+
+      // Load statistics (recomputed from filtered list client-side, or use RPC for full stats)
+      const completeCount = questionsData.filter(
+        (q) => q.completeness_status === "complete"
+      ).length
+      const partialCount = questionsData.filter(
+        (q) => q.completeness_status === "partial"
+      ).length
+      const missingCount = questionsData.filter(
+        (q) => q.completeness_status === "missing"
+      ).length
+      const researchCount = questionsData.filter(
+        (q) => q.research_available
+      ).length
+      const total = questionsData.length
+      setStats({
+        total_questions: total,
+        complete_metadata: completeCount,
+        partial_metadata: partialCount,
+        missing_metadata: missingCount,
+        research_available: researchCount,
+        completion_percentage: total > 0 ? Math.round((completeCount / total) * 1000) / 10 : 0,
+      })
     } catch (error) {
       console.error("Load error:", error)
       toast({

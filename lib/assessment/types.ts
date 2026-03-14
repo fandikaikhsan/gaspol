@@ -9,6 +9,13 @@ export type CognitiveLevel = "L1" | "L2" | "L3"
 
 export type Difficulty = "easy" | "medium" | "hard"
 
+/** Structured document: stimulus, answer, explanation with blocks */
+export interface QuestionContent {
+  stimulus?: { blocks: unknown[] }
+  answer?: unknown
+  explanation?: { blocks: unknown[] }
+}
+
 export interface Question {
   id: string
   micro_skill_id: string
@@ -22,6 +29,8 @@ export interface Question {
   explanation: string
   explanation_images: string[]
   construct_weights: ConstructWeights
+  /** Structured content for DocumentRenderer (Phase 2) */
+  content?: QuestionContent | null
 }
 
 export type QuestionOptions =

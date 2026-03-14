@@ -1,0 +1,856 @@
+{
+  "_meta": {
+    "description": "All possible question types for admin import. Use skill_code + exam_id OR skill_id. See docs/features/admin-question-import.features.md",
+    "generated": "2025-03-14"
+  },
+  "skill_code": "TPS-PU-MAT-01-A",
+  "exam_id": "UTBK-SNBT 2026",
+  "questions": [
+    {
+      "_example": "5.1 MCQ5 — Text + Inline Math",
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Nilai dari " },
+          { "type": "inline_math", "content": "2^3 \\times 3^2" },
+          { "type": "text", "content": " adalah..." }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": { "blocks": [{ "type": "text", "content": "72" }] },
+            "is_correct": true
+          },
+          {
+            "key": "B",
+            "content": { "blocks": [{ "type": "text", "content": "36" }] },
+            "is_correct": false
+          },
+          {
+            "key": "C",
+            "content": { "blocks": [{ "type": "text", "content": "54" }] },
+            "is_correct": false
+          },
+          {
+            "key": "D",
+            "content": { "blocks": [{ "type": "text", "content": "48" }] },
+            "is_correct": false
+          },
+          {
+            "key": "E",
+            "content": { "blocks": [{ "type": "text", "content": "24" }] },
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          { "type": "text", "content": "2³ = 8, 3² = 9. Jadi 8 × 9 = 72." }
+        ]
+      },
+      "time_estimate_seconds": 60,
+      "construct_weights": {
+        "C.ATTENTION": 0.2,
+        "C.SPEED": 0.25,
+        "C.REASONING": 0.15,
+        "C.COMPUTATION": 0.35,
+        "C.READING": 0.05
+      }
+    },
+    {
+      "_example": "5.2 MCQ5 — With Function Graph",
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Perhatikan grafik berikut." },
+          {
+            "type": "function_graph",
+            "spec": {
+              "domain": { "x": [-2, 6], "y": [-2, 8] },
+              "axes": true,
+              "grid": true,
+              "curves": [
+                {
+                  "type": "function",
+                  "expression": "-x + 4",
+                  "label": "y = -x + 4"
+                }
+              ],
+              "points": [
+                { "x": 0, "y": 4, "label": "A" },
+                { "x": 4, "y": 0, "label": "B" }
+              ]
+            }
+          },
+          {
+            "type": "text",
+            "content": "Persamaan garis yang melalui titik A dan B adalah..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": {
+              "blocks": [{ "type": "inline_math", "content": "y = -x + 4" }]
+            },
+            "is_correct": true
+          },
+          {
+            "key": "B",
+            "content": {
+              "blocks": [{ "type": "inline_math", "content": "y = x + 4" }]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "C",
+            "content": {
+              "blocks": [
+                { "type": "inline_math", "content": "y = -\\frac{1}{2}x + 4" }
+              ]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "D",
+            "content": {
+              "blocks": [{ "type": "inline_math", "content": "y = 2x - 4" }]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "E",
+            "content": {
+              "blocks": [
+                { "type": "text", "content": "Tidak dapat ditentukan" }
+              ]
+            },
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          { "type": "text", "content": "Gradien " },
+          { "type": "inline_math", "content": "m = \\frac{0-4}{4-0} = -1" },
+          { "type": "text", "content": ", intercept c = 4. Jadi y = -x + 4." }
+        ]
+      },
+      "time_estimate_seconds": 90,
+      "construct_weights": {
+        "C.ATTENTION": 0.2,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.35,
+        "C.COMPUTATION": 0.15,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "_example": "5.3 MCQ5 — With Table Stimulus",
+      "question_type": "MCQ5",
+      "difficulty": "easy",
+      "cognitive_level": "L1",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Tabel berikut menunjukkan nilai ulangan 4 siswa."
+          },
+          {
+            "type": "table",
+            "spec": {
+              "headers": ["Nama", "Matematika", "Fisika", "Rata-rata"],
+              "rows": [
+                ["Andi", "85", "90", "87.5"],
+                ["Budi", "78", "82", "80"],
+                ["Citra", "92", "88", "90"],
+                ["Dewi", "75", "95", "85"]
+              ]
+            }
+          },
+          {
+            "type": "text",
+            "content": "Siswa dengan rata-rata tertinggi adalah..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": { "blocks": [{ "type": "text", "content": "Andi" }] },
+            "is_correct": false
+          },
+          {
+            "key": "B",
+            "content": { "blocks": [{ "type": "text", "content": "Budi" }] },
+            "is_correct": false
+          },
+          {
+            "key": "C",
+            "content": { "blocks": [{ "type": "text", "content": "Citra" }] },
+            "is_correct": true
+          },
+          {
+            "key": "D",
+            "content": { "blocks": [{ "type": "text", "content": "Dewi" }] },
+            "is_correct": false
+          },
+          {
+            "key": "E",
+            "content": {
+              "blocks": [{ "type": "text", "content": "Andi dan Citra" }]
+            },
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "C"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Rata-rata tertinggi adalah Citra (90), diikuti Andi (87.5), Dewi (85), lalu Budi (80)."
+          }
+        ]
+      },
+      "time_estimate_seconds": 45,
+      "construct_weights": {
+        "C.ATTENTION": 0.3,
+        "C.SPEED": 0.2,
+        "C.REASONING": 0.2,
+        "C.COMPUTATION": 0.15,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "_example": "5.4 MCQ5 — With Chart (Vega-Lite)",
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Grafik batang berikut menunjukkan penjualan per bulan."
+          },
+          {
+            "type": "chart",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "width": 520,
+              "height": 260,
+              "data": {
+                "values": [
+                  { "bulan": "Jan", "jumlah": 120 },
+                  { "bulan": "Feb", "jumlah": 150 },
+                  { "bulan": "Mar", "jumlah": 130 },
+                  { "bulan": "Apr", "jumlah": 180 }
+                ]
+              },
+              "mark": {
+                "type": "bar"
+              },
+              "encoding": {
+                "x": {
+                  "field": "bulan",
+                  "type": "ordinal",
+                  "sort": ["Jan", "Feb", "Mar", "Apr"],
+                  "title": "Bulan",
+                  "axis": {
+                    "labelAngle": 0
+                  }
+                },
+                "y": {
+                  "field": "jumlah",
+                  "type": "quantitative",
+                  "title": "Jumlah",
+                  "scale": {
+                    "domain": [0, 200]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "text",
+            "content": "Bulan dengan penjualan tertinggi adalah..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": { "blocks": [{ "type": "text", "content": "Januari" }] },
+            "is_correct": false
+          },
+          {
+            "key": "B",
+            "content": {
+              "blocks": [{ "type": "text", "content": "Februari" }]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "C",
+            "content": { "blocks": [{ "type": "text", "content": "Maret" }] },
+            "is_correct": false
+          },
+          {
+            "key": "D",
+            "content": { "blocks": [{ "type": "text", "content": "April" }] },
+            "is_correct": true
+          },
+          {
+            "key": "E",
+            "content": {
+              "blocks": [{ "type": "text", "content": "Februari dan April" }]
+            },
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "D"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "April memiliki penjualan 180, tertinggi di antara semua bulan."
+          }
+        ]
+      },
+      "time_estimate_seconds": 60,
+      "construct_weights": {
+        "C.ATTENTION": 0.35,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.05,
+        "C.READING": 0.2
+      }
+    },
+    {
+      "_example": "5.5 MCK (Multi-Select)",
+      "question_type": "MCK",
+      "difficulty": "hard",
+      "cognitive_level": "L3",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Pilih SEMUA pernyataan yang ekuivalen dengan "
+          },
+          { "type": "inline_math", "content": "\\neg(p \\wedge q)" },
+          { "type": "text", "content": ":" }
+        ]
+      },
+      "answer": {
+        "interaction_type": "multi_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": {
+              "blocks": [
+                { "type": "inline_math", "content": "\\neg p \\vee \\neg q" }
+              ]
+            },
+            "is_correct": true
+          },
+          {
+            "key": "B",
+            "content": {
+              "blocks": [
+                { "type": "inline_math", "content": "p \\rightarrow \\neg q" }
+              ]
+            },
+            "is_correct": true
+          },
+          {
+            "key": "C",
+            "content": {
+              "blocks": [
+                { "type": "inline_math", "content": "\\neg p \\wedge \\neg q" }
+              ]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "D",
+            "content": {
+              "blocks": [
+                { "type": "inline_math", "content": "q \\rightarrow \\neg p" }
+              ]
+            },
+            "is_correct": true
+          }
+        ],
+        "correct_answer": "A,B,D"
+      },
+      "explanation": {
+        "blocks": [
+          { "type": "text", "content": "De Morgan: " },
+          {
+            "type": "inline_math",
+            "content": "\\neg(p \\wedge q) \\equiv \\neg p \\vee \\neg q"
+          },
+          { "type": "text", "content": ". Juga ekuivalen dengan " },
+          { "type": "inline_math", "content": "p \\rightarrow \\neg q" },
+          { "type": "text", "content": " dan " },
+          { "type": "inline_math", "content": "q \\rightarrow \\neg p" },
+          { "type": "text", "content": ". Opsi C adalah negasi dari p ∨ q." }
+        ]
+      },
+      "time_estimate_seconds": 120,
+      "construct_weights": {
+        "C.ATTENTION": 0.25,
+        "C.SPEED": 0.1,
+        "C.REASONING": 0.5,
+        "C.COMPUTATION": 0.05,
+        "C.READING": 0.1
+      }
+    },
+    {
+      "_example": "5.6 MCK-Table (Table Select)",
+      "question_type": "MCK-Table",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Centang semua sel yang benar berdasarkan pernyataan di baris kiri dan kolom atas."
+          },
+          {
+            "type": "table",
+            "spec": {
+              "headers": ["", "Pernyataan A", "Pernyataan B", "Pernyataan C"],
+              "rows": [
+                ["Jika p maka q", "implikasi", "logika", "syarat"],
+                ["p dan q", "konjungsi", "disjungsi", "negasi"]
+              ]
+            }
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "table_select",
+        "options": {
+          "rows": [
+            {
+              "id": "R1",
+              "content": {
+                "blocks": [{ "type": "text", "content": "Jika p maka q" }]
+              }
+            },
+            {
+              "id": "R2",
+              "content": {
+                "blocks": [{ "type": "text", "content": "p dan q" }]
+              }
+            }
+          ],
+          "columns": [
+            {
+              "id": "C1",
+              "content": {
+                "blocks": [{ "type": "text", "content": "Pernyataan A" }]
+              }
+            },
+            {
+              "id": "C2",
+              "content": {
+                "blocks": [{ "type": "text", "content": "Pernyataan B" }]
+              }
+            },
+            {
+              "id": "C3",
+              "content": {
+                "blocks": [{ "type": "text", "content": "Pernyataan C" }]
+              }
+            }
+          ]
+        },
+        "correct_answer": "R1-C1,R2-C1"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Implikasi = jika p maka q. Konjungsi = p dan q."
+          }
+        ]
+      },
+      "time_estimate_seconds": 90,
+      "construct_weights": {
+        "C.ATTENTION": 0.3,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.35,
+        "C.COMPUTATION": 0.05,
+        "C.READING": 0.15
+      }
+    },
+    {
+      "_example": "5.7 Fill-in (Numeric)",
+      "question_type": "Fill-in",
+      "difficulty": "easy",
+      "cognitive_level": "L1",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Jika " },
+          { "type": "inline_math", "content": "x = 5" },
+          { "type": "text", "content": ", maka nilai dari " },
+          { "type": "inline_math", "content": "2x + 3 = " }
+        ]
+      },
+      "answer": {
+        "interaction_type": "fill_in",
+        "options": {
+          "type": "numeric",
+          "unit": null,
+          "placeholder": "Masukkan jawaban..."
+        },
+        "correct_answer": "13"
+      },
+      "explanation": {
+        "blocks": [{ "type": "text", "content": "2(5) + 3 = 10 + 3 = 13" }]
+      },
+      "time_estimate_seconds": 30,
+      "construct_weights": {
+        "C.ATTENTION": 0.15,
+        "C.SPEED": 0.2,
+        "C.REASONING": 0.1,
+        "C.COMPUTATION": 0.5,
+        "C.READING": 0.05
+      }
+    },
+    {
+      "_example": "5.8 MCQ5 — Geometry Diagram",
+      "question_type": "MCQ5",
+      "difficulty": "medium",
+      "cognitive_level": "L2",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Perhatikan segitiga berikut." },
+          {
+            "type": "geometry",
+            "spec": {
+              "elements": [
+                {
+                  "kind": "segment",
+                  "id": "AB",
+                  "from": { "x": 20, "y": 150 },
+                  "to": { "x": 180, "y": 150 }
+                },
+                {
+                  "kind": "segment",
+                  "id": "BC",
+                  "from": { "x": 180, "y": 150 },
+                  "to": { "x": 100, "y": 20 }
+                },
+                {
+                  "kind": "segment",
+                  "id": "CA",
+                  "from": { "x": 100, "y": 20 },
+                  "to": { "x": 20, "y": 150 }
+                },
+                {
+                  "kind": "point",
+                  "id": "A",
+                  "at": { "x": 20, "y": 150 },
+                  "label": "A"
+                },
+                {
+                  "kind": "point",
+                  "id": "B",
+                  "at": { "x": 180, "y": 150 },
+                  "label": "B"
+                },
+                {
+                  "kind": "point",
+                  "id": "C",
+                  "at": { "x": 100, "y": 20 },
+                  "label": "C"
+                }
+              ],
+              "viewBox": { "width": 200, "height": 180 }
+            }
+          },
+          {
+            "type": "text",
+            "content": "Jika AB = 4 cm, luas segitiga ABC adalah..."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": {
+              "blocks": [{ "type": "inline_math", "content": "4\\sqrt{3}" }]
+            },
+            "is_correct": true
+          },
+          {
+            "key": "B",
+            "content": {
+              "blocks": [{ "type": "inline_math", "content": "2\\sqrt{3}" }]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "C",
+            "content": {
+              "blocks": [{ "type": "inline_math", "content": "6\\sqrt{3}" }]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "D",
+            "content": {
+              "blocks": [{ "type": "inline_math", "content": "8\\sqrt{3}" }]
+            },
+            "is_correct": false
+          },
+          {
+            "key": "E",
+            "content": { "blocks": [{ "type": "text", "content": "12 cm²" }] },
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Segitiga sama sisi dengan sisi 4. Tinggi = "
+          },
+          { "type": "inline_math", "content": "2\\sqrt{3}" },
+          { "type": "text", "content": ", luas = ½ × 4 × " },
+          { "type": "inline_math", "content": "2\\sqrt{3} = 4\\sqrt{3}" },
+          { "type": "text", "content": " cm²." }
+        ]
+      },
+      "time_estimate_seconds": 90,
+      "construct_weights": {
+        "C.ATTENTION": 0.2,
+        "C.SPEED": 0.15,
+        "C.REASONING": 0.3,
+        "C.COMPUTATION": 0.3,
+        "C.READING": 0.05
+      }
+    },
+    {
+      "_example": "5.9 TF (True/False)",
+      "question_type": "TF",
+      "difficulty": "easy",
+      "cognitive_level": "L1",
+      "stimulus": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Pernyataan \"Semua bilangan prima adalah ganjil\" bernilai benar."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "True",
+            "content": { "blocks": [{ "type": "text", "content": "Benar" }] },
+            "is_correct": false
+          },
+          {
+            "key": "False",
+            "content": { "blocks": [{ "type": "text", "content": "Salah" }] },
+            "is_correct": true
+          }
+        ],
+        "correct_answer": "False"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "2 adalah bilangan prima dan genap. Jadi pernyataan salah."
+          }
+        ]
+      },
+      "time_estimate_seconds": 30,
+      "construct_weights": {
+        "C.ATTENTION": 0.3,
+        "C.SPEED": 0.2,
+        "C.REASONING": 0.25,
+        "C.COMPUTATION": 0.05,
+        "C.READING": 0.2
+      }
+    },
+    {
+      "_example": "5.10 MCQ5 — Image Fallback",
+      "question_type": "MCQ5",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Perhatikan gambar berikut." },
+          {
+            "type": "image",
+            "spec": {
+              "url": "https://storage.example.com/diagram.png",
+              "alt": "Diagram yang tidak dapat direpresentasikan secara terstruktur",
+              "caption": "Sumber: UTBK 2024"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Berdasarkan gambar, pilih jawaban yang benar."
+          }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": { "blocks": [{ "type": "text", "content": "Opsi A" }] },
+            "is_correct": false
+          },
+          {
+            "key": "B",
+            "content": { "blocks": [{ "type": "text", "content": "Opsi B" }] },
+            "is_correct": true
+          }
+        ],
+        "correct_answer": "B"
+      },
+      "explanation": {
+        "blocks": [
+          { "type": "text", "content": "Penjelasan berdasarkan gambar." }
+        ]
+      }
+    },
+    {
+      "_example": "Block types: text, inline_math, block_math",
+      "question_type": "MCQ5",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Rumus kuadrat: " },
+          {
+            "type": "block_math",
+            "content": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}"
+          },
+          { "type": "text", "content": " berlaku ketika " },
+          { "type": "inline_math", "content": "a \\neq 0" },
+          { "type": "text", "content": "." }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": { "blocks": [{ "type": "text", "content": "Benar" }] },
+            "is_correct": true
+          },
+          {
+            "key": "B",
+            "content": { "blocks": [{ "type": "text", "content": "Salah" }] },
+            "is_correct": false
+          }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Persamaan kuadrat memerlukan a ≠ 0 agar tetap kuadrat."
+          }
+        ]
+      }
+    },
+    {
+      "_example": "Venn diagram block",
+      "question_type": "MCQ5",
+      "stimulus": {
+        "blocks": [
+          { "type": "text", "content": "Perhatikan diagram Venn berikut." },
+          {
+            "type": "venn",
+            "spec": {
+              "viewBox": { "width": 340, "height": 240 },
+              "sets": [
+                {
+                  "id": "A",
+                  "label": "A",
+                  "cx": 120,
+                  "cy": 120,
+                  "r": 70
+                },
+                {
+                  "id": "B",
+                  "label": "B",
+                  "cx": 220,
+                  "cy": 120,
+                  "r": 70
+                }
+              ],
+              "regions": [
+                {
+                  "id": "A-only",
+                  "label": "hanya A",
+                  "setIds": ["A"],
+                  "cx": 80,
+                  "cy": 125
+                },
+                {
+                  "id": "A-cap-B",
+                  "label": "A ∩ B",
+                  "setIds": ["A", "B"],
+                  "cx": 170,
+                  "cy": 125
+                }
+              ]
+            }
+          },
+          { "type": "text", "content": "Daerah A ∩ B ditunjukkan oleh..." }
+        ]
+      },
+      "answer": {
+        "interaction_type": "single_choice",
+        "options": [
+          {
+            "key": "A",
+            "content": {
+              "blocks": [{ "type": "text", "content": "Daerah irisannya" }]
+            },
+            "is_correct": true
+          }
+        ],
+        "correct_answer": "A"
+      },
+      "explanation": {
+        "blocks": [
+          {
+            "type": "text",
+            "content": "Irisan A ∩ B adalah daerah yang dilalui kedua himpunan."
+          }
+        ]
+      }
+    }
+  ]
+}

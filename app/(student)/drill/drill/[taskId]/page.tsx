@@ -33,6 +33,18 @@ export default function DrillRunnerPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [runKey, setRunKey] = useState(0) // key to force remount on retry
 
+  // Clear session storage when retrying (start fresh)
+  useEffect(() => {
+    const retry = searchParams.get("retry")
+    if (retry === "1" || retry === "true") {
+      try {
+        localStorage.removeItem(`qr-session-${taskId}`)
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [taskId, searchParams])
+
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()

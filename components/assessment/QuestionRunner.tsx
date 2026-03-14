@@ -114,7 +114,7 @@ export function QuestionRunner({
     key: number
   } | null>(null)
 
-  // T-035: Restore answers from localStorage on mount
+  // T-035: Restore answers and timer from localStorage on mount (resume in-progress)
   const storageKey = `qr-session-${moduleId}`
   useEffect(() => {
     try {
@@ -140,13 +140,23 @@ export function QuestionRunner({
         if (typeof parsed.currentIndex === "number")
           setCurrentIndex(parsed.currentIndex)
         if (parsed.flagged) setFlagged(new Set(parsed.flagged))
+        // Restore timer: add elapsed time since last activity
+        if (
+          showTimer &&
+          typeof parsed.timeElapsed === "number" &&
+          parsed.lastActivityAt
+        ) {
+          const lastAt = new Date(parsed.lastActivityAt).getTime()
+          const extraSec = Math.max(0, Math.floor((Date.now() - lastAt) / 1000))
+          setTimeElapsed(parsed.timeElapsed + extraSec)
+        }
       }
     } catch {
       /* ignore corrupt data */
     }
-  }, [storageKey])
+  }, [storageKey, showTimer])
 
-  // T-035: Persist answers to localStorage on change
+  // T-035: Persist answers and timer to localStorage on change
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -155,12 +165,14 @@ export function QuestionRunner({
           answers,
           currentIndex,
           flagged: Array.from(flagged),
+          timeElapsed,
+          lastActivityAt: new Date().toISOString(),
         }),
       )
     } catch {
       /* storage full */
     }
-  }, [answers, currentIndex, flagged, storageKey])
+  }, [answers, currentIndex, flagged, timeElapsed, storageKey])
 
   const currentQuestion = questions[currentIndex]
   const totalQuestions = questions.length
@@ -355,6 +367,21 @@ export function QuestionRunner({
     currentQuestion.question_format,
   )
 
+  // Build option content blocks from structured content when present
+  const optionContentBlocks = (() => {
+    const answer = currentQuestion.content?.answer as
+      | { options?: Array<{ key: string; content?: { blocks?: unknown[] } }> }
+      | undefined
+    if (!answer?.options) return undefined
+    const map: Record<string, { blocks: unknown[] }> = {}
+    for (const opt of answer.options) {
+      if (opt.content?.blocks?.length) {
+        map[opt.key] = { blocks: opt.content.blocks }
+      }
+    }
+    return Object.keys(map).length ? map : undefined
+  })()
+
   // Render answer input based on question format
   const renderAnswerInput = () => {
     const normalizedFormat = normalizeFormat(currentQuestion.question_format)
@@ -366,6 +393,7 @@ export function QuestionRunner({
             options={currentQuestion.options as any}
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
+            optionContentBlocks={optionContentBlocks}
           />
         )
       case "mcq4":
@@ -375,6 +403,7 @@ export function QuestionRunner({
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
             optionKeys={["A", "B", "C", "D"]}
+            optionContentBlocks={optionContentBlocks}
           />
         )
       case "tf":
@@ -383,6 +412,7 @@ export function QuestionRunner({
             options={currentQuestion.options as any}
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
+            optionContentBlocks={optionContentBlocks}
           />
         )
       case "mcktable":
@@ -658,6 +688,9 @@ export function QuestionRunner({
               stem={currentQuestion.stem}
               stemImages={currentQuestion.stem_images}
               questionNumber={currentIndex + 1}
+              contentStimulus={
+                currentQuestion.content?.stimulus as { blocks: unknown[] } | undefined
+              }
             />
           </CardHeader>
 

@@ -215,6 +215,16 @@ serve(async (req) => {
           continue
         }
 
+        if (taxonomyNode.level !== 5) {
+          results.push({
+            skill_id: nodeId,
+            skill_name: taxonomyNode.name,
+            error: "Material cards must be linked to Level-5 (micro-skill) nodes only",
+            saved: false,
+          })
+          continue
+        }
+
         // Get parent nodes for context
         const parentNodes: any[] = []
         let currentParentId = taxonomyNode.parent_id
@@ -264,6 +274,23 @@ serve(async (req) => {
           }
         }
 
+        // Normalize examples: prefer {contoh, penjelasan} structure; fallback for legacy/plain strings
+        const rawExamples = Array.isArray(parsed.examples) ? parsed.examples : []
+        const examples = rawExamples.map((e: unknown) => {
+          if (e != null && typeof e === "object") {
+            const obj = e as Record<string, unknown>
+            const contoh = typeof obj.contoh === "string" ? obj.contoh : ""
+            const penjelasan = typeof obj.penjelasan === "string" ? obj.penjelasan : ""
+            if (contoh || penjelasan) return { contoh, penjelasan }
+            // Fallback for other object shapes
+            if (typeof obj.solution === "string") return { contoh: obj.solution, penjelasan: "" }
+            if (typeof obj.example === "string") return { contoh: obj.example, penjelasan: "" }
+            if (typeof obj.text === "string") return { contoh: obj.text, penjelasan: "" }
+          }
+          if (typeof e === "string") return { contoh: e, penjelasan: "" }
+          return { contoh: String(e), penjelasan: "" }
+        })
+
         const card = {
           skill_id: nodeId,
           title: parsed.title || taxonomyNode.name,
@@ -272,7 +299,7 @@ serve(async (req) => {
           common_mistakes: Array.isArray(parsed.common_mistakes)
             ? parsed.common_mistakes
             : [],
-          examples: Array.isArray(parsed.examples) ? parsed.examples : [],
+          examples,
           status: "draft",
           created_by: userId,
         }
@@ -397,28 +424,29 @@ function buildMaterialCardPrompt(
   context += `2. Core Idea: The ONE central concept students must understand (2-4 sentences)\n`
   context += `3. Key Facts: 3-6 essential facts, formulas, or definitions to memorize\n`
   context += `4. Common Mistakes: 2-4 common errors or misconceptions students have about this topic\n`
-  context += `5. Examples: 2-3 worked examples or real-world applications with step-by-step solutions\n`
+  context += `5. Examples: 2-3 worked examples, each with "contoh" (the example) and "penjelasan" (the explanation)\n`
   context += `6. Content should be in Bahasa Indonesia appropriate for Indonesian high school students\n`
   context += `7. Be concise but thorough — this is a review card, not a textbook chapter\n`
   context += `8. Use precise mathematical notation where needed (LaTeX okay)\n\n`
 
-  context += `OUTPUT FORMAT (JSON only, no markdown):\n`
+  context += `OUTPUT FORMAT (JSON only, no markdown). Examples MUST use the structured format with "contoh" and "penjelasan":\n`
   context += `{\n`
-  context += `  "title": "Understanding Fractions and Operations",\n`
-  context += `  "core_idea": "Pecahan adalah bagian dari keseluruhan...",\n`
+  context += `  "title": "Understanding Synonyms and Antonyms",\n`
+  context += `  "core_idea": "Sinonim adalah kata yang maknanya sama...",\n`
   context += `  "key_facts": [\n`
-  context += `    "Pecahan a/b dimana b ≠ 0",\n`
-  context += `    "Penjumlahan pecahan: samakan penyebut terlebih dahulu"\n`
+  context += `    "Sinonim: kata dengan makna sama atau mirip",\n`
+  context += `    "Antonim: kata dengan makna berlawanan"\n`
   context += `  ],\n`
   context += `  "common_mistakes": [\n`
-  context += `    "Menjumlahkan penyebut secara langsung: 1/2 + 1/3 ≠ 2/5",\n`
-  context += `    "Lupa menyederhanakan hasil operasi pecahan"\n`
+  context += `    "Menganggap kata mirip ejaan sebagai sinonim",\n`
+  context += `    "Tidak memerhatikan konteks kalimat"\n`
   context += `  ],\n`
   context += `  "examples": [\n`
-  context += `    "Contoh: 1/4 + 2/3 = 3/12 + 8/12 = 11/12",\n`
-  context += `    "Soal: Jika sebuah kue dibagi 8 bagian dan dimakan 3, sisa = 5/8"\n`
+  context += `    {"contoh": "Kata target: 'berani'. Sinonim: 'pemberani'. Dalam kalimat: 'Dia seorang pemberani yang tidak takut menghadapi bahaya.'", "penjelasan": "Dalam konteks ini, 'pemberani' adalah sinonim yang tepat untuk 'berani'."},\n`
+  context += `    {"contoh": "Kata target: 'malas'. Antonim: 'rajin'. Dalam kalimat: 'Dia sangat rajin mengerjakan tugasnya.'", "penjelasan": "Dalam konteks ini, 'rajin' adalah antonim yang tepat untuk 'malas'."}\n`
   context += `  ]\n`
   context += `}\n\n`
+  context += `CRITICAL: Each item in "examples" MUST be an object with exactly two keys: "contoh" (string - the example/sample) and "penjelasan" (string - the explanation). Never use plain strings or other structures. This format is required for all taxonomy levels.\n\n`
   context += `Generate the material card now.`
 
   return context
