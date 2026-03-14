@@ -137,7 +137,12 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentPhase, setCurrentPhase] = useState<string | null>(null)
-  const canAccessAnalytics = currentPhase && ALLOWED_ANALYTICS_PHASES.includes(currentPhase as any)
+  const [baselineCompleteForActiveExam, setBaselineCompleteForActiveExam] =
+    useState<boolean | null>(null)
+  const canAccessAnalytics =
+    currentPhase &&
+    ALLOWED_ANALYTICS_PHASES.includes(currentPhase as any) &&
+    baselineCompleteForActiveExam === true
 
   useEffect(() => {
     loadPhaseAndSnapshot()
@@ -158,7 +163,45 @@ export default function AnalyticsPage() {
         throw new Error("Not authenticated")
       }
 
-      // Fetch user_state.current_phase first
+      const examConfigResult = await getActiveExamConfig(supabase, user.id)
+      setExamConfig(examConfigResult)
+
+      if (!examConfigResult) {
+        setCurrentPhase(null)
+        setSnapshot(null)
+        setIsLoading(false)
+        return
+      }
+
+      // Baseline is exam-specific: analytics locked until baseline for active exam is complete
+      const { data: baselineModules } = await (supabase as any)
+        .from("baseline_modules")
+        .select("module_id")
+        .eq("is_active", true)
+        .eq("exam_id", examConfigResult.exam_id)
+
+      const requiredIds = new Set(
+        (baselineModules || []).map((m: { module_id: string }) => m.module_id),
+      )
+
+      let completedIds = new Set<string>()
+      if (requiredIds.size > 0) {
+        const { data: completedForExam } = await (supabase as any)
+          .from("module_completions")
+          .select("module_id")
+          .eq("user_id", user.id)
+          .eq("context_type", "baseline")
+          .in("module_id", Array.from(requiredIds))
+        completedIds = new Set(
+          (completedForExam || []).map((m: { module_id: string }) => m.module_id),
+        )
+      }
+      const complete =
+        requiredIds.size > 0 &&
+        Array.from(requiredIds).every((id) => completedIds.has(id))
+      setBaselineCompleteForActiveExam(complete)
+
+      // Fetch user_state.current_phase for display
       const { data: userState } = await supabase
         .from("user_state")
         .select("current_phase")
@@ -168,16 +211,13 @@ export default function AnalyticsPage() {
       const phase = userState?.current_phase ?? "ONBOARDING"
       setCurrentPhase(phase)
 
-      if (!ALLOWED_ANALYTICS_PHASES.includes(phase as any)) {
+      // Lock analytics if baseline for active exam not complete (e.g. switched to new exam)
+      if (!complete) {
         setIsLoading(false)
         return
       }
 
-      const examConfigResult = await getActiveExamConfig(supabase, user.id)
-      setExamConfig(examConfigResult)
-
-      if (!examConfigResult) {
-        setSnapshot(null)
+      if (!ALLOWED_ANALYTICS_PHASES.includes(phase as any)) {
         setIsLoading(false)
         return
       }

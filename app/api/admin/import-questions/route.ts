@@ -31,7 +31,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { skillId, examId, skillCode, questions } = transformImport(parsed.data)
+    let { skillId, examId, skillCode, questions } = transformImport(parsed.data)
+
+    // Resolve exam_id if it's an exam code/name instead of UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (examId && !uuidRegex.test(examId)) {
+      const examCode = examId
+      let { data: exam } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("name", examCode)
+        .eq("is_active", true)
+        .maybeSingle()
+
+      if (!exam) {
+        const partial = await supabase
+          .from("exams")
+          .select("id")
+          .ilike("name", `%${examCode}%`)
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle()
+        exam = partial.data
+      }
+
+      if (!exam) {
+        return NextResponse.json(
+          {
+            error: "Exam not found",
+            hint: `exam_id "${examCode}" is not a valid UUID and no matching exam was found by name. Use the exam UUID from the exams table or ensure the exam name matches.`,
+          },
+          { status: 400 },
+        )
+      }
+      examId = exam.id
+    }
 
     // Resolve taxonomy node: either use skill_id (must be L5) or lookup by skill_code+exam_id
     let taxonomyNodeId: string | null = null

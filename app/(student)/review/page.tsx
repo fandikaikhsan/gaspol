@@ -53,6 +53,7 @@ export default function ReviewPage() {
   const { t: tc } = useTranslation("common")
 
   const [isLoading, setIsLoading] = useState(true)
+  const [activeExamId, setActiveExamId] = useState<string | null>(null)
   const [subtopics, setSubtopics] = useState<TaxonomyNode[]>([])
   const [expanded, setExpanded] = useState<
     Record<string, ExpandedSubtopic | null>
@@ -72,22 +73,23 @@ export default function ReviewPage() {
           return
         }
 
-        const activeExamId = await getActiveExamId(supabase, user.id)
+        const examId = await getActiveExamId(supabase, user.id)
+        setActiveExamId(examId)
 
-        if (!activeExamId) {
+        if (!examId) {
           setSubtopics([])
           setIsLoading(false)
           return
         }
 
-        let l4Query = (supabase as any)
+        // Only taxonomy for active exam — exclude exam_id null (unrelated materials)
+        const { data: l4Data, error: l4Error } = await (supabase as any)
           .from("taxonomy_nodes")
           .select("id, name, code, level, parent_id")
           .eq("level", 4)
           .eq("is_active", true)
-          .or(`exam_id.eq.${activeExamId},exam_id.is.null`)
-
-        const { data: l4Data, error: l4Error } = await l4Query.order("code")
+          .eq("exam_id", examId)
+          .order("code")
         if (l4Error) throw l4Error
         const allL4s = (l4Data as TaxonomyNode[]) || []
 
@@ -103,6 +105,7 @@ export default function ReviewPage() {
           .from("taxonomy_nodes")
           .select("id, parent_id")
           .eq("level", 5)
+          .eq("exam_id", examId)
           .in("parent_id", l4Ids)
 
         const l5WithParentArr = (l5WithParent || []) as Array<{
@@ -158,13 +161,16 @@ export default function ReviewPage() {
 
       setLoadingExpand(subtopicId)
       try {
-        // Get L5 skills under this L4
-        const { data: skillsData, error: skillsError } = await (supabase as any)
+        // Get L5 skills under this L4 — only for active exam (exclude exam_id null)
+        let skillsQuery = (supabase as any)
           .from("taxonomy_nodes")
           .select("id, name, code, level, parent_id")
           .eq("parent_id", subtopicId)
           .eq("level", 5)
-          .order("code")
+        if (activeExamId) {
+          skillsQuery = skillsQuery.eq("exam_id", activeExamId)
+        }
+        const { data: skillsData, error: skillsError } = await skillsQuery.order("code")
 
         if (skillsError) throw skillsError
         const skills = (skillsData as TaxonomyNode[]) || []
@@ -225,7 +231,7 @@ export default function ReviewPage() {
         setLoadingExpand(null)
       }
     },
-    [expanded, subtopics, supabase],
+    [expanded, subtopics, supabase, activeExamId],
   )
 
   // Compute subtopic summary stats

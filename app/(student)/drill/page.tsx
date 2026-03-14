@@ -111,9 +111,7 @@ async function fetchDrillData() {
           .from("taxonomy_nodes")
           .select("id, parent_id, level, code, name, exam_id")
           .eq("is_active", true)
-        q = activeExamId
-          ? q.or(`exam_id.eq.${activeExamId},exam_id.is.null`)
-          : q.in("exam_id", [])
+        q = activeExamId ? q.eq("exam_id", activeExamId) : q.in("exam_id", [])
         return q.order("level").order("position")
       })(),
 
@@ -123,20 +121,26 @@ async function fetchDrillData() {
         .select("module_id")
         .eq("user_id", user.id),
 
-      // 4. Plan tasks for current cycle
+      // 4. Plan tasks for current cycle — only if cycle belongs to active exam
       supabase
         .from("user_state")
         .select("current_cycle_id")
         .eq("user_id", user.id)
         .single()
         .then(async ({ data: state }) => {
-          if (!state?.current_cycle_id) return []
+          if (!state?.current_cycle_id || !activeExamId) return []
+          const { data: cycle } = await supabase
+            .from("plan_cycles")
+            .select("id, exam_id")
+            .eq("id", state.current_cycle_id)
+            .single()
+          if (!cycle || cycle.exam_id !== activeExamId) return []
           const { data } = await supabase
             .from("plan_tasks")
             .select(
               "id, module_id, is_required, is_completed, title, task_type",
             )
-            .eq("cycle_id", state.current_cycle_id)
+            .eq("cycle_id", cycle.id)
           return data || []
         }),
     ])

@@ -1,6 +1,6 @@
 {
   "skill_code": "TPS-PU-LOG-01-A",
-  "exam_id": "uuid-of-exam",
+  "exam_id": "uuid-of-exam-or-exam-name",
   "questions": [
     {
       "question_type": "MCQ5",
@@ -12,7 +12,7 @@
       "answer": {
         "interaction_type": "single_choice",
         "options": [
-          { "key": "A", "content": { "blocks": [{ "type": "text", "content": "Option A" }] }, "is_correct": false },
+          { "key": "A", "text": "Option A", "is_correct": false },
           { "key": "B", "content": { "blocks": [{ "type": "text", "content": "Option B" }] }, "is_correct": true }
         ],
         "correct_answer": "B"

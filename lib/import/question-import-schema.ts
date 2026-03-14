@@ -20,11 +20,14 @@ const blockMathBlockSchema = z.object({
   content: z.string(),
 })
 
+// Allow string or number in table cells (e.g. numeric data); coerce to string
+const tableCellSchema = z.union([z.string(), z.number()]).transform((v) => String(v))
+
 const tableBlockSchema = z.object({
   type: z.literal("table"),
   spec: z.object({
-    headers: z.array(z.string()),
-    rows: z.array(z.array(z.string())),
+    headers: z.array(z.union([z.string(), z.number()]).transform(String)),
+    rows: z.array(z.array(tableCellSchema)),
   }),
 })
 
@@ -89,17 +92,34 @@ const optionContentSchema = z.object({
   blocks: z.array(contentBlockSchema),
 })
 
-const singleChoiceOptionSchema = z.object({
-  key: z.string(),
-  content: optionContentSchema,
-  is_correct: z.boolean().optional(),
-})
+// Accept either content.blocks or shorthand "text" for simple options
+const singleChoiceOptionSchema = z.preprocess(
+  (val) => {
+    if (val && typeof val === "object" && "text" in val && !("content" in val)) {
+      return { ...val, content: { blocks: [{ type: "text" as const, content: String(val.text) }] } }
+    }
+    return val
+  },
+  z.object({
+    key: z.string(),
+    content: optionContentSchema,
+    is_correct: z.boolean().optional(),
+  }),
+)
 
-// --- MCK-Table row/column ---
-const tableRowColumnSchema = z.object({
-  id: z.string(),
-  content: optionContentSchema,
-})
+// --- MCK-Table row/column --- (accept content.blocks or shorthand "label")
+const tableRowColumnSchema = z.preprocess(
+  (val) => {
+    if (val && typeof val === "object" && "label" in val && !("content" in val)) {
+      return { ...val, content: { blocks: [{ type: "text" as const, content: String(val.label) }] } }
+    }
+    return val
+  },
+  z.object({
+    id: z.string(),
+    content: optionContentSchema,
+  }),
+)
 
 // --- Fill-in options ---
 const fillInOptionsSchema = z.object({
@@ -168,10 +188,11 @@ const questionSchema = z.object({
 })
 
 // --- Import wrapper ---
+// exam_id: UUID from exams table, OR exam_code/name for lookup (e.g. "UTBK-SNBT-2026-V1")
 export const questionImportSchema = z
   .object({
     skill_code: z.string().min(1).optional(),
-    exam_id: z.string().uuid().optional(),
+    exam_id: z.string().min(1).optional(),
     skill_id: z.string().uuid().optional(),
     questions: z.array(questionSchema),
   })

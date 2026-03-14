@@ -13,12 +13,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   Circle,
   Loader2,
   Target,
   MessageCircle,
 } from "lucide-react"
+import { getActiveExamId } from "@/lib/active-exam"
 import TanyaGaspolChat from "@/components/review/TanyaGaspolChat"
 import { MaterialCardViewer } from "@/components/review/MaterialCardViewer"
 
@@ -72,21 +74,40 @@ function MaterialCardDetailContent() {
   const [skill, setSkill] = useState<SkillInfo | null>(null)
   const [coverage, setCoverage] = useState<Coverage | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
+  const [skillNotForActiveExam, setSkillNotForActiveExam] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch skill info
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setIsLoading(false)
+          return
+        }
+
+        const activeExamId = await getActiveExamId(supabase, user.id)
+
+        // Fetch skill info (include exam_id for validation)
         const { data: skillData } = await (supabase as any)
           .from("taxonomy_nodes")
-          .select("id, name, code")
+          .select("id, name, code, exam_id")
           .eq("id", skillId)
           .single()
 
-        if (skillData) setSkill(skillData as SkillInfo)
+        if (skillData) {
+          setSkill({ id: skillData.id, name: skillData.name, code: skillData.code })
+          // Block skills not for active exam: exam_id null or different exam
+          if (activeExamId && (skillData.exam_id === null || skillData.exam_id !== activeExamId)) {
+            setSkillNotForActiveExam(true)
+            setIsLoading(false)
+            return
+          }
+        }
 
         // Fetch published material card for this skill
-        const { data: cardData } = await supabase
+        const { data: cardData } = await (supabase as any)
           .from("material_cards")
           .select("*")
           .eq("skill_id", skillId)
@@ -111,9 +132,6 @@ function MaterialCardDetailContent() {
         }
 
         // Fetch user coverage
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
         if (user) {
           const { data: coverageData } = await supabase
             .from("user_skill_state")
@@ -137,6 +155,31 @@ function MaterialCardDetailContent() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (skillNotForActiveExam) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-2xl mx-auto py-8">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <Card className="border-2 border-amber-200 bg-amber-50/50">
+            <CardContent className="py-12 text-center">
+              <h3 className="text-lg font-semibold mb-1">Not Available</h3>
+              <p className="text-muted-foreground">
+                This material is not available for the currently active exam.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }

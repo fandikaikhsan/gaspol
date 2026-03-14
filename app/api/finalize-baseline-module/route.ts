@@ -74,11 +74,12 @@ export async function POST(request: NextRequest) {
     // 4. FETCH MODULE & CHECK PASS THRESHOLD (T-019)
     const { data: moduleData } = await supabase
       .from("modules")
-      .select("id, passing_threshold")
+      .select("id, passing_threshold, exam_id")
       .eq("id", module_id)
       .single()
 
     const passingThreshold = moduleData?.passing_threshold ?? 0.7
+    const moduleExamId = moduleData?.exam_id ?? null
     const scoreRatio = total_questions > 0 ? correct_count / total_questions : 0
     const passed = scoreRatio >= passingThreshold
 
@@ -144,23 +145,33 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", completion.id)
 
-    // 7. CHECK IF ALL BASELINE MODULES ARE COMPLETE
-    const { data: allBaselineModules } = await supabase
-      .from("baseline_modules")
-      .select("module_id")
-      .eq("is_active", true)
+    // 7. CHECK IF ALL BASELINE MODULES FOR THIS EXAM ARE COMPLETE
+    // Baseline is exam-specific: only transition when all baseline for this exam are done
+    let allComplete = false
+    if (moduleExamId) {
+      const { data: allBaselineModules } = await supabase
+        .from("baseline_modules")
+        .select("module_id")
+        .eq("is_active", true)
+        .eq("exam_id", moduleExamId)
 
-    const { data: completedModules } = await supabase
-      .from("module_completions")
-      .select("module_id")
-      .eq("user_id", user.id)
-      .eq("context_type", "baseline")
+      const allModuleIds = (allBaselineModules || []).map((m) => m.module_id)
+      if (allModuleIds.length > 0) {
+        const { data: completedModules } = await supabase
+          .from("module_completions")
+          .select("module_id")
+          .eq("user_id", user.id)
+          .eq("context_type", "baseline")
+          .in("module_id", allModuleIds)
 
-    const allModuleIds = (allBaselineModules || []).map((m) => m.module_id)
-    const completedModuleIds = (completedModules || []).map((m) => m.module_id)
-    const allComplete =
-      allModuleIds.length > 0 &&
-      allModuleIds.every((id) => completedModuleIds.includes(id))
+        const completedModuleIds = (completedModules || []).map(
+          (m) => m.module_id,
+        )
+        allComplete = allModuleIds.every((id) =>
+          completedModuleIds.includes(id),
+        )
+      }
+    }
 
     // 8. UPDATE USER STATE IF ALL COMPLETE
     if (allComplete) {

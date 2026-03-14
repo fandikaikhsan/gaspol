@@ -50,14 +50,9 @@ async function fetchPlanData(): Promise<PlanData> {
 
   if (!user) throw new Error("Not authenticated")
 
-  // Parallel fetches for independent data
-  const [stateResult, baselineResult, snapshotResult, profileResult] = await Promise.all([
+  // Parallel fetches for independent data (baseline fetched after we have activeExamId)
+  const [stateResult, snapshotResult, profileResult] = await Promise.all([
     supabase.from("user_state").select("*").eq("user_id", user.id).single(),
-    supabase
-      .from("baseline_modules")
-      .select("id, title, module_id")
-      .eq("is_active", true)
-      .order("checkpoint_order"),
     supabase
       .from("analytics_snapshots")
       .select("readiness_score")
@@ -74,7 +69,19 @@ async function fetchPlanData(): Promise<PlanData> {
 
   const state = stateResult.data
   const examConfig = await getActiveExamConfig(supabase, user.id)
-  const baselineData = baselineResult.data || []
+  const activeExamId = examConfig?.exam_id ?? null
+
+  // Baseline is exam-specific: only show modules for the active exam
+  let baselineData: Array<{ id: string; title: string; module_id: string }> = []
+  if (activeExamId) {
+    const { data } = await supabase
+      .from("baseline_modules")
+      .select("id, title, module_id")
+      .eq("is_active", true)
+      .eq("exam_id", activeExamId)
+      .order("checkpoint_order")
+    baselineData = data || []
+  }
 
   // Fetch baseline completion status (N+1 eliminated — single query)
   const moduleIds = baselineData.map((m) => m.module_id)
@@ -98,7 +105,7 @@ async function fetchPlanData(): Promise<PlanData> {
     score: completionMap.get(module.module_id),
   }))
 
-  // Fetch cycle & tasks if present
+  // Fetch cycle & tasks if present — only show when cycle belongs to active exam
   let currentCycle = null
   let tasks: PlanTask[] = []
 
@@ -109,9 +116,13 @@ async function fetchPlanData(): Promise<PlanData> {
       .eq("id", state.current_cycle_id)
       .single()
 
-    currentCycle = cycle
+    // Only show plan if cycle belongs to the currently active exam (hide legacy cycles with null exam_id)
+    const cycleMatchesActiveExam =
+      cycle && activeExamId && cycle.exam_id === activeExamId
 
-    if (cycle) {
+    if (cycleMatchesActiveExam) {
+      currentCycle = cycle
+
       const { data: cycleTasks } = await supabase
         .from("plan_tasks")
         .select("*")
