@@ -8,6 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { getActiveExamConfig } from "@/lib/active-exam"
 
 export interface BaselineModule {
   id: string
@@ -38,6 +39,7 @@ export interface PlanData {
   baselineModules: BaselineModule[]
   readinessScore: number
   examDate: string | null
+  hasActiveExam: boolean
 }
 
 async function fetchPlanData(): Promise<PlanData> {
@@ -71,6 +73,7 @@ async function fetchPlanData(): Promise<PlanData> {
   ])
 
   const state = stateResult.data
+  const examConfig = await getActiveExamConfig(supabase, user.id)
   const baselineData = baselineResult.data || []
 
   // Fetch baseline completion status (N+1 eliminated — single query)
@@ -124,6 +127,8 @@ async function fetchPlanData(): Promise<PlanData> {
     }
   }
 
+  const hasActiveExam = examConfig !== null
+
   return {
     user,
     userState: state,
@@ -132,6 +137,7 @@ async function fetchPlanData(): Promise<PlanData> {
     baselineModules,
     readinessScore: snapshotResult.data?.readiness_score || 0,
     examDate: profileResult.data?.exam_date || null,
+    hasActiveExam,
   }
 }
 

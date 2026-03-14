@@ -31,6 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
+import { ImportJsonExampleBlock } from "@/components/admin/ImportJsonExampleBlock"
+import { taxonomyTemplateJson } from "@/lib/import/templates"
 
 interface TaxonomyNode {
   id: string
@@ -41,7 +43,15 @@ interface TaxonomyNode {
   description: string
   position: number
   exam_id: string | null
+  default_construct_weights?: Record<string, number> | null
+  expected_time_sec?: number | null
   children?: TaxonomyNode[]
+}
+
+interface Construct {
+  id: string
+  name: string
+  sort_order: number
 }
 
 interface Exam {
@@ -61,6 +71,7 @@ export default function AdminTaxonomyPage() {
   const [nodes, setNodes] = useState<TaxonomyNode[]>([])
   const [flatNodes, setFlatNodes] = useState<TaxonomyNode[]>([])
   const [exams, setExams] = useState<Exam[]>([])
+  const [constructs, setConstructs] = useState<Construct[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
@@ -74,6 +85,9 @@ export default function AdminTaxonomyPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Suggest Construct Weights state
+  const [isLoadingConstructSuggestions, setIsLoadingConstructSuggestions] = useState(false)
 
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -101,6 +115,8 @@ export default function AdminTaxonomyPage() {
     parent_id: null as string | null,
     level: 1,
     exam_id: null as string | null,
+    default_construct_weights: {} as Record<string, number>,
+    expected_time_sec: null as number | null,
   })
 
   useEffect(() => {
@@ -112,16 +128,16 @@ export default function AdminTaxonomyPage() {
     try {
       const supabase = createClient()
 
-      // Load exams
-      const { data: examsData } = await supabase
-        .from("exams")
-        .select("id, name")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
+      // Load exams and constructs
+      const [examsResult, constructsResult] = await Promise.all([
+        supabase.from("exams").select("id, name").eq("is_active", true).order("created_at", { ascending: false }),
+        supabase.from("constructs").select("id, name, sort_order").order("sort_order"),
+      ])
 
-      setExams(examsData || [])
+      setExams(examsResult.data || [])
+      setConstructs((constructsResult.data as Construct[]) || [])
 
-      const activeExamIds = (examsData || []).map((e) => e.id)
+      const activeExamIds = (examsResult.data || []).map((e: Exam) => e.id)
 
       // Load taxonomy (only from active exams)
       let data: TaxonomyNode[] = []
@@ -191,6 +207,8 @@ export default function AdminTaxonomyPage() {
       parent_id: parentNode?.id || null,
       level: newLevel,
       exam_id: parentNode?.exam_id || (exams[0]?.id || null),
+      default_construct_weights: {},
+      expected_time_sec: null,
     })
     setDialogMode("add")
     setSelectedNode(null)
@@ -200,6 +218,11 @@ export default function AdminTaxonomyPage() {
   }
 
   const openEditDialog = (node: TaxonomyNode) => {
+    const weights = node.default_construct_weights
+      ? (typeof node.default_construct_weights === "object" && !Array.isArray(node.default_construct_weights)
+        ? node.default_construct_weights as Record<string, number>
+        : {})
+      : {}
     setFormData({
       name: node.name,
       code: node.code,
@@ -207,6 +230,8 @@ export default function AdminTaxonomyPage() {
       parent_id: node.parent_id,
       level: node.level,
       exam_id: node.exam_id,
+      default_construct_weights: weights,
+      expected_time_sec: node.expected_time_sec ?? null,
     })
     setDialogMode("edit")
     setSelectedNode(node)
@@ -266,6 +291,59 @@ export default function AdminTaxonomyPage() {
       })
     } finally {
       setIsLoadingSuggestions(false)
+    }
+  }
+
+  const getSuggestConstructWeights = async () => {
+    if (!formData.exam_id || !formData.code) {
+      toast({
+        variant: "destructive",
+        title: "Missing Data",
+        description: "Select an exam and enter a node code first.",
+      })
+      return
+    }
+    setIsLoadingConstructSuggestions(true)
+    try {
+      const supabase = createClient()
+      const accessToken = (await supabase.auth.getSession()).data.session?.access_token
+      const res = await fetch("/api/admin/suggest-construct-weights", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          exam_id: formData.exam_id,
+          taxonomy_node_code: formData.code,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to get suggestions")
+      if (data.success && (data.construct_weights || data.expected_time_sec !== null)) {
+        setFormData({
+          ...formData,
+          default_construct_weights: data.construct_weights || {},
+          expected_time_sec: data.expected_time_sec ?? formData.expected_time_sec,
+        })
+        toast({
+          title: "Suggestions Applied",
+          description: data.source === "research" ? "Construct weights from exam research." : "No research profile found.",
+        })
+      } else {
+        toast({
+          title: "No Suggestions",
+          description: data.message || "No research profile found for this node code.",
+        })
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed",
+        description: error instanceof Error ? error.message : "Could not fetch suggestions.",
+      })
+    } finally {
+      setIsLoadingConstructSuggestions(false)
     }
   }
 
@@ -510,6 +588,16 @@ export default function AdminTaxonomyPage() {
     }
   }
 
+  const validateConstructWeights = (weights: Record<string, number>): string | null => {
+    const constructIds = new Set(constructs.map((c) => c.id))
+    for (const key of Object.keys(weights)) {
+      if (!constructIds.has(key)) {
+        return `Construct "${key}" does not exist. Valid constructs: ${[...constructIds].join(", ")}`
+      }
+    }
+    return null
+  }
+
   const handleSave = async () => {
     if (!formData.name || !formData.code) {
       toast({
@@ -520,10 +608,32 @@ export default function AdminTaxonomyPage() {
       return
     }
 
+    const weights = formData.default_construct_weights
+    if (weights && Object.keys(weights).length > 0) {
+      const validationError = validateConstructWeights(weights)
+      if (validationError) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Construct Weights",
+          description: validationError,
+        })
+        return
+      }
+    }
+
     setIsSaving(true)
 
     try {
       const supabase = createClient()
+      const updatePayload: Record<string, unknown> = {
+        name: formData.name,
+        code: formData.code,
+        description: formData.description,
+        default_construct_weights: Object.keys(formData.default_construct_weights || {}).length > 0
+          ? formData.default_construct_weights
+          : {},
+        expected_time_sec: formData.expected_time_sec ?? null,
+      }
 
       if (dialogMode === "add") {
         // Get max position for ordering
@@ -545,6 +655,8 @@ export default function AdminTaxonomyPage() {
           exam_id: formData.exam_id,
           position: nextPosition,
           is_active: true,
+          default_construct_weights: updatePayload.default_construct_weights,
+          expected_time_sec: updatePayload.expected_time_sec,
         })
 
         if (error) throw error
@@ -558,9 +670,11 @@ export default function AdminTaxonomyPage() {
         const { error } = await supabase
           .from("taxonomy_nodes")
           .update({
-            name: formData.name,
-            code: formData.code,
-            description: formData.description,
+            name: updatePayload.name,
+            code: updatePayload.code,
+            description: updatePayload.description,
+            default_construct_weights: updatePayload.default_construct_weights,
+            expected_time_sec: updatePayload.expected_time_sec,
           })
           .eq("id", selectedNode!.id)
 
@@ -679,12 +793,20 @@ export default function AdminTaxonomyPage() {
           </div>
 
           <div className="flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="text-xs">
                 {getLevelLabel(node.level)}
               </Badge>
               <span className="font-bold">{node.name}</span>
               <span className="text-xs text-muted-foreground">({node.code})</span>
+              {node.default_construct_weights &&
+                typeof node.default_construct_weights === "object" &&
+                !Array.isArray(node.default_construct_weights) &&
+                Object.keys(node.default_construct_weights).length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    Weights
+                  </Badge>
+                )}
             </div>
             {node.description && (
               <p className="text-sm text-muted-foreground mt-1">{node.description}</p>
@@ -817,6 +939,11 @@ export default function AdminTaxonomyPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <ImportJsonExampleBlock
+              template={taxonomyTemplateJson}
+              label="Example template"
+              onUseAsInput={() => setImportJson(taxonomyTemplateJson)}
+            />
             <div className="space-y-2">
               <Label htmlFor="import-taxonomy-json">Taxonomy JSON</Label>
               <Textarea
@@ -979,6 +1106,70 @@ export default function AdminTaxonomyPage() {
                 placeholder="Optional description"
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="expected_time_sec">Expected Time (sec)</Label>
+              <Input
+                id="expected_time_sec"
+                type="number"
+                min={0}
+                placeholder="e.g., 120"
+                value={formData.expected_time_sec ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setFormData({ ...formData, expected_time_sec: v ? parseInt(v, 10) : null })
+                }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Construct Weights</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={getSuggestConstructWeights}
+                  disabled={isLoadingConstructSuggestions || !formData.exam_id || !formData.code}
+                >
+                  {isLoadingConstructSuggestions ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    "Suggest from Research"
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Weights per construct (should sum to 1.0). Keys must exist in constructs table.
+              </p>
+              <div className="space-y-2">
+                {constructs.map((c) => (
+                  <div key={c.id} className="flex items-center gap-2">
+                    <Label className="w-40 text-xs font-normal">{c.name}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      placeholder="0"
+                      className="w-24"
+                      value={formData.default_construct_weights?.[c.id] ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        const num = v ? parseFloat(v) : undefined
+                        setFormData({
+                          ...formData,
+                          default_construct_weights: {
+                            ...formData.default_construct_weights,
+                            [c.id]: num ?? 0,
+                          },
+                        })
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

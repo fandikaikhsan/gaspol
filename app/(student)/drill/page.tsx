@@ -44,6 +44,7 @@ import {
   Filter,
   FilterX,
 } from "lucide-react"
+import { getActiveExamId } from "@/lib/active-exam"
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -87,24 +88,34 @@ async function fetchDrillData() {
   } = await supabase.auth.getUser()
   if (!user) throw new Error("Not authenticated")
 
-  // Parallel fetches
+  // Get active exam ID — students only see modules for the active exam
+  const activeExamId = await getActiveExamId(supabase, user.id)
+
+  // Parallel fetches — filter by active exam
   const [modulesRes, taxonomyRes, completionsRes, planTasksRes] =
     await Promise.all([
-      // 1. All published drill modules
-      supabase
-        .from("modules")
-        .select("id, name, module_type, question_count, target_node_id, status")
-        .in("module_type", ["drill_focus", "drill_mixed"])
-        .eq("status", "published")
-        .order("name"),
+      // 1. Published drill modules for active exam only (empty when no active exam)
+      (() => {
+        let q = supabase
+          .from("modules")
+          .select("id, name, module_type, question_count, target_node_id, status, exam_id")
+          .in("module_type", ["drill_focus", "drill_mixed"])
+          .eq("status", "published")
+        q = activeExamId ? q.eq("exam_id", activeExamId) : q.in("exam_id", [])
+        return q.order("name")
+      })(),
 
-      // 2. Taxonomy tree (all active nodes)
-      supabase
-        .from("taxonomy_nodes")
-        .select("id, parent_id, level, code, name")
-        .eq("is_active", true)
-        .order("level")
-        .order("position"),
+      // 2. Taxonomy tree for active exam only
+      (() => {
+        let q = supabase
+          .from("taxonomy_nodes")
+          .select("id, parent_id, level, code, name, exam_id")
+          .eq("is_active", true)
+        q = activeExamId
+          ? q.or(`exam_id.eq.${activeExamId},exam_id.is.null`)
+          : q.in("exam_id", [])
+        return q.order("level").order("position")
+      })(),
 
       // 3. User's module completions
       supabase

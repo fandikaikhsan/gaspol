@@ -96,7 +96,7 @@ export async function middleware(request: NextRequest) {
         // Map each phase to its allowed route prefixes
         const phaseAllowedRoutes: Record<string, string[]> = {
           ONBOARDING: ['/onboarding'],
-          BASELINE_ASSESSMENT_IN_PROGRESS: ['/baseline', '/analytics'],
+          BASELINE_ASSESSMENT_IN_PROGRESS: ['/baseline'],
           BASELINE_COMPLETE: ['/analytics', '/plan'],
           PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics', '/recycle'],
           RECYCLE_UNLOCKED: ['/plan', '/drill', '/review', '/analytics', '/recycle'],

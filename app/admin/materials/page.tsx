@@ -121,8 +121,12 @@ export default function AdminMaterialsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [filterTaxonomyNodeId, setFilterTaxonomyNodeId] = useState<string | null>(null)
-  const [taxonomyTree, setTaxonomyTree] = useState<Array<{ id: string; parent_id: string | null; level: number }>>([])
+  const [filterTaxonomyNodeId, setFilterTaxonomyNodeId] = useState<
+    string | null
+  >(null)
+  const [taxonomyTree, setTaxonomyTree] = useState<
+    Array<{ id: string; parent_id: string | null; level: number }>
+  >([])
   const [previewCard, setPreviewCard] = useState<MaterialCard | null>(null)
 
   // Dialog state
@@ -194,13 +198,17 @@ export default function AdminMaterialsPage() {
         }
         return String(v ?? "")
       }
-      const normalizeExample = (v: unknown): string | { contoh: string; penjelasan: string } => {
+      const normalizeExample = (
+        v: unknown,
+      ): string | { contoh: string; penjelasan: string } => {
         if (typeof v === "string") return v
         if (v != null && typeof v === "object") {
           const obj = v as Record<string, unknown>
           const contoh = typeof obj.contoh === "string" ? obj.contoh : ""
-          const penjelasan = typeof obj.penjelasan === "string" ? obj.penjelasan : ""
-          if ("contoh" in obj || "penjelasan" in obj) return { contoh, penjelasan }
+          const penjelasan =
+            typeof obj.penjelasan === "string" ? obj.penjelasan : ""
+          if ("contoh" in obj || "penjelasan" in obj)
+            return { contoh, penjelasan }
         }
         return { contoh: asString(v), penjelasan: "" }
       }
@@ -249,7 +257,9 @@ export default function AdminMaterialsPage() {
     [taxonomyTree],
   )
 
-  const filterL5Ids = filterTaxonomyNodeId ? getL5DescendantIds(filterTaxonomyNodeId) : null
+  const filterL5Ids = filterTaxonomyNodeId
+    ? getL5DescendantIds(filterTaxonomyNodeId)
+    : null
 
   // Fetch taxonomy skills (level 5, only from active exams)
   const fetchSkills = useCallback(async () => {
@@ -293,7 +303,13 @@ export default function AdminMaterialsPage() {
         .select("id, parent_id, level")
         .eq("is_active", true)
         .in("exam_id", activeExamIds)
-      setTaxonomyTree((data || []).map((n) => ({ id: n.id, parent_id: n.parent_id, level: n.level })))
+      setTaxonomyTree(
+        (data || []).map((n) => ({
+          id: n.id,
+          parent_id: n.parent_id,
+          level: n.level,
+        })),
+      )
     } catch (e) {
       console.error("Failed to fetch taxonomy tree:", e)
     }
@@ -315,7 +331,9 @@ export default function AdminMaterialsPage() {
   // Open edit dialog
   const handleEdit = (card: MaterialCard) => {
     setEditingCard(card)
-    const toFormExample = (ex: ExampleItem): { contoh: string; penjelasan: string } =>
+    const toFormExample = (
+      ex: ExampleItem,
+    ): { contoh: string; penjelasan: string } =>
       typeof ex === "string"
         ? { contoh: ex, penjelasan: "" }
         : { contoh: ex.contoh ?? "", penjelasan: ex.penjelasan ?? "" }
@@ -412,7 +430,8 @@ export default function AdminMaterialsPage() {
     try {
       const updateData: Record<string, unknown> = { status: newStatus }
       if (newStatus === "published") {
-        updateData.reviewed_by = (await supabase.auth.getUser()).data.user?.id || null
+        updateData.reviewed_by =
+          (await supabase.auth.getUser()).data.user?.id || null
       }
 
       const { error } = await supabase
@@ -434,7 +453,12 @@ export default function AdminMaterialsPage() {
       ...prev,
       [field]:
         field === "examples"
-          ? [...prev[field].map((e) => (typeof e === "string" ? { contoh: e, penjelasan: "" } : e)), { contoh: "", penjelasan: "" }]
+          ? [
+              ...prev[field].map((e) =>
+                typeof e === "string" ? { contoh: e, penjelasan: "" } : e,
+              ),
+              { contoh: "", penjelasan: "" },
+            ]
           : [...prev[field], ""],
     }))
   }
@@ -541,21 +565,23 @@ export default function AdminMaterialsPage() {
             Manage learning material cards for micro-skills
           </p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Material Card
-        </Button>
-        <Button
-          variant="brutal-outline"
-          onClick={() => {
-            setIsGenerateDialogOpen(true)
-            setSelectedSkillIds([])
-            setGenerateResults(null)
-          }}
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          Generate with AI
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Material Card
+          </Button>
+          <Button
+            variant="brutal-outline"
+            onClick={() => {
+              setIsGenerateDialogOpen(true)
+              setSelectedSkillIds([])
+              setGenerateResults(null)
+            }}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            Generate with AI
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -659,7 +685,9 @@ export default function AdminMaterialsPage() {
                       </p>
                       <div className="flex gap-4 text-xs text-muted-foreground">
                         <span>
-                          Skill: {skills.find((s) => s.id === card.skill_id)?.name ?? card.skill_id}
+                          Skill:{" "}
+                          {skills.find((s) => s.id === card.skill_id)?.name ??
+                            card.skill_id}
                         </span>
                         <span>{card.key_facts.length} facts</span>
                         <span>{card.common_mistakes.length} mistakes</span>
@@ -672,7 +700,9 @@ export default function AdminMaterialsPage() {
                         <Button
                           size="sm"
                           variant="default"
-                          onClick={() => handleStatusChange(card.id, "published")}
+                          onClick={() =>
+                            handleStatusChange(card.id, "published")
+                          }
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Publish
@@ -850,14 +880,23 @@ export default function AdminMaterialsPage() {
             <div>
               <Label>Examples</Label>
               <p className="text-xs text-muted-foreground mb-2">
-                Each example has Contoh (the sample) and Penjelasan (the explanation).
+                Each example has Contoh (the sample) and Penjelasan (the
+                explanation).
               </p>
               {form.examples.map((example, i) => {
-                const ex = typeof example === "string" ? { contoh: example, penjelasan: "" } : example
+                const ex =
+                  typeof example === "string"
+                    ? { contoh: example, penjelasan: "" }
+                    : example
                 return (
-                  <div key={i} className="border rounded-lg p-3 mt-2 space-y-2 bg-muted/30">
+                  <div
+                    key={i}
+                    className="border rounded-lg p-3 mt-2 space-y-2 bg-muted/30"
+                  >
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Example {i + 1}</span>
+                      <span className="text-sm font-medium">
+                        Example {i + 1}
+                      </span>
                       {form.examples.length > 1 && (
                         <Button
                           variant="ghost"
@@ -912,7 +951,10 @@ export default function AdminMaterialsPage() {
                 <Select
                   value={form.status}
                   onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, status: v as "draft" | "published" }))
+                    setForm((prev) => ({
+                      ...prev,
+                      status: v as "draft" | "published",
+                    }))
                   }
                 >
                   <SelectTrigger>
@@ -956,7 +998,9 @@ export default function AdminMaterialsPage() {
           {previewCard && (
             <MaterialCardViewer
               card={previewCard}
-              skillName={skills.find((s) => s.id === previewCard.skill_id)?.name}
+              skillName={
+                skills.find((s) => s.id === previewCard.skill_id)?.name
+              }
               showHeader={true}
             />
           )}

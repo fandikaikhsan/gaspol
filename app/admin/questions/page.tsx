@@ -34,6 +34,8 @@ import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
 import { TaxonomyCascadingSelector } from "@/components/admin/TaxonomyCascadingSelector"
 import { TaxonomyFilterChips } from "@/components/admin/TaxonomyFilterChips"
+import { ImportJsonExampleBlock } from "@/components/admin/ImportJsonExampleBlock"
+import { questionTemplateJson } from "@/lib/import/templates"
 
 interface Question {
   id: string
@@ -1505,6 +1507,11 @@ export default function AdminQuestionsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <ImportJsonExampleBlock
+              template={questionTemplateJson}
+              label="Example template"
+              onUseAsInput={() => setImportJson(questionTemplateJson)}
+            />
             <div className="space-y-2">
               <Label htmlFor="import-json">Import JSON</Label>
               <Textarea

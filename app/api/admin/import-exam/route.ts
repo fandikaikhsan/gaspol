@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
         year: exam.year,
         research_summary: research_summary ?? null,
         structure_metadata: structureMetadata,
+        construct_profile: construct_profile && Object.keys(construct_profile).length > 0 ? construct_profile : {},
         is_active: true,
         is_primary: false,
         created_by: user!.id,
@@ -62,6 +63,20 @@ export async function POST(request: NextRequest) {
         )
       }
       throw error
+    }
+
+    // Populate exam_constructs and taxonomy nodes from construct_profile (align with research_exam flow)
+    if (construct_profile && Object.keys(construct_profile).length > 0) {
+      const [taxonomyResult, constructsResult] = await Promise.all([
+        supabase.rpc("apply_research_to_taxonomy", { p_exam_id: data.id }),
+        supabase.rpc("apply_constructs_from_research", { p_exam_id: data.id }),
+      ])
+      if (taxonomyResult.error) {
+        console.warn("[import-exam] apply_research_to_taxonomy:", taxonomyResult.error.message)
+      }
+      if (constructsResult.error) {
+        console.warn("[import-exam] apply_constructs_from_research:", constructsResult.error.message)
+      }
     }
 
     return NextResponse.json({

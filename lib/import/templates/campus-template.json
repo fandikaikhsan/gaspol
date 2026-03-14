@@ -1,0 +1,17 @@
+{
+  "data": [
+    {
+      "university_id": 1,
+      "university_name": "UNIVERSITAS CONTOH",
+      "program_id": 1001,
+      "program_name": "MATEMATIKA",
+      "type": "Sarjana",
+      "score": 400,
+      "interest": 500,
+      "capacity": 50,
+      "acceptance_rate": 10
+    }
+  ],
+  "year": 2026,
+  "verified": false
+}

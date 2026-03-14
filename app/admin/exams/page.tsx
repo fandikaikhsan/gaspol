@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Star, Eye, EyeOff, Calendar, BookOpen, Trash2, FileJson, Loader2 } from "lucide-react"
+import { Plus, Star, Eye, EyeOff, Calendar, BookOpen, Trash2, FileJson, Loader2, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 import {
@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ImportJsonExampleBlock } from "@/components/admin/ImportJsonExampleBlock"
+import { examTemplateJson } from "@/lib/import/templates"
 
 interface Exam {
   id: string
@@ -350,10 +352,16 @@ export default function AdminExamsPage() {
                 )}
 
                 <div className="flex gap-2 flex-wrap">
+                  <Link href={`/admin/exams/${exam.id}`}>
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      View Details
+                    </Button>
+                  </Link>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => toggleActive(exam.id, exam.is_active)}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleActive(exam.id, exam.is_active); }}
                   >
                     {exam.is_active ? (
                       <>
@@ -404,6 +412,11 @@ export default function AdminExamsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <ImportJsonExampleBlock
+              template={examTemplateJson}
+              label="Example template"
+              onUseAsInput={() => setImportJson(examTemplateJson)}
+            />
             <div className="space-y-2">
               <Label htmlFor="import-exam-json">Exam JSON</Label>
               <Textarea

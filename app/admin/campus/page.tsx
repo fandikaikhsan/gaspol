@@ -57,6 +57,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ImportJsonExampleBlock } from "@/components/admin/ImportJsonExampleBlock"
+import { campusTemplateJson } from "@/lib/import/templates"
 
 interface CampusScore {
   id: string
@@ -484,6 +486,11 @@ export default function AdminCampusPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <ImportJsonExampleBlock
+              template={campusTemplateJson}
+              label="Example template"
+              onUseAsInput={() => setImportJson(campusTemplateJson)}
+            />
             <div className="space-y-2">
               <Label htmlFor="import-campus-json">Campus JSON</Label>
               <Textarea

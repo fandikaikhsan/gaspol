@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
+import { getActiveExamId } from "@/lib/active-exam"
 
 interface TaxonomyNode {
   id: string
@@ -58,20 +59,83 @@ export default function ReviewPage() {
   >({})
   const [loadingExpand, setLoadingExpand] = useState<string | null>(null)
 
-  // Fetch L4 subtopics
+  // Fetch L4 subtopics: active exam only, and only topics that have at least one material card
   useEffect(() => {
     async function fetchSubtopics() {
       try {
-        const { data, error } = await (supabase as any)
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setSubtopics([])
+          setIsLoading(false)
+          return
+        }
+
+        const activeExamId = await getActiveExamId(supabase, user.id)
+
+        if (!activeExamId) {
+          setSubtopics([])
+          setIsLoading(false)
+          return
+        }
+
+        let l4Query = (supabase as any)
           .from("taxonomy_nodes")
           .select("id, name, code, level, parent_id")
           .eq("level", 4)
-          .order("code")
+          .eq("is_active", true)
+          .or(`exam_id.eq.${activeExamId},exam_id.is.null`)
 
-        if (error) throw error
-        setSubtopics((data as TaxonomyNode[]) || [])
+        const { data: l4Data, error: l4Error } = await l4Query.order("code")
+        if (l4Error) throw l4Error
+        const allL4s = (l4Data as TaxonomyNode[]) || []
+
+        if (allL4s.length === 0) {
+          setSubtopics([])
+          setIsLoading(false)
+          return
+        }
+
+        const l4Ids = allL4s.map((l) => l.id)
+
+        const { data: l5WithParent } = await (supabase as any)
+          .from("taxonomy_nodes")
+          .select("id, parent_id")
+          .eq("level", 5)
+          .in("parent_id", l4Ids)
+
+        const l5WithParentArr = (l5WithParent || []) as Array<{
+          id: string
+          parent_id: string
+        }>
+        const l5Ids = l5WithParentArr.map((r) => r.id)
+        if (l5Ids.length === 0) {
+          setSubtopics([])
+          setIsLoading(false)
+          return
+        }
+
+        const { data: materialData } = await (supabase as any)
+          .from("material_cards")
+          .select("skill_id")
+          .in("skill_id", l5Ids)
+          .eq("status", "published")
+
+        const l5WithMaterial = new Set(
+          (materialData || []).map((m: { skill_id: string }) => m.skill_id),
+        )
+        const l4IdsWithMaterial = new Set(
+          l5WithParentArr
+            .filter((r) => l5WithMaterial.has(r.id))
+            .map((r) => r.parent_id),
+        )
+
+        const filtered = allL4s.filter((l4) => l4IdsWithMaterial.has(l4.id))
+        setSubtopics(filtered)
       } catch (err) {
         console.error("Failed to fetch subtopics:", err)
+        setSubtopics([])
       } finally {
         setIsLoading(false)
       }
@@ -143,15 +207,16 @@ export default function ReviewPage() {
         )
 
         const subtopic = subtopics.find((s) => s.id === subtopicId)!
+        const skillsWithMeta = skills.map((skill) => ({
+          ...skill,
+          coverage: coverageMap[skill.id] || null,
+          hasMaterialCard: materialSkillIds.has(skill.id),
+        }))
         setExpanded((prev) => ({
           ...prev,
           [subtopicId]: {
             ...subtopic,
-            skills: skills.map((skill) => ({
-              ...skill,
-              coverage: coverageMap[skill.id] || null,
-              hasMaterialCard: materialSkillIds.has(skill.id),
-            })),
+            skills: skillsWithMeta.filter((s) => s.hasMaterialCard),
           },
         }))
       } catch (err) {

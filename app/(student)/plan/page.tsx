@@ -13,11 +13,17 @@ import { PlanPageSkeleton } from "@/components/plan/PlanPageSkeleton"
 import { BaselineIncomplete } from "@/components/plan/BaselineIncomplete"
 import { GeneratePlanCTA } from "@/components/plan/GeneratePlanCTA"
 import { ActivePlanView } from "@/components/plan/ActivePlanView"
+import { NoActiveExamView } from "@/components/plan/NoActiveExamView"
 
 export default function PlanDashboardPage() {
   const { data, isLoading, error } = usePlanData()
 
   if (isLoading || !data) return <PlanPageSkeleton />
+
+  // No active exam → students only see content when exam is active
+  if (!data.hasActiveExam) {
+    return <NoActiveExamView />
+  }
 
   // Check baseline completion
   const baselineCompleted =
