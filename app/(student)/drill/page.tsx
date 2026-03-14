@@ -62,6 +62,7 @@ interface DrillModule {
   module_type: "drill_focus" | "drill_mixed"
   question_count: number
   target_node_id: string | null
+  is_in_progress?: boolean
   // Resolved from taxonomy
   l5_name?: string
   l4_name?: string
@@ -91,7 +92,7 @@ async function fetchDrillData() {
   const activeExamId = await getActiveExamId(supabase, user.id)
 
   // Parallel fetches — filter by active exam
-  const [modulesRes, taxonomyRes, completionsRes, planTasksRes] =
+  const [modulesRes, taxonomyRes, completionsRes, inProgressRes, planTasksRes] =
     await Promise.all([
       // 1. Published drill modules for active exam only (empty when no active exam)
       (() => {
@@ -114,13 +115,25 @@ async function fetchDrillData() {
         return q.order("level").order("position")
       })(),
 
-      // 3. User's module completions
+      // 3. User's module completions (drill context only)
       supabase
         .from("module_completions")
         .select("module_id")
-        .eq("user_id", user.id),
+        .eq("user_id", user.id)
+        .eq("context_type", "drill"),
 
-      // 4. Plan tasks for current cycle — only if cycle belongs to active exam
+      // 4. Modules in progress (has attempts, no completion)
+      (() => {
+        if (!activeExamId) return Promise.resolve({ data: [] })
+        return (supabase as any)
+          .from("attempts")
+          .select("module_id")
+          .eq("user_id", user.id)
+          .eq("context_type", "drill")
+          .not("module_id", "is", null)
+      })(),
+
+      // 5. Plan tasks for current cycle — only if cycle belongs to active exam
       supabase
         .from("user_state")
         .select("current_cycle_id")
@@ -176,6 +189,12 @@ async function fetchDrillData() {
     (completionsRes.data || []).map((c: { module_id: string }) => c.module_id),
   )
 
+  const inProgressModuleIds = new Set(
+    (inProgressRes.data || [])
+      .map((a: { module_id: string }) => a.module_id)
+      .filter((id: string) => id && !completedModuleIds.has(id)),
+  )
+
   const planTasksByModule = new Map<
     string,
     { id: string; is_required: boolean; is_completed: boolean }
@@ -206,6 +225,7 @@ async function fetchDrillData() {
         is_required: planTask?.is_required ?? false,
         is_completed:
           completedModuleIds.has(m.id) || (planTask?.is_completed ?? false),
+        is_in_progress: inProgressModuleIds.has(m.id),
         plan_task_id: planTask?.id,
       }
     },
@@ -237,10 +257,18 @@ function ModuleCard({
     e.stopPropagation()
     if (module.is_completed) {
       router.push(`/drill/drill/${module.id}?retry=1`)
+    } else if (module.is_in_progress) {
+      router.push(`/drill/drill/${module.id}`)
     } else {
       router.push(`/drill/drill/${module.id}`)
     }
   }
+
+  const buttonLabel = module.is_completed
+    ? "Ulangi"
+    : module.is_in_progress
+      ? "Lanjutkan"
+      : "Mulai"
 
   return (
     <Card
@@ -318,12 +346,16 @@ function ModuleCard({
 
           {/* CTA */}
           <Button
-            variant="brutal"
+            variant={module.is_in_progress ? "default" : "brutal"}
             size="sm"
-            className="shrink-0 touch-target text-xs h-8 px-3"
+            className={`shrink-0 touch-target text-xs h-8 px-3 ${
+              module.is_in_progress
+                ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-600"
+                : ""
+            }`}
             onClick={handleButtonClick}
           >
-            {module.is_completed ? "Ulangi" : "Mulai"}
+            {buttonLabel}
             <ChevronRight className="h-3.5 w-3.5 ml-1" />
           </Button>
         </div>
