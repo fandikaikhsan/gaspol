@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
         .eq("is_active", true)
         .eq("exam_id", examConfigResult.exam_id)
 
-      const requiredIds = new Set(
+      const requiredIds = new Set<string>(
         (baselineModules || []).map((m: { module_id: string }) => m.module_id),
       )
 

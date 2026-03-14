@@ -153,7 +153,7 @@ export default function BaselineHubPage() {
               <Progress value={progress} className="h-3" />
             </div>
 
-            {completedCount === totalCount && (
+            {totalCount > 0 && completedCount === totalCount && (
               <div className="bg-background p-4 rounded-lg border-2 border-status-strong">
                 <p className="font-semibold text-status-strong mb-2">
                   {t("progress.allComplete")}

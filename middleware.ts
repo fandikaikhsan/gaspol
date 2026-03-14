@@ -94,13 +94,14 @@ export async function middleware(request: NextRequest) {
       // Settings is always accessible
       if (!path.startsWith('/settings')) {
         // Map each phase to its allowed route prefixes
+        // Include /baseline in later phases so students can complete baseline for a new exam
         const phaseAllowedRoutes: Record<string, string[]> = {
           ONBOARDING: ['/onboarding'],
           BASELINE_ASSESSMENT_IN_PROGRESS: ['/baseline'],
-          BASELINE_COMPLETE: ['/analytics', '/plan'],
-          PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics', '/recycle'],
-          RECYCLE_UNLOCKED: ['/plan', '/drill', '/review', '/analytics', '/recycle'],
-          RECYCLE_ASSESSMENT_IN_PROGRESS: ['/recycle', '/analytics'],
+          BASELINE_COMPLETE: ['/analytics', '/plan', '/baseline'],
+          PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics', '/recycle', '/baseline'],
+          RECYCLE_UNLOCKED: ['/plan', '/drill', '/review', '/analytics', '/recycle', '/baseline'],
+          RECYCLE_ASSESSMENT_IN_PROGRESS: ['/recycle', '/analytics', '/baseline'],
         }
 
         const allowed = phaseAllowedRoutes[phase] || ['/onboarding']
