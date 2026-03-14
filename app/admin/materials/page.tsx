@@ -2,7 +2,7 @@
 
 /**
  * Admin Material Cards Management (T-037 + T-039)
- * CRUD operations + publish workflow (draft → review → published)
+ * CRUD operations + publish workflow (draft ↔ published)
  */
 
 import { useState, useEffect, useCallback } from "react"
@@ -44,15 +44,18 @@ import {
   Search,
   BookOpen,
   CheckCircle,
-  Clock,
   FileEdit,
-  ArrowRight,
+  Eye,
 } from "lucide-react"
 import { Sparkles } from "lucide-react"
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
+import { TaxonomyFilterChips } from "@/components/admin/TaxonomyFilterChips"
+import { MaterialCardViewer } from "@/components/review/MaterialCardViewer"
 
 // Types
+type ExampleItem = string | { contoh: string; penjelasan: string }
+
 interface MaterialCard {
   id: string
   skill_id: string
@@ -60,8 +63,8 @@ interface MaterialCard {
   core_idea: string
   key_facts: string[]
   common_mistakes: string[]
-  examples: string[]
-  status: "draft" | "review" | "published"
+  examples: ExampleItem[]
+  status: "draft" | "published"
   created_by: string | null
   reviewed_by: string | null
   created_at: string
@@ -82,11 +85,6 @@ const STATUS_CONFIG = {
     label: "Draft",
     color: "bg-muted text-muted-foreground",
     icon: FileEdit,
-  },
-  review: {
-    label: "In Review",
-    color: "bg-yellow-100 text-yellow-800",
-    icon: Clock,
   },
   published: {
     label: "Published",
@@ -109,7 +107,7 @@ const EMPTY_FORM: Omit<
   core_idea: "",
   key_facts: [""],
   common_mistakes: [""],
-  examples: [""],
+  examples: [{ contoh: "", penjelasan: "" }],
   status: "draft",
 }
 
@@ -123,6 +121,9 @@ export default function AdminMaterialsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [filterTaxonomyNodeId, setFilterTaxonomyNodeId] = useState<string | null>(null)
+  const [taxonomyTree, setTaxonomyTree] = useState<Array<{ id: string; parent_id: string | null; level: number }>>([])
+  const [previewCard, setPreviewCard] = useState<MaterialCard | null>(null)
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -141,19 +142,38 @@ export default function AdminMaterialsPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateResults, setGenerateResults] = useState<any>(null)
 
-  // Fetch materials
+  // Fetch materials (only from active exam skills)
   const fetchMaterials = useCallback(async () => {
     setIsLoading(true)
     try {
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e: { id: string }) => e.id)
+      let activeSkillIds: string[] = []
+      if (activeExamIds.length > 0) {
+        const { data: nodes } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .eq("level", 5)
+          .in("exam_id", activeExamIds)
+        activeSkillIds = (nodes || []).map((n: { id: string }) => n.id)
+      }
+
       let query = supabase
         .from("material_cards")
         .select("*")
         .order("updated_at", { ascending: false })
 
+      if (activeSkillIds.length > 0) {
+        query = query.in("skill_id", activeSkillIds)
+      } else {
+        query = query.in("skill_id", [])
+      }
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter as MaterialCardStatus)
       }
-
       if (searchQuery.trim()) {
         query = query.or(
           `title.ilike.%${searchQuery}%,core_idea.ilike.%${searchQuery}%`,
@@ -163,16 +183,39 @@ export default function AdminMaterialsPage() {
       const { data, error } = await query
 
       if (error) throw error
+      const asString = (v: unknown): string => {
+        if (typeof v === "string") return v
+        if (v != null && typeof v === "object") {
+          const obj = v as Record<string, unknown>
+          if (typeof obj.solution === "string") return obj.solution
+          if (typeof obj.example === "string") return obj.example
+          if (typeof obj.text === "string") return obj.text
+          return JSON.stringify(obj)
+        }
+        return String(v ?? "")
+      }
+      const normalizeExample = (v: unknown): string | { contoh: string; penjelasan: string } => {
+        if (typeof v === "string") return v
+        if (v != null && typeof v === "object") {
+          const obj = v as Record<string, unknown>
+          const contoh = typeof obj.contoh === "string" ? obj.contoh : ""
+          const penjelasan = typeof obj.penjelasan === "string" ? obj.penjelasan : ""
+          if ("contoh" in obj || "penjelasan" in obj) return { contoh, penjelasan }
+        }
+        return { contoh: asString(v), penjelasan: "" }
+      }
       setMaterials(
         (data || []).map((d) => ({
           ...d,
           key_facts: Array.isArray(d.key_facts)
-            ? (d.key_facts as string[])
+            ? (d.key_facts as unknown[]).map(asString)
             : [],
           common_mistakes: Array.isArray(d.common_mistakes)
-            ? (d.common_mistakes as string[])
+            ? (d.common_mistakes as unknown[]).map(asString)
             : [],
-          examples: Array.isArray(d.examples) ? (d.examples as string[]) : [],
+          examples: Array.isArray(d.examples)
+            ? (d.examples as unknown[]).map(normalizeExample)
+            : [],
         })),
       )
     } catch (error) {
@@ -183,13 +226,48 @@ export default function AdminMaterialsPage() {
     }
   }, [searchQuery, statusFilter])
 
-  // Fetch taxonomy skills (level 5)
+  const getL5DescendantIds = useCallback(
+    (nodeId: string): Set<string> => {
+      const nodeMap = new Map(taxonomyTree.map((n) => [n.id, n]))
+      const byParent = new Map<string | null, typeof taxonomyTree>()
+      for (const n of taxonomyTree) {
+        const key = n.parent_id
+        if (!byParent.has(key)) byParent.set(key, [])
+        byParent.get(key)!.push(n)
+      }
+      const result = new Set<string>()
+      const collect = (id: string) => {
+        const n = nodeMap.get(id)
+        if (!n) return
+        if (n.level === 5) result.add(id)
+        const children = byParent.get(id) || []
+        for (const c of children) collect(c.id)
+      }
+      collect(nodeId)
+      return result
+    },
+    [taxonomyTree],
+  )
+
+  const filterL5Ids = filterTaxonomyNodeId ? getL5DescendantIds(filterTaxonomyNodeId) : null
+
+  // Fetch taxonomy skills (level 5, only from active exams)
   const fetchSkills = useCallback(async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e: { id: string }) => e.id)
+      if (activeExamIds.length === 0) {
+        setSkills([])
+        return
+      }
+      const { data, error } = await supabase
         .from("taxonomy_nodes")
         .select("id, name, level, parent_id")
         .eq("level", 5)
+        .in("exam_id", activeExamIds)
         .order("name")
 
       if (error) throw error
@@ -199,10 +277,33 @@ export default function AdminMaterialsPage() {
     }
   }, [])
 
+  const fetchTaxonomyTree = useCallback(async () => {
+    try {
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e: { id: string }) => e.id)
+      if (activeExamIds.length === 0) {
+        setTaxonomyTree([])
+        return
+      }
+      const { data } = await supabase
+        .from("taxonomy_nodes")
+        .select("id, parent_id, level")
+        .eq("is_active", true)
+        .in("exam_id", activeExamIds)
+      setTaxonomyTree((data || []).map((n) => ({ id: n.id, parent_id: n.parent_id, level: n.level })))
+    } catch (e) {
+      console.error("Failed to fetch taxonomy tree:", e)
+    }
+  }, [])
+
   useEffect(() => {
     fetchMaterials()
     fetchSkills()
-  }, [fetchMaterials, fetchSkills])
+    fetchTaxonomyTree()
+  }, [fetchMaterials, fetchSkills, fetchTaxonomyTree])
 
   // Open create dialog
   const handleCreate = () => {
@@ -214,6 +315,10 @@ export default function AdminMaterialsPage() {
   // Open edit dialog
   const handleEdit = (card: MaterialCard) => {
     setEditingCard(card)
+    const toFormExample = (ex: ExampleItem): { contoh: string; penjelasan: string } =>
+      typeof ex === "string"
+        ? { contoh: ex, penjelasan: "" }
+        : { contoh: ex.contoh ?? "", penjelasan: ex.penjelasan ?? "" }
     setForm({
       skill_id: card.skill_id,
       title: card.title,
@@ -221,7 +326,10 @@ export default function AdminMaterialsPage() {
       key_facts: card.key_facts.length > 0 ? card.key_facts : [""],
       common_mistakes:
         card.common_mistakes.length > 0 ? card.common_mistakes : [""],
-      examples: card.examples.length > 0 ? card.examples : [""],
+      examples:
+        card.examples.length > 0
+          ? card.examples.map(toFormExample)
+          : [{ contoh: "", penjelasan: "" }],
       status: card.status,
     })
     setIsDialogOpen(true)
@@ -236,13 +344,16 @@ export default function AdminMaterialsPage() {
 
     setIsSubmitting(true)
     try {
+      const filteredExamples = form.examples
+        .map((e) => (typeof e === "string" ? { contoh: e, penjelasan: "" } : e))
+        .filter((e) => e.contoh.trim() || e.penjelasan.trim())
       const payload = {
         skill_id: form.skill_id,
         title: form.title.trim(),
         core_idea: form.core_idea.trim(),
         key_facts: form.key_facts.filter((f) => f.trim()),
         common_mistakes: form.common_mistakes.filter((m) => m.trim()),
-        examples: form.examples.filter((e) => e.trim()),
+        examples: filteredExamples,
         status: form.status,
       }
 
@@ -294,16 +405,14 @@ export default function AdminMaterialsPage() {
     }
   }
 
-  // Status transition (T-039: publish workflow)
   const handleStatusChange = async (
     id: string,
-    newStatus: "draft" | "review" | "published",
+    newStatus: "draft" | "published",
   ) => {
     try {
       const updateData: Record<string, unknown> = { status: newStatus }
       if (newStatus === "published") {
-        updateData.reviewed_by =
-          (await supabase.auth.getUser()).data.user?.id || null
+        updateData.reviewed_by = (await supabase.auth.getUser()).data.user?.id || null
       }
 
       const { error } = await supabase
@@ -321,7 +430,13 @@ export default function AdminMaterialsPage() {
 
   // Dynamic list field helpers
   const addListItem = (field: "key_facts" | "common_mistakes" | "examples") => {
-    setForm((prev) => ({ ...prev, [field]: [...prev[field], ""] }))
+    setForm((prev) => ({
+      ...prev,
+      [field]:
+        field === "examples"
+          ? [...prev[field].map((e) => (typeof e === "string" ? { contoh: e, penjelasan: "" } : e)), { contoh: "", penjelasan: "" }]
+          : [...prev[field], ""],
+    }))
   }
 
   const updateListItem = (
@@ -336,6 +451,22 @@ export default function AdminMaterialsPage() {
     })
   }
 
+  const updateExampleItem = (
+    index: number,
+    subField: "contoh" | "penjelasan",
+    value: string,
+  ) => {
+    setForm((prev) => {
+      const arr = prev.examples.map((e) =>
+        typeof e === "string" ? { contoh: e, penjelasan: "" } : { ...e },
+      )
+      if (arr[index]) {
+        arr[index] = { ...arr[index], [subField]: value }
+      }
+      return { ...prev, examples: arr }
+    })
+  }
+
   const removeListItem = (
     field: "key_facts" | "common_mistakes" | "examples",
     index: number,
@@ -346,8 +477,10 @@ export default function AdminMaterialsPage() {
     }))
   }
 
-  // Filtered + searched materials
-  const filteredMaterials = materials
+  const filteredMaterials = materials.filter((m) => {
+    if (!filterL5Ids) return true
+    return filterL5Ids.has(m.skill_id)
+  })
 
   // AI Batch Generation (T-038)
   const handleGenerate = async () => {
@@ -392,11 +525,9 @@ export default function AdminMaterialsPage() {
     )
   }
 
-  // Stats
   const stats = {
     total: materials.length,
     draft: materials.filter((m) => m.status === "draft").length,
-    review: materials.filter((m) => m.status === "review").length,
     published: materials.filter((m) => m.status === "published").length,
   }
 
@@ -428,7 +559,7 @@ export default function AdminMaterialsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -445,14 +576,6 @@ export default function AdminMaterialsPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-yellow-600">
-              {stats.review}
-            </div>
-            <div className="text-sm text-muted-foreground">In Review</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
             <div className="text-2xl font-bold text-green-600">
               {stats.published}
             </div>
@@ -462,27 +585,33 @@ export default function AdminMaterialsPage() {
       </div>
 
       {/* Search + Filter */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by title or core idea..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      <div className="space-y-4">
+        <div className="flex gap-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by title or core idea..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="published">Published</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="review">In Review</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-          </SelectContent>
-        </Select>
+        <TaxonomyFilterChips
+          value={filterTaxonomyNodeId}
+          onChange={setFilterTaxonomyNodeId}
+          placeholder="Filter by taxonomy (Exam → L1 → … → L5)"
+        />
       </div>
 
       {/* Materials List */}
@@ -529,7 +658,9 @@ export default function AdminMaterialsPage() {
                         {card.core_idea}
                       </p>
                       <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span>Skill: {card.skill_id}</span>
+                        <span>
+                          Skill: {skills.find((s) => s.id === card.skill_id)?.name ?? card.skill_id}
+                        </span>
                         <span>{card.key_facts.length} facts</span>
                         <span>{card.common_mistakes.length} mistakes</span>
                         <span>{card.examples.length} examples</span>
@@ -537,24 +668,11 @@ export default function AdminMaterialsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {/* Publish workflow buttons (T-039) */}
                       {card.status === "draft" && (
                         <Button
                           size="sm"
-                          variant="brutal-outline"
-                          onClick={() => handleStatusChange(card.id, "review")}
-                        >
-                          <ArrowRight className="h-3 w-3 mr-1" />
-                          Submit for Review
-                        </Button>
-                      )}
-                      {card.status === "review" && (
-                        <Button
-                          size="sm"
                           variant="default"
-                          onClick={() =>
-                            handleStatusChange(card.id, "published")
-                          }
+                          onClick={() => handleStatusChange(card.id, "published")}
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Publish
@@ -570,6 +688,14 @@ export default function AdminMaterialsPage() {
                         </Button>
                       )}
 
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setPreviewCard(card)}
+                        title="Preview student view"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -720,30 +846,55 @@ export default function AdminMaterialsPage() {
               </Button>
             </div>
 
-            {/* Examples */}
+            {/* Examples (contoh + penjelasan) */}
             <div>
               <Label>Examples</Label>
-              {form.examples.map((example, i) => (
-                <div key={i} className="flex gap-2 mt-2">
-                  <Textarea
-                    value={example}
-                    onChange={(e) =>
-                      updateListItem("examples", i, e.target.value)
-                    }
-                    placeholder={`Example ${i + 1}`}
-                    rows={2}
-                  />
-                  {form.examples.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeListItem("examples", i)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+              <p className="text-xs text-muted-foreground mb-2">
+                Each example has Contoh (the sample) and Penjelasan (the explanation).
+              </p>
+              {form.examples.map((example, i) => {
+                const ex = typeof example === "string" ? { contoh: example, penjelasan: "" } : example
+                return (
+                  <div key={i} className="border rounded-lg p-3 mt-2 space-y-2 bg-muted/30">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Example {i + 1}</span>
+                      {form.examples.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeListItem("examples", i)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs">Contoh</Label>
+                      <Textarea
+                        value={ex.contoh}
+                        onChange={(e) =>
+                          updateExampleItem(i, "contoh", e.target.value)
+                        }
+                        placeholder="e.g. Kata target: 'berani'. Sinonim: 'pemberani'..."
+                        rows={2}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Penjelasan</Label>
+                      <Textarea
+                        value={ex.penjelasan}
+                        onChange={(e) =>
+                          updateExampleItem(i, "penjelasan", e.target.value)
+                        }
+                        placeholder="e.g. Dalam konteks ini, 'pemberani' adalah sinonim yang tepat..."
+                        rows={2}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                )
+              })}
               <Button
                 variant="ghost"
                 size="sm"
@@ -761,7 +912,7 @@ export default function AdminMaterialsPage() {
                 <Select
                   value={form.status}
                   onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, status: v as any }))
+                    setForm((prev) => ({ ...prev, status: v as "draft" | "published" }))
                   }
                 >
                   <SelectTrigger>
@@ -769,7 +920,6 @@ export default function AdminMaterialsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="review">In Review</SelectItem>
                     <SelectItem value="published">Published</SelectItem>
                   </SelectContent>
                 </Select>
@@ -791,6 +941,25 @@ export default function AdminMaterialsPage() {
               {editingCard ? "Update" : "Create"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview modal (student view) */}
+      <Dialog open={!!previewCard} onOpenChange={() => setPreviewCard(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Student Preview</DialogTitle>
+            <DialogDescription>
+              How this material card will appear to students
+            </DialogDescription>
+          </DialogHeader>
+          {previewCard && (
+            <MaterialCardViewer
+              card={previewCard}
+              skillName={skills.find((s) => s.id === previewCard.skill_id)?.name}
+              showHeader={true}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -860,7 +1029,7 @@ export default function AdminMaterialsPage() {
               <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-2">
                 {skills.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-2">
-                    No micro-skills found
+                    No Level-5 micro-skills found
                   </p>
                 ) : (
                   skills.map((skill) => (
@@ -880,7 +1049,7 @@ export default function AdminMaterialsPage() {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {selectedSkillIds.length} skill(s) selected
+                {selectedSkillIds.length} Level-5 micro-skill(s) selected
               </p>
               <DialogFooter>
                 <Button

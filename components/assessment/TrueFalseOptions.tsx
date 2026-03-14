@@ -1,19 +1,21 @@
 /**
  * TrueFalseOptions Component
  * T-031: True/False question format
- *
- * Binary True/False selector with clean card-style buttons
+ * Phase 2: option content blocks for rich display
  */
 
 import { TFOptions } from "@/lib/assessment/types"
 import { Check, X } from "lucide-react"
+import { DocumentRenderer } from "@/lib/content-renderer/DocumentRenderer"
+import type { ContentBlock } from "@/lib/content-renderer/types"
 
 interface TrueFalseOptionsProps {
   options: TFOptions
   selectedAnswer: string
   onAnswerChange: (answer: string) => void
   disabled?: boolean
-  showCorrectAnswer?: string // For review mode
+  showCorrectAnswer?: string
+  optionContentBlocks?: Record<string, { blocks: ContentBlock[] }>
 }
 
 export function TrueFalseOptions({
@@ -22,10 +24,11 @@ export function TrueFalseOptions({
   onAnswerChange,
   disabled = false,
   showCorrectAnswer,
+  optionContentBlocks,
 }: TrueFalseOptionsProps) {
   const choices = [
-    { key: "True", label: options?.True || "True", icon: Check },
-    { key: "False", label: options?.False || "False", icon: X },
+    { key: "True", label: options?.True || "Benar", icon: Check },
+    { key: "False", label: options?.False || "Salah", icon: X },
   ]
 
   return (
@@ -66,7 +69,13 @@ export function TrueFalseOptions({
             >
               <Icon className="w-6 h-6" />
             </div>
-            <span>{label}</span>
+            {optionContentBlocks?.[key]?.blocks?.length ? (
+              <div className="leading-relaxed text-center">
+                <DocumentRenderer blocks={optionContentBlocks[key].blocks as ContentBlock[]} />
+              </div>
+            ) : (
+              <span>{label}</span>
+            )}
 
             {/* Correctness indicator (review mode) */}
             {showCorrectAnswer && isCorrect && (

@@ -58,6 +58,7 @@ interface Module {
   time_limit_min: number | null
   is_published: boolean
   created_at: string
+  exam_id?: string | null
   target_node_id?: string | null
   questions?: ModuleQuestion[]
 }
@@ -124,7 +125,10 @@ export default function AdminModulesPage() {
     module_type: "drill_focus",
     time_limit_min: null as number | null,
     target_node_id: null as string | null,
+    exam_id: null as string | null,
   })
+
+  const [exams, setExams] = useState<Array<{ id: string; name: string }>>([])
 
   // Composer state
   const [moduleQuestions, setModuleQuestions] = useState<ModuleQuestion[]>([])
@@ -136,24 +140,51 @@ export default function AdminModulesPage() {
 
   useEffect(() => {
     loadModules()
+    loadExams()
   }, [])
 
-  // Load taxonomy nodes for drill_focus target selection
+  const loadExams = async () => {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from("exams")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+    setExams(data || [])
+  }
+
+  // Load taxonomy nodes for drill_focus target selection (when exam is selected)
   useEffect(() => {
-    if (isDialogOpen && taxonomyNodes.length === 0) {
-      loadTaxonomyNodes()
+    if (isDialogOpen && formData.module_type === "drill_focus") {
+      loadTaxonomyNodes(formData.exam_id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDialogOpen])
+  }, [isDialogOpen, formData.module_type, formData.exam_id])
 
-  const loadTaxonomyNodes = async () => {
+  const loadTaxonomyNodes = async (examId?: string | null) => {
     setLoadingTaxonomy(true)
     try {
       const supabase = createClient()
-      const { data, error } = await (supabase as any)
+      let examIds: string[] = []
+      if (examId) {
+        examIds = [examId]
+      } else {
+        const { data: activeExams } = await supabase
+          .from("exams")
+          .select("id")
+          .eq("is_active", true)
+        examIds = (activeExams || []).map((e) => e.id)
+      }
+      if (examIds.length === 0) {
+        setTaxonomyNodes([])
+        setLoadingTaxonomy(false)
+        return
+      }
+      const { data, error } = await supabase
         .from("taxonomy_nodes")
         .select("id, parent_id, level, code, name")
         .eq("is_active", true)
+        .in("exam_id", examIds)
         .order("level")
         .order("position")
 
@@ -202,7 +233,22 @@ export default function AdminModulesPage() {
     try {
       const supabase = createClient()
 
-      const { data, error } = await supabase
+      // Get active exam IDs for filtering
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e) => e.id)
+      const activeNodeIdSet = new Set<string>()
+      if (activeExamIds.length > 0) {
+        const { data: nodes } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .in("exam_id", activeExamIds)
+        ;(nodes || []).forEach((n) => activeNodeIdSet.add(n.id))
+      }
+
+      const { data: allModules, error } = await supabase
         .from("modules")
         .select(
           `
@@ -225,8 +271,18 @@ export default function AdminModulesPage() {
 
       if (error) throw error
 
+      // Filter: modules attached to active exams
+      const filtered =
+        activeExamIds.length > 0
+          ? (allModules || []).filter(
+              (m: any) =>
+                (m.exam_id && activeExamIds.includes(m.exam_id)) ||
+                (m.exam_id == null && m.target_node_id != null && activeNodeIdSet.has(m.target_node_id))
+            )
+          : []
+
       // Transform data
-      const transformedModules = (data || []).map((m: any) => ({
+      const transformedModules = filtered.map((m: any) => ({
         ...m,
         questions: m.module_questions || [],
       }))
@@ -253,6 +309,7 @@ export default function AdminModulesPage() {
       module_type: "drill_focus",
       time_limit_min: null,
       target_node_id: null,
+      exam_id: exams[0]?.id ?? null,
     })
     setIsDialogOpen(true)
   }
@@ -266,6 +323,7 @@ export default function AdminModulesPage() {
       module_type: module.module_type,
       time_limit_min: module.time_limit_min,
       target_node_id: module.target_node_id || null,
+      exam_id: module.exam_id ?? null,
     })
     setIsDialogOpen(true)
   }
@@ -276,6 +334,15 @@ export default function AdminModulesPage() {
         variant: "destructive",
         title: "Missing Name",
         description: "Please provide a module name.",
+      })
+      return
+    }
+
+    if (!formData.exam_id) {
+      toast({
+        variant: "destructive",
+        title: "Exam Required",
+        description: "Please select an exam for this module.",
       })
       return
     }
@@ -293,6 +360,7 @@ export default function AdminModulesPage() {
         description: formData.description || null,
         module_type: formData.module_type,
         time_limit_min: formData.time_limit_min,
+        exam_id: formData.exam_id,
         target_node_id:
           formData.module_type === "drill_focus"
             ? formData.target_node_id
@@ -384,12 +452,38 @@ export default function AdminModulesPage() {
     setIsLoadingQuestions(true)
     try {
       const supabase = createClient()
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
+        .eq("is_active", true)
+      const activeExamIds = (activeExams || []).map((e) => e.id)
+      let questionIdsToLoad: string[] = []
+      if (activeExamIds.length > 0) {
+        const { data: activeNodes } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .in("exam_id", activeExamIds)
+        const activeNodeIds = (activeNodes || []).map((n) => n.id)
+        if (activeNodeIds.length > 0) {
+          const { data: qtData } = await supabase
+            .from("question_taxonomy")
+            .select("question_id")
+            .in("taxonomy_node_id", activeNodeIds)
+          questionIdsToLoad = [...new Set((qtData || []).map((r) => r.question_id))]
+        }
+      }
+      if (questionIdsToLoad.length === 0) {
+        setAvailableQuestions([])
+        setIsLoadingQuestions(false)
+        return
+      }
       const { data, error } = await supabase
         .from("questions")
         .select(
           "id, question_text, stem, question_type, difficulty, time_estimate_seconds, cognitive_level",
         )
         .eq("is_active", true)
+        .in("id", questionIdsToLoad)
         .order("created_at", { ascending: false })
         .limit(100)
 
@@ -755,6 +849,36 @@ export default function AdminModulesPage() {
                 placeholder="Brief description of this module"
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="exam">
+                Exam <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.exam_id || ""}
+                onValueChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    exam_id: v || null,
+                    target_node_id: null,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select exam" />
+                </SelectTrigger>
+                <SelectContent>
+                  {exams.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Modules are always attached to an exam
+              </p>
             </div>
 
             <div className="space-y-2">

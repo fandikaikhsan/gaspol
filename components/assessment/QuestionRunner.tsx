@@ -355,6 +355,21 @@ export function QuestionRunner({
     currentQuestion.question_format,
   )
 
+  // Build option content blocks from structured content when present
+  const optionContentBlocks = (() => {
+    const answer = currentQuestion.content?.answer as
+      | { options?: Array<{ key: string; content?: { blocks?: unknown[] } }> }
+      | undefined
+    if (!answer?.options) return undefined
+    const map: Record<string, { blocks: unknown[] }> = {}
+    for (const opt of answer.options) {
+      if (opt.content?.blocks?.length) {
+        map[opt.key] = { blocks: opt.content.blocks }
+      }
+    }
+    return Object.keys(map).length ? map : undefined
+  })()
+
   // Render answer input based on question format
   const renderAnswerInput = () => {
     const normalizedFormat = normalizeFormat(currentQuestion.question_format)
@@ -366,6 +381,7 @@ export function QuestionRunner({
             options={currentQuestion.options as any}
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
+            optionContentBlocks={optionContentBlocks}
           />
         )
       case "mcq4":
@@ -375,6 +391,7 @@ export function QuestionRunner({
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
             optionKeys={["A", "B", "C", "D"]}
+            optionContentBlocks={optionContentBlocks}
           />
         )
       case "tf":
@@ -383,6 +400,7 @@ export function QuestionRunner({
             options={currentQuestion.options as any}
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
+            optionContentBlocks={optionContentBlocks}
           />
         )
       case "mcktable":
@@ -658,6 +676,9 @@ export function QuestionRunner({
               stem={currentQuestion.stem}
               stemImages={currentQuestion.stem_images}
               questionNumber={currentIndex + 1}
+              contentStimulus={
+                currentQuestion.content?.stimulus as { blocks: unknown[] } | undefined
+              }
             />
           </CardHeader>
 

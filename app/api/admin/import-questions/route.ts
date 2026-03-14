@@ -33,8 +33,31 @@ export async function POST(request: NextRequest) {
 
     const { skillId, examId, skillCode, questions } = transformImport(parsed.data)
 
-    // Resolve taxonomy node: either use skill_id or lookup by skill_code+exam_id
-    let taxonomyNodeId: string | null = skillId
+    // Resolve taxonomy node: either use skill_id (must be L5) or lookup by skill_code+exam_id
+    let taxonomyNodeId: string | null = null
+
+    if (skillId) {
+      const { data: node, error: lookupError } = await supabase
+        .from("taxonomy_nodes")
+        .select("id, level")
+        .eq("id", skillId)
+        .eq("is_active", true)
+        .maybeSingle()
+
+      if (lookupError || !node) {
+        return NextResponse.json(
+          { error: "Invalid skill_id", hint: "skill_id must reference an active taxonomy node" },
+          { status: 400 },
+        )
+      }
+      if (node.level !== 5) {
+        return NextResponse.json(
+          { error: "skill_id must reference a level-5 (micro-skill) taxonomy node" },
+          { status: 400 },
+        )
+      }
+      taxonomyNodeId = node.id
+    }
 
     if (!taxonomyNodeId && skillCode && examId) {
       const { data: node, error: lookupError } = await supabase

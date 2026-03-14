@@ -19,6 +19,8 @@ import { TrueFalseOptions } from "@/components/assessment/TrueFalseOptions"
 import { TableOptions } from "@/components/assessment/TableOptions"
 import { FillInInput } from "@/components/assessment/FillInInput"
 import { MathRenderer } from "@/components/assessment/MathRenderer"
+import { DocumentRenderer } from "@/lib/content-renderer/DocumentRenderer"
+import type { ContentBlock } from "@/lib/content-renderer/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -84,7 +86,7 @@ async function fetchPembahasanData(moduleId: string): Promise<PembahasanData> {
     supabase
       .from("questions")
       .select(
-        "id, micro_skill_id, difficulty, cognitive_level, question_format, stem, stem_images, options, correct_answer, explanation, explanation_images, construct_weights",
+        "id, micro_skill_id, difficulty, cognitive_level, question_format, stem, stem_images, options, correct_answer, explanation, explanation_images, construct_weights, content",
       )
       .in("id", questionIds),
     supabase
@@ -161,6 +163,19 @@ function parseUserAnswer(raw: string | null | undefined): string {
     /* not JSON, use as-is */
   }
   return String(raw)
+}
+
+/** Extract option content blocks from question.content.answer for DocumentRenderer */
+function extractOptionContentBlocks(question: Question): Record<string, { blocks: unknown[] }> | undefined {
+  const answer = question.content?.answer as { options?: Array<{ key: string; content?: { blocks?: unknown[] } }> } | undefined
+  if (!answer?.options) return undefined
+  const map: Record<string, { blocks: unknown[] }> = {}
+  for (const opt of answer.options) {
+    if (opt.content?.blocks?.length) {
+      map[opt.key] = { blocks: opt.content.blocks }
+    }
+  }
+  return Object.keys(map).length ? map : undefined
 }
 
 /* ── Component ─────────────────────────────────────────── */
@@ -245,6 +260,8 @@ export default function PembahasanPage() {
           const userAnswer = parseUserAnswer(attempt?.user_answer)
           const format = normalizeFormat(question.question_format)
           const materialCard = data.materialCards.get(question.micro_skill_id)
+          const content = question.content as { explanation?: { blocks?: unknown[] } } | undefined
+          const explanationBlocks = content?.explanation?.blocks
 
           return (
             <Card
@@ -281,6 +298,9 @@ export default function PembahasanPage() {
                   stem={question.stem}
                   stemImages={question.stem_images || []}
                   questionNumber={index + 1}
+                  contentStimulus={
+                    question.content?.stimulus as { blocks: unknown[] } | undefined
+                  }
                 />
 
                 {/* Answer options in review mode */}
@@ -296,6 +316,7 @@ export default function PembahasanPage() {
                         optionKeys={
                           format === "mcq4" ? ["A", "B", "C", "D"] : undefined
                         }
+                        optionContentBlocks={extractOptionContentBlocks(question)}
                       />
                       {!isCorrect && (
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -323,6 +344,7 @@ export default function PembahasanPage() {
                         onAnswerChange={() => {}}
                         disabled
                         showCorrectAnswer={question.correct_answer}
+                        optionContentBlocks={extractOptionContentBlocks(question)}
                       />
                       {!isCorrect && (
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -408,14 +430,18 @@ export default function PembahasanPage() {
                 </div>
 
                 {/* Explanation */}
-                {question.explanation && (
+                {(question.explanation || explanationBlocks?.length) && (
                   <div className="border-t-2 border-border pt-3">
                     <div className="flex items-center gap-2 text-sm font-semibold mb-2">
                       <BookOpen className="h-4 w-4 text-primary" />
                       Pembahasan
                     </div>
                     <div className="text-sm leading-relaxed text-foreground/90">
-                      <MathRenderer text={question.explanation} />
+                      {explanationBlocks?.length ? (
+                        <DocumentRenderer blocks={explanationBlocks as ContentBlock[]} />
+                      ) : (
+                        <MathRenderer text={question.explanation} />
+                      )}
                     </div>
                     {question.explanation_images &&
                       question.explanation_images.length > 0 && (

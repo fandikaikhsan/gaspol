@@ -119,28 +119,52 @@ export default function AdminFlashcardsPage() {
     try {
       const supabase = createClient()
 
-      // Load flashcards with taxonomy join
-      const { data: flashcardsData, error: flashcardsError } = await supabase
-        .from("flashcards")
-        .select(`
-          *,
-          taxonomy_node:taxonomy_nodes(id, name, code)
-        `)
-        .order("created_at", { ascending: false })
-
-      if (flashcardsError) throw flashcardsError
-
-      setFlashcards(flashcardsData || [])
-
-      // Load taxonomy nodes (level 5 = micro-skills) for linking
-      const { data: nodesData } = await supabase
-        .from("taxonomy_nodes")
-        .select("id, name, code, level")
+      // Get active exam taxonomy node IDs
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id")
         .eq("is_active", true)
-        .order("level")
-        .order("position")
+      const activeExamIds = (activeExams || []).map((e) => e.id)
+      let activeSkillIds: string[] = []
+      if (activeExamIds.length > 0) {
+        const { data: nodes } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .eq("level", 5)
+          .in("exam_id", activeExamIds)
+        activeSkillIds = (nodes || []).map((n) => n.id)
+      }
 
-      setTaxonomyNodes(nodesData || [])
+      // Load flashcards (only from active exam skills)
+      let flashcardsData: any[] = []
+      if (activeSkillIds.length > 0) {
+        const { data, error: flashcardsError } = await supabase
+          .from("flashcards")
+          .select(`
+            *,
+            taxonomy_node:taxonomy_nodes(id, name, code)
+          `)
+          .in("micro_skill_id", activeSkillIds)
+          .order("created_at", { ascending: false })
+
+        if (flashcardsError) throw flashcardsError
+        flashcardsData = data || []
+      }
+      setFlashcards(flashcardsData)
+
+      // Load taxonomy nodes (level 5, only from active exams) for linking
+      let nodesData: TaxonomyNode[] = []
+      if (activeExamIds.length > 0) {
+        const { data } = await supabase
+          .from("taxonomy_nodes")
+          .select("id, name, code, level")
+          .eq("is_active", true)
+          .in("exam_id", activeExamIds)
+          .order("level")
+          .order("position")
+        nodesData = data || []
+      }
+      setTaxonomyNodes(nodesData)
     } catch (error) {
       console.error("Load error:", error)
       toast({

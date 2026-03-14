@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/select"
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog"
 import { OrphanWarningBadge } from "@/components/admin/OrphanWarningBadge"
+import { TaxonomyCascadingSelector } from "@/components/admin/TaxonomyCascadingSelector"
+import { TaxonomyFilterChips } from "@/components/admin/TaxonomyFilterChips"
 
 interface Question {
   id: string
@@ -88,10 +90,13 @@ export default function AdminQuestionsPage() {
   const { toast } = useToast()
   const [questions, setQuestions] = useState<Question[]>([])
   const [taxonomyNodes, setTaxonomyNodes] = useState<TaxonomyNode[]>([])
+  const [taxonomyTree, setTaxonomyTree] = useState<Array<{ id: string; parent_id: string | null; level: number }>>([])
+  const [exams, setExams] = useState<Array<{ id: string; name: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all")
   const [filterType, setFilterType] = useState<string>("all")
+  const [filterTaxonomyNodeId, setFilterTaxonomyNodeId] = useState<string | null>(null)
 
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -114,7 +119,7 @@ export default function AdminQuestionsPage() {
     points: 1,
     explanation: "",
     media_url: "",
-    taxonomy_node_ids: [] as string[],
+    taxonomy_node_id: null as string | null,
   })
 
   // Options state
@@ -154,19 +159,48 @@ export default function AdminQuestionsPage() {
     try {
       const supabase = createClient()
 
-      // Load questions with joins
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("questions")
-        .select(`
-          *,
-          question_options(id, option_text, is_correct, position)
-        `)
+      // Get active exams (for filter dropdown)
+      const { data: activeExams } = await supabase
+        .from("exams")
+        .select("id, name")
+        .eq("is_active", true)
         .order("created_at", { ascending: false })
+      setExams(activeExams || [])
+      const activeExamIds = (activeExams || []).map((e) => e.id)
 
-      if (questionsError) throw questionsError
+      let questionIdsToLoad: string[] = []
+      if (activeExamIds.length > 0) {
+        const { data: activeNodes } = await supabase
+          .from("taxonomy_nodes")
+          .select("id")
+          .in("exam_id", activeExamIds)
+        const activeNodeIds = (activeNodes || []).map((n) => n.id)
+        if (activeNodeIds.length > 0) {
+          const { data: qtData } = await supabase
+            .from("question_taxonomy")
+            .select("question_id")
+            .in("taxonomy_node_id", activeNodeIds)
+          questionIdsToLoad = [...new Set((qtData || []).map((r) => r.question_id))]
+        }
+      }
 
-      // Load taxonomy links separately
-      const questionIds = questionsData?.map((q) => q.id) || []
+      // Load questions (only those linked to active exam taxonomy)
+      let questionsData: any[] = []
+      if (questionIdsToLoad.length > 0) {
+        const { data, error: questionsError } = await supabase
+          .from("questions")
+          .select(`
+            *,
+            question_options(id, option_text, is_correct, position)
+          `)
+          .in("id", questionIdsToLoad)
+          .order("created_at", { ascending: false })
+
+        if (questionsError) throw questionsError
+        questionsData = data || []
+      }
+
+      const questionIds = questionsData.map((q) => q.id)
       let taxonomyMap: Record<string, any[]> = {}
 
       if (questionIds.length > 0) {
@@ -197,15 +231,22 @@ export default function AdminQuestionsPage() {
 
       setQuestions(transformedQuestions)
 
-      // Load taxonomy nodes for linking
-      const { data: nodesData } = await supabase
-        .from("taxonomy_nodes")
-        .select("id, name, code, level")
-        .eq("is_active", true)
-        .order("level")
-        .order("position")
-
-      setTaxonomyNodes(nodesData || [])
+      // Load taxonomy nodes for linking and filter (only from active exams)
+      let nodesData: TaxonomyNode[] = []
+      let treeData: Array<{ id: string; parent_id: string | null; level: number }> = []
+      if (activeExamIds.length > 0) {
+        const { data } = await supabase
+          .from("taxonomy_nodes")
+          .select("id, name, code, level, parent_id")
+          .eq("is_active", true)
+          .in("exam_id", activeExamIds)
+          .order("level")
+          .order("position")
+        nodesData = (data || []).map((n) => ({ id: n.id, name: n.name, code: n.code, level: n.level }))
+        treeData = (data || []).map((n) => ({ id: n.id, parent_id: n.parent_id, level: n.level }))
+      }
+      setTaxonomyNodes(nodesData)
+      setTaxonomyTree(treeData)
     } catch (error) {
       console.error("Load error:", error)
       toast({
@@ -230,7 +271,7 @@ export default function AdminQuestionsPage() {
       points: 1,
       explanation: "",
       media_url: "",
-      taxonomy_node_ids: [],
+      taxonomy_node_id: null,
     })
     setOptions([
       { option_text: "", is_correct: false, position: 0 },
@@ -254,7 +295,7 @@ export default function AdminQuestionsPage() {
       points: question.points,
       explanation: question.explanation || "",
       media_url: question.media_url || "",
-      taxonomy_node_ids: question.taxonomy_nodes?.map((n) => n.id) || [],
+      taxonomy_node_id: question.taxonomy_nodes?.[0]?.id ?? question.micro_skill_id ?? null,
     })
     setOptions(
       question.options && question.options.length > 0
@@ -311,6 +352,15 @@ export default function AdminQuestionsPage() {
         })
         return
       }
+    }
+
+    if (!formData.taxonomy_node_id) {
+      toast({
+        variant: "destructive",
+        title: "Micro-skill Required",
+        description: "Please select a micro-skill (L5) taxonomy node.",
+      })
+      return
     }
 
     setIsSaving(true)
@@ -403,16 +453,14 @@ export default function AdminQuestionsPage() {
         }
       }
 
-      // Link taxonomy nodes
-      if (formData.taxonomy_node_ids.length > 0) {
-        const taxonomyLinks = formData.taxonomy_node_ids.map((nodeId) => ({
-          question_id: questionId,
-          taxonomy_node_id: nodeId,
-        }))
-
+      // Link to L5 taxonomy node (required, single)
+      if (formData.taxonomy_node_id) {
         const { error: taxonomyError } = await supabase
           .from("question_taxonomy")
-          .insert(taxonomyLinks)
+          .insert({
+            question_id: questionId,
+            taxonomy_node_id: formData.taxonomy_node_id,
+          })
 
         if (taxonomyError) throw taxonomyError
       }
@@ -716,6 +764,29 @@ export default function AdminQuestionsPage() {
 
   const validTaxonomyIds = new Set(taxonomyNodes.map((n) => n.id))
 
+  // Get all L5 descendant node IDs for filter (when filterTaxonomyNodeId is set)
+  const getL5DescendantIds = (nodeId: string): Set<string> => {
+    const nodeMap = new Map(taxonomyTree.map((n) => [n.id, n]))
+    const byParent = new Map<string | null, typeof taxonomyTree>()
+    for (const n of taxonomyTree) {
+      const key = n.parent_id
+      if (!byParent.has(key)) byParent.set(key, [])
+      byParent.get(key)!.push(n)
+    }
+    const result = new Set<string>()
+    const collect = (id: string) => {
+      const n = nodeMap.get(id)
+      if (!n) return
+      if (n.level === 5) result.add(id)
+      const children = byParent.get(id) || []
+      for (const c of children) collect(c.id)
+    }
+    collect(nodeId)
+    return result
+  }
+
+  const filterL5Ids = filterTaxonomyNodeId ? getL5DescendantIds(filterTaxonomyNodeId) : null
+
   const filteredQuestions = questions.filter((q) => {
     const text = (q.question_text ?? q.stem ?? "") as string
     const matchesSearch =
@@ -727,7 +798,11 @@ export default function AdminQuestionsPage() {
 
     const matchesType = filterType === "all" || q.question_type === filterType
 
-    return matchesSearch && matchesDifficulty && matchesType
+    const qL5Id = q.micro_skill_id ?? q.taxonomy_nodes?.[0]?.id
+    const matchesTaxonomy =
+      !filterL5Ids || (qL5Id && filterL5Ids.has(qL5Id))
+
+    return matchesSearch && matchesDifficulty && matchesType && matchesTaxonomy
   })
 
   if (isLoading) {
@@ -770,9 +845,12 @@ export default function AdminQuestionsPage() {
             <Filter className="h-5 w-5" />
             Filters
           </CardTitle>
+          <CardDescription>
+            Select exam and drill down by taxonomy (L1–L5) to filter questions
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Search</Label>
               <div className="relative">
@@ -816,6 +894,13 @@ export default function AdminQuestionsPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2 lg:col-span-4">
+              <TaxonomyFilterChips
+                value={filterTaxonomyNodeId}
+                onChange={setFilterTaxonomyNodeId}
+                placeholder="Select exam, then drill down to filter"
+              />
             </div>
           </div>
         </CardContent>
@@ -1123,26 +1208,17 @@ export default function AdminQuestionsPage() {
               />
             </div>
 
-            {/* Taxonomy Linking */}
+            {/* Taxonomy Linking - L5 micro-skill (required) */}
             <div className="space-y-2">
-              <Label>Link to Taxonomy (Optional)</Label>
-              <Select
-                value={formData.taxonomy_node_ids[0] || ""}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, taxonomy_node_ids: [value] })
+              <TaxonomyCascadingSelector
+                value={formData.taxonomy_node_id}
+                onChange={(nodeId) =>
+                  setFormData({ ...formData, taxonomy_node_id: nodeId })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select taxonomy node" />
-                </SelectTrigger>
-                <SelectContent>
-                  {taxonomyNodes.map((node) => (
-                    <SelectItem key={node.id} value={node.id}>
-                      {"  ".repeat(node.level - 1)} {node.name} ({node.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                required
+                l5Only
+                placeholder="Select exam, then drill down to L5 micro-skill"
+              />
             </div>
           </div>
 
@@ -1178,27 +1254,19 @@ export default function AdminQuestionsPage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>
-                      Taxonomy Node <span className="text-red-500">*</span>
+                      Micro-skill (L5) <span className="text-red-500">*</span>
                     </Label>
-                    <Select
+                    <TaxonomyCascadingSelector
                       value={generationParams.taxonomy_node_id}
-                      onValueChange={(value) =>
-                        setGenerationParams({ ...generationParams, taxonomy_node_id: value })
+                      onChange={(nodeId) =>
+                        setGenerationParams({ ...generationParams, taxonomy_node_id: nodeId ?? "" })
                       }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select taxonomy node" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taxonomyNodes.map((node) => (
-                          <SelectItem key={node.id} value={node.id}>
-                            {"  ".repeat(node.level - 1)} {node.name} ({node.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      required
+                      l5Only
+                      placeholder="Select exam, then drill down to L5 micro-skill"
+                    />
                     <p className="text-xs text-muted-foreground">
-                      Questions will be generated based on this taxonomy node
+                      Questions will be generated based on this micro-skill
                     </p>
                   </div>
 

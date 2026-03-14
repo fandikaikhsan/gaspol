@@ -121,17 +121,23 @@ export default function AdminTaxonomyPage() {
 
       setExams(examsData || [])
 
-      // Load taxonomy
-      const { data, error } = await supabase
-        .from("taxonomy_nodes")
-        .select("*")
-        .order("position")
+      const activeExamIds = (examsData || []).map((e) => e.id)
 
-      if (error) throw error
+      // Load taxonomy (only from active exams)
+      let data: TaxonomyNode[] = []
+      if (activeExamIds.length > 0) {
+        const { data: taxonomyData, error } = await supabase
+          .from("taxonomy_nodes")
+          .select("*")
+          .in("exam_id", activeExamIds)
+          .order("position")
 
-      setFlatNodes(data || [])
-      const tree = buildTree(data || [])
-      setNodes(tree)
+        if (error) throw error
+        data = taxonomyData || []
+      }
+
+      setFlatNodes(data)
+      setNodes(buildTree(data))
     } catch (error) {
       toast({
         variant: "destructive",

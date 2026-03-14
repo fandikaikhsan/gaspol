@@ -1,21 +1,24 @@
 /**
  * AnswerOptions Component
  * Phase 2: Question Runner & Assessment Engine
- *
- * Supports MCQ5 (A–E) and MCQ4 (A–D) formats
+ * Supports MCQ5 (A–E), MCQ4 (A–D), TF. Phase 2: option content blocks for rich display.
  */
 
 import { MCQ5Options, MCQ4Options } from "@/lib/assessment/types"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { DocumentRenderer } from "@/lib/content-renderer/DocumentRenderer"
+import type { ContentBlock } from "@/lib/content-renderer/types"
 
 interface AnswerOptionsProps {
-  options: MCQ5Options | MCQ4Options
+  options: MCQ5Options | MCQ4Options | Record<string, string>
   selectedAnswer: string
   onAnswerChange: (answer: string) => void
   disabled?: boolean
   showCorrectAnswer?: string // For review mode
   optionKeys?: readonly string[] // Override option keys (default: auto-detect from options)
+  /** Structured content blocks per option key; when present, used instead of options[key] */
+  optionContentBlocks?: Record<string, { blocks: ContentBlock[] }>
 }
 
 export function AnswerOptions({
@@ -25,13 +28,28 @@ export function AnswerOptions({
   disabled = false,
   showCorrectAnswer,
   optionKeys: overrideKeys,
+  optionContentBlocks,
 }: AnswerOptionsProps) {
-  // Auto-detect keys: if E exists → MCQ5, otherwise MCQ4
+  // Auto-detect keys: if E exists → MCQ5, else if True/False → TF, otherwise MCQ4
   const optionKeys =
     overrideKeys ??
-    ("E" in options
-      ? (["A", "B", "C", "D", "E"] as const)
-      : (["A", "B", "C", "D"] as const))
+    ("True" in options || "False" in options
+      ? (["True", "False"] as const)
+      : "E" in options
+        ? (["A", "B", "C", "D", "E"] as const)
+        : (["A", "B", "C", "D"] as const))
+
+  const renderOptionContent = (key: string) => {
+    const blocks = optionContentBlocks?.[key]?.blocks
+    if (blocks && blocks.length > 0) {
+      return (
+        <div className="leading-relaxed">
+          <DocumentRenderer blocks={blocks as ContentBlock[]} />
+        </div>
+      )
+    }
+    return <span className="leading-relaxed">{options[key] ?? ""}</span>
+  }
 
   return (
     <RadioGroup
@@ -85,7 +103,7 @@ export function AnswerOptions({
 
               {/* Option text */}
               <div className="flex-1 pt-0.5">
-                <p className="leading-relaxed">{options[key]}</p>
+                {renderOptionContent(key)}
               </div>
 
               {/* Correctness indicator (review mode) */}

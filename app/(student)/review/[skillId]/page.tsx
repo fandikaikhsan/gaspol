@@ -13,10 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   ArrowLeft,
-  BookOpen,
-  Lightbulb,
-  AlertTriangle,
-  FileText,
   CheckCircle2,
   Circle,
   Loader2,
@@ -24,6 +20,7 @@ import {
   MessageCircle,
 } from "lucide-react"
 import TanyaGaspolChat from "@/components/review/TanyaGaspolChat"
+import { MaterialCardViewer } from "@/components/review/MaterialCardViewer"
 
 interface MaterialCard {
   id: string
@@ -32,7 +29,7 @@ interface MaterialCard {
   core_idea: string
   key_facts: string[]
   common_mistakes: string[]
-  examples: string[]
+  examples: (string | { contoh?: string; penjelasan?: string })[]
   status: string
 }
 
@@ -108,7 +105,7 @@ function MaterialCardDetailContent() {
               ? (cardData.common_mistakes as string[])
               : [],
             examples: Array.isArray(cardData.examples)
-              ? (cardData.examples as string[])
+              ? (cardData.examples as (string | { contoh?: string; penjelasan?: string })[])
               : [],
           })
         }
@@ -242,90 +239,13 @@ function MaterialCardDetailContent() {
           </Button>
         </div>
 
-        {/* Core Idea */}
-        <Card className="border-2 border-border mb-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
-              Core Idea
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-base leading-relaxed">{card.core_idea}</p>
-          </CardContent>
-        </Card>
-
-        {/* Key Facts */}
-        {card.key_facts.length > 0 && (
-          <Card className="border-2 border-border mb-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-500" />
-                Key Facts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {card.key_facts.map((fact, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="h-5 w-5 rounded-full bg-blue-100 text-blue-800 text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold">
-                      {i + 1}
-                    </span>
-                    <span className="text-sm leading-relaxed">{fact}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Common Mistakes */}
-        {card.common_mistakes.length > 0 && (
-          <Card className="border-2 border-border mb-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-500" />
-                Common Mistakes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {card.common_mistakes.map((mistake, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400 flex-shrink-0 mt-2" />
-                    <span className="text-sm leading-relaxed">{mistake}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Examples */}
-        {card.examples.length > 0 && (
-          <Card className="border-2 border-border mb-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-green-500" />
-                Examples
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {card.examples.map((example, i) => (
-                  <div
-                    key={i}
-                    className="bg-muted/50 rounded-lg p-3 border border-border"
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {example}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Material content (shared component) */}
+        <MaterialCardViewer
+          card={card}
+          skillName={skill?.name}
+          skillCode={skill?.code}
+          showHeader={false}
+        />
         {/* Tanya Gaspol Chat Modal */}
         {card && skill && (
           <TanyaGaspolChat
