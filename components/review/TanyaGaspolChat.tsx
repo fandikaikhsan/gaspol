@@ -90,6 +90,10 @@ interface TanyaGaspolChatProps {
   skillId: string
   skillName: string
   materialContext: MaterialContext
+  /** Increment to push text into the input (e.g. from highlight → "Apa maksud…"). */
+  prefillKey?: number | null
+  prefillText?: string
+  onPrefillApplied?: () => void
 }
 
 export default function TanyaGaspolChat({
@@ -99,6 +103,9 @@ export default function TanyaGaspolChat({
   skillId,
   skillName,
   materialContext,
+  prefillKey,
+  prefillText = "",
+  onPrefillApplied,
 }: TanyaGaspolChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState("")
@@ -109,6 +116,11 @@ export default function TanyaGaspolChat({
   const [isQuotaExhausted, setIsQuotaExhausted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastPrefillKeyRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    lastPrefillKeyRef.current = null
+  }, [skillId])
 
   const greeting = useRef(
     GREETING_TEMPLATES[Math.floor(Math.random() * GREETING_TEMPLATES.length)](
@@ -116,12 +128,34 @@ export default function TanyaGaspolChat({
     ),
   )
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" })
+    })
+  }, [])
 
   const isActive = layout === "embedded" || open
+
+  // After history finishes loading, snap scroll to the latest messages
+  useEffect(() => {
+    if (isFetchingHistory) return
+    scrollToBottom("auto")
+  }, [isFetchingHistory, scrollToBottom])
+
+  // New messages / typing indicator: smooth scroll
+  useEffect(() => {
+    if (isFetchingHistory) return
+    scrollToBottom("smooth")
+  }, [messages, isLoading, isFetchingHistory, scrollToBottom])
+
+  useEffect(() => {
+    if (prefillKey == null) return
+    if (lastPrefillKeyRef.current === prefillKey) return
+    lastPrefillKeyRef.current = prefillKey
+    setInputValue(prefillText)
+    onPrefillApplied?.()
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }, [prefillKey, prefillText, onPrefillApplied])
 
   // Load chat history and quota when panel is active
   useEffect(() => {

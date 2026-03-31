@@ -50,7 +50,9 @@
     "commonMistakes": "Kesalahan Umum",
     "examplesHeading": "Contoh",
     "exampleN": "Contoh {{n}}",
-    "explanation": "Penjelasan"
+    "explanation": "Penjelasan",
+    "highlightAsk": "Apa maksudnya?",
+    "askMaksudPrompt": "Apa maksud dari {{quote}}?"
   },
   "swipe": {
     "title": "Quick Swipe",

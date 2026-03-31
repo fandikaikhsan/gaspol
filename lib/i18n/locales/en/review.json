@@ -50,7 +50,9 @@
     "commonMistakes": "Common mistakes",
     "examplesHeading": "Example",
     "exampleN": "Example {{n}}",
-    "explanation": "Explanation"
+    "explanation": "Explanation",
+    "highlightAsk": "What does this mean?",
+    "askMaksudPrompt": "What does \"{{quote}}\" mean?"
   },
   "swipe": {
     "title": "Quick Swipe",

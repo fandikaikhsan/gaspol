@@ -21,7 +21,7 @@ export default function StudentLayout({
 }) {
   const pathname = usePathname()
   const isContentOnly = pathname?.startsWith("/onboarding")
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
 
   return (
     <StudentLayoutClient>

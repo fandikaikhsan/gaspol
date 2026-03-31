@@ -5,7 +5,7 @@
  * Shows Core Idea, Key Facts, Common Mistakes, Examples for a micro-skill
  */
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent } from "@/components/ui/card"
@@ -23,7 +23,9 @@ import {
 import { getActiveExamId } from "@/lib/active-exam"
 import TanyaGaspolChat from "@/components/review/TanyaGaspolChat"
 import { MaterialCardViewer } from "@/components/review/MaterialCardViewer"
+import { MaterialHighlightAsk } from "@/components/review/MaterialHighlightAsk"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { useTranslation } from "@/lib/i18n"
 
 interface MaterialCard {
   id: string
@@ -72,6 +74,26 @@ function MaterialCardDetailContent() {
   const entryFrom = searchParams.get("from")
 
   const isLg = useMediaQuery("(min-width: 1024px)")
+  const { t: tr } = useTranslation("review")
+  const materialBodyRef = useRef<HTMLDivElement>(null)
+  const [chatPrefill, setChatPrefill] = useState<{
+    key: number
+    text: string
+  } | null>(null)
+
+  const handleHighlightAsk = (selected: string) => {
+    const quote = selected.replace(/\s+/g, " ").trim()
+    if (!quote) return
+    const text = tr("material.askMaksudPrompt", { quote })
+    if (!isLg) {
+      setChatOpen(true)
+      window.setTimeout(() => {
+        setChatPrefill({ key: Date.now(), text })
+      }, 50)
+    } else {
+      setChatPrefill({ key: Date.now(), text })
+    }
+  }
 
   const handleBack = () => {
     if (fromPembahasan && pembahasanModuleId) {
@@ -279,55 +301,66 @@ function MaterialCardDetailContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+      <div className="mx-auto max-w-[90%] xl:max-w-[80%] px-4 py-6 md:px-6">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10 xl:gap-12">
           <div className="min-w-0 flex-1">
-            <Button variant="ghost" onClick={handleBack} className="-ml-2 mb-4">
+            <Button
+              variant="ghost"
+              onClick={handleBack}
+              className="-ml-2 mb-4 lg:hidden"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
 
-            {subtopicName && (
-              <p className="text-sm font-medium text-muted-foreground">
-                {subtopicName}
-              </p>
-            )}
+            <div ref={materialBodyRef} className="select-text">
+              {subtopicName && (
+                <p className="text-sm font-medium text-muted-foreground">
+                  {subtopicName}
+                </p>
+              )}
 
-            <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
-              <h1 className="font-serif text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
-                {card.title}
-              </h1>
-              <Badge
-                variant="outline"
-                className={
-                  isCovered
-                    ? "shrink-0 border-green-200 bg-green-100 text-green-800"
-                    : "shrink-0 bg-muted text-muted-foreground"
-                }
-              >
-                {isCovered ? (
-                  <CheckCircle2 className="mr-1 h-3 w-3" />
-                ) : (
-                  <Circle className="mr-1 h-3 w-3" />
-                )}
-                {points}/20 pts
-              </Badge>
+              <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
+                <h1 className="font-serif text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
+                  {card.title}
+                </h1>
+                <Badge
+                  variant="outline"
+                  className={
+                    isCovered
+                      ? "shrink-0 border-green-200 bg-green-100 text-green-800"
+                      : "shrink-0 bg-muted text-muted-foreground"
+                  }
+                >
+                  {isCovered ? (
+                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                  ) : (
+                    <Circle className="mr-1 h-3 w-3" />
+                  )}
+                  {points}/20 pts
+                </Badge>
+              </div>
+
+              <div className="mt-6 flex select-none flex-col gap-3 sm:flex-row lg:hidden">
+                <div className="min-w-0 flex-1">{drillOrBackButton}</div>
+                <div className="min-w-0 flex-1">{tanyaButton}</div>
+              </div>
+
+              <div className="mt-8 lg:mt-10">
+                <MaterialCardViewer
+                  variant="editorial"
+                  card={card}
+                  skillName={skill?.name}
+                  skillCode={skill?.code}
+                  showHeader={false}
+                />
+              </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:hidden">
-              {drillOrBackButton}
-              {tanyaButton}
-            </div>
-
-            <div className="mt-8 lg:mt-10">
-              <MaterialCardViewer
-                variant="editorial"
-                card={card}
-                skillName={skill?.name}
-                skillCode={skill?.code}
-                showHeader={false}
-              />
-            </div>
+            <MaterialHighlightAsk
+              rootRef={materialBodyRef}
+              onAsk={handleHighlightAsk}
+            />
           </div>
 
           {isLg && skill && (
@@ -342,6 +375,9 @@ function MaterialCardDetailContent() {
                   key_facts: card.key_facts,
                   common_mistakes: card.common_mistakes,
                 }}
+                prefillKey={chatPrefill?.key}
+                prefillText={chatPrefill?.text ?? ""}
+                onPrefillApplied={() => setChatPrefill(null)}
               />
             </aside>
           )}
@@ -360,6 +396,9 @@ function MaterialCardDetailContent() {
             key_facts: card.key_facts,
             common_mistakes: card.common_mistakes,
           }}
+          prefillKey={chatPrefill?.key}
+          prefillText={chatPrefill?.text ?? ""}
+          onPrefillApplied={() => setChatPrefill(null)}
         />
       )}
     </div>
