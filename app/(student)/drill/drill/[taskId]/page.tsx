@@ -25,6 +25,7 @@ export default function DrillRunnerPage() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const taskId = params.taskId as string
+  const skillId = searchParams.get("skillId")
 
   const [user, setUser] = useState<any>(null)
   const [planTaskId, setPlanTaskId] = useState<string | null>(null)
@@ -95,7 +96,7 @@ export default function DrillRunnerPage() {
             variant: "destructive",
             title: "Modul tidak ditemukan",
           })
-          router.push("/drill")
+          router.push("/review")
           return
         }
 
@@ -118,7 +119,7 @@ export default function DrillRunnerPage() {
           variant: "destructive",
           title: "Modul tidak ditemukan",
         })
-        router.push("/drill")
+        router.push("/review")
         return
       }
 
@@ -138,7 +139,9 @@ export default function DrillRunnerPage() {
         .maybeSingle()
 
       if (existingCompletion && retry !== "1" && retry !== "true") {
-        router.replace(`/drill/drill/${taskId}/result`)
+        router.replace(
+          `/drill/drill/${taskId}/result${skillId ? `?skillId=${skillId}` : ""}`,
+        )
         setIsLoading(false)
         return
       }
@@ -153,7 +156,7 @@ export default function DrillRunnerPage() {
           variant: "destructive",
           title: "Modul tidak memiliki soal",
         })
-        router.push("/drill")
+        router.push("/review")
         return
       }
 
@@ -174,7 +177,7 @@ export default function DrillRunnerPage() {
 
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId])
+  }, [taskId, skillId])
 
   const handleCompleteWithResult = useCallback(
     async (session: AssessmentSession): Promise<ModuleResult> => {
@@ -265,12 +268,17 @@ export default function DrillRunnerPage() {
   }, [])
 
   const handleViewPembahasan = useCallback(() => {
-    router.push(`/drill/pembahasan/${module?.id}`)
-  }, [router, module])
+    const q = skillId ? `?skillId=${skillId}` : ""
+    router.push(`/drill/pembahasan/${module?.id}${q}`)
+  }, [router, module, skillId])
 
   const handleContinue = useCallback(() => {
-    router.push("/drill")
-  }, [router])
+    if (skillId) {
+      router.push(`/review/${skillId}/drill`)
+    } else {
+      router.push("/review")
+    }
+  }, [router, skillId])
 
   if (isLoading) {
     return (

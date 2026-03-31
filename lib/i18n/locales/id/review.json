@@ -1,6 +1,30 @@
 {
   "title": "Taktis",
   "subtitle": "Mode belajar cepat untuk penguatan skill yang efektif",
+  "section": {
+    "materiTree": "Materi per subtopik",
+    "materiTreeHint": "Buka topik untuk latihan atau baca materi per skill"
+  },
+  "accordion": {
+    "loading": "Memuat…",
+    "emptySkills": "Belum ada skill dengan materi",
+    "progressLine": "{{covered}} dari {{total}} selesai"
+  },
+  "skill": {
+    "done": "Selesai",
+    "pointsLine": "{{points}}/20 poin",
+    "latihan": "Latihan",
+    "materi": "Materi"
+  },
+  "empty": {
+    "noTopics": "Belum ada topik materi.",
+    "noSkills": "Tidak ada skill dengan materi.",
+    "noTopicsForFilter": "Tidak ada materi untuk filter ini."
+  },
+  "filters": {
+    "all": "Semua",
+    "l2Label": "Filter mata pelajaran"
+  },
   "flashcards": {
     "title": "Flashcards",
     "desc": "Balik kartu untuk menguji ingatan dan memperkuat konsep penting",

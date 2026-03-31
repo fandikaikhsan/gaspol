@@ -42,19 +42,23 @@ const taskColors = {
 }
 
 function getTaskHref(task: TaskCardProps["task"]): string {
+  const tid = task.id
+  const target = task.target_node_id || ""
   switch (task.task_type) {
     case "drill_focus":
-      return `/drill?tab=topic&node=${task.target_node_id || ""}&taskId=${task.id}`
+      return target
+        ? `/review/${target}/drill?taskId=${tid}&from=plan`
+        : `/review?taskId=${tid}`
     case "drill_mixed":
-      return `/drill?tab=mixed&taskId=${task.id}`
+      return `/drill/mixed?taskId=${tid}`
     case "mock":
-      return `/drill?tab=mixed&mode=mock&taskId=${task.id}`
+      return `/drill/mixed?taskId=${tid}`
     case "flashcard":
-      return `/review/flashcards?taskId=${task.id}`
+      return `/review/flashcards?taskId=${tid}`
     case "review":
-      return `/drill?tab=topic&taskId=${task.id}`
+      return `/review?taskId=${tid}`
     default:
-      return `/drill?tab=mixed&taskId=${task.id}`
+      return `/drill/mixed?taskId=${tid}`
   }
 }
 

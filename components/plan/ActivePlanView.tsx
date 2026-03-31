@@ -251,7 +251,7 @@ export function ActivePlanView({
               variant="brutal-outline"
               size="sm"
               className="min-h-[44px]"
-              onClick={() => router.push("/drill")}
+              onClick={() => router.push("/review")}
             >
               <BookOpen className="h-4 w-4 mr-2" />
               {t("active.browseAllPractice")}

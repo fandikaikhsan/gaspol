@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Question } from "@/lib/assessment/types"
 import { QuestionDisplay } from "@/components/assessment/QuestionDisplay"
@@ -183,7 +183,9 @@ function extractOptionContentBlocks(question: Question): Record<string, { blocks
 export default function PembahasanPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const moduleId = params.moduleId as string
+  const skillId = searchParams.get("skillId")
 
   const [data, setData] = useState<PembahasanData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -491,12 +493,25 @@ export default function PembahasanPage() {
           <Button
             variant="brutal-outline"
             className="flex-1"
-            onClick={() => router.push(`/drill/drill/${moduleId}`)}
+            onClick={() => {
+              const q = new URLSearchParams({ retry: "1" })
+              if (skillId) q.set("skillId", skillId)
+              router.push(`/drill/drill/${moduleId}?${q.toString()}`)
+            }}
           >
             Coba Lagi
           </Button>
-          <Button className="flex-1" onClick={() => router.push("/drill")}>
-            Kembali ke Drill
+          <Button
+            className="flex-1"
+            onClick={() =>
+              router.push(
+                skillId
+                  ? `/review/${skillId}/drill?from=pembahasan&moduleId=${moduleId}`
+                  : "/review",
+              )
+            }
+          >
+            {skillId ? "Kembali ke latihan skill" : "Kembali ke Review"}
           </Button>
         </div>
       </div>

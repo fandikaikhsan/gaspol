@@ -1,6 +1,30 @@
 {
   "title": "Taktis",
   "subtitle": "Quick study modes for rapid skill reinforcement",
+  "section": {
+    "materiTree": "Materials by subtopic",
+    "materiTreeHint": "Expand a topic to practice or open materials per skill"
+  },
+  "accordion": {
+    "loading": "Loading…",
+    "emptySkills": "No skills with materials yet",
+    "progressLine": "{{covered}} of {{total}} done"
+  },
+  "skill": {
+    "done": "Done",
+    "pointsLine": "{{points}}/20 pts",
+    "latihan": "Practice",
+    "materi": "Material"
+  },
+  "empty": {
+    "noTopics": "No material topics yet.",
+    "noSkills": "No skills with materials.",
+    "noTopicsForFilter": "No materials match this filter."
+  },
+  "filters": {
+    "all": "All",
+    "l2Label": "Subject filter"
+  },
   "flashcards": {
     "title": "Flashcards",
     "desc": "Flip cards to test your memory and reinforce key concepts",

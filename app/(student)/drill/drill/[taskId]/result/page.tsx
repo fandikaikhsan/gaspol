@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,8 +24,16 @@ interface ModuleCompletion {
 export default function DrillResultPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
+  const skillId = searchParams.get("skillId")
   const { t } = useTranslation("common")
   const taskId = params.taskId as string
+
+  const backHref = skillId
+    ? `/review/${skillId}/drill`
+    : "/review"
+  const drillWithSkill = (path: string) =>
+    skillId ? `${path}${path.includes("?") ? "&" : "?"}skillId=${skillId}` : path
 
   const [moduleId, setModuleId] = useState<string | null>(null)
   const [completion, setCompletion] = useState<ModuleCompletion | null>(null)
@@ -63,7 +71,7 @@ export default function DrillResultPage() {
       }
 
       if (!resolvedModuleId) {
-        router.push("/drill")
+        router.push("/review")
         return
       }
 
@@ -80,7 +88,7 @@ export default function DrillResultPage() {
         .maybeSingle()
 
       if (error || !data) {
-        router.push("/drill")
+        router.push("/review")
         return
       }
 
@@ -167,7 +175,11 @@ export default function DrillResultPage() {
 
         <div className="flex flex-col gap-3">
           <Button
-            onClick={() => router.push(`/drill/pembahasan/${moduleId}`)}
+            onClick={() =>
+              router.push(
+                `/drill/pembahasan/${moduleId}${skillId ? `?skillId=${skillId}` : ""}`,
+              )
+            }
             className="w-full"
           >
             <BookOpen className="w-4 h-4 mr-2" />
@@ -176,7 +188,11 @@ export default function DrillResultPage() {
           <div className="flex gap-3">
             <Button
               variant="brutal-outline"
-              onClick={() => router.push(`/drill/drill/${taskId}?retry=1`)}
+              onClick={() =>
+                router.push(
+                  drillWithSkill(`/drill/drill/${taskId}?retry=1`),
+                )
+              }
               className="flex-1"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -184,11 +200,11 @@ export default function DrillResultPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push("/drill")}
+              onClick={() => router.push(backHref)}
               className="flex-1"
             >
               <ArrowRight className="w-4 h-4 mr-2" />
-              Kembali ke Drill
+              {skillId ? "Kembali ke latihan skill" : "Kembali ke Review"}
             </Button>
           </div>
         </div>

@@ -68,6 +68,25 @@ function MaterialCardDetailContent() {
   const skillId = params.skillId as string
   const fromPembahasan = searchParams.get("from") === "pembahasan"
   const pembahasanModuleId = searchParams.get("moduleId")
+  const entryFrom = searchParams.get("from")
+
+  const handleBack = () => {
+    if (fromPembahasan && pembahasanModuleId) {
+      router.push(
+        `/drill/pembahasan/${pembahasanModuleId}?skillId=${skillId}`,
+      )
+      return
+    }
+    if (entryFrom === "review") {
+      router.push("/review")
+      return
+    }
+    if (entryFrom === "analytics") {
+      router.push("/analytics")
+      return
+    }
+    router.back()
+  }
 
   const [isLoading, setIsLoading] = useState(true)
   const [card, setCard] = useState<MaterialCard | null>(null)
@@ -163,11 +182,7 @@ function MaterialCardDetailContent() {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-2xl mx-auto py-8">
-          <Button
-            variant="ghost"
-            onClick={() => router.back()}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={handleBack} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -188,11 +203,7 @@ function MaterialCardDetailContent() {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-2xl mx-auto py-8">
-          <Button
-            variant="ghost"
-            onClick={() => router.back()}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={handleBack} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -217,7 +228,7 @@ function MaterialCardDetailContent() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto py-6">
         {/* Back Button */}
-        <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+        <Button variant="ghost" onClick={handleBack} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
@@ -256,7 +267,9 @@ function MaterialCardDetailContent() {
               variant="brutal"
               className="flex-1 gap-2"
               onClick={() =>
-                router.push(`/drill/pembahasan/${pembahasanModuleId}`)
+                router.push(
+                  `/drill/pembahasan/${pembahasanModuleId}?skillId=${skillId}`,
+                )
               }
             >
               <ArrowLeft className="h-4 w-4" />
@@ -266,7 +279,9 @@ function MaterialCardDetailContent() {
             <Button
               variant="brutal"
               className="flex-1 gap-2"
-              onClick={() => router.push(`/drill?tab=topic&node=${skillId}`)}
+              onClick={() =>
+                router.push(`/review/${skillId}/drill?from=material`)
+              }
             >
               <Target className="h-4 w-4" />
               Latihan Skill Ini

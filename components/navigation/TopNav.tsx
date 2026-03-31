@@ -62,7 +62,6 @@ export function TopNav({ userRole = "student" }: TopNavProps) {
   // Student navigation links (translated)
   const studentLinks = [
     { href: "/plan", labelKey: "nav.plan" },
-    { href: "/drill", labelKey: "nav.drill" },
     { href: "/review", labelKey: "nav.review" },
     { href: "/analytics", labelKey: "nav.analytics" },
   ]

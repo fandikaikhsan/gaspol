@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   Target,
-  Swords,
   BookOpen,
   BarChart2,
   User,
@@ -20,7 +19,6 @@ import { useTranslation } from "@/lib/i18n"
 
 const navigation = [
   { key: "plan", href: "/plan", icon: Target },
-  { key: "drill", href: "/drill", icon: Swords },
   { key: "review", href: "/review", icon: BookOpen },
   { key: "analytics", href: "/analytics", icon: BarChart2 },
 ] as const

@@ -954,8 +954,8 @@ export default function AdminModulesPage() {
                   </Select>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Required for drill_focus modules to correctly categorize in
-                  the student drill page.
+                  Required for drill_focus modules: students open drills from
+                  Review → material → latihan for this L5 skill.
                 </p>
               </div>
             )}
