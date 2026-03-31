@@ -14,13 +14,12 @@
     "expandSidebar": "Expand sidebar"
   },
   "tutor": {
-    "tagline": "Success with Gaspol",
-    "headline": "Anything still unclear?",
-    "inputPlaceholder": "Type your question here…",
-    "chatPlaceholder": "Continue the conversation…",
-    "ask": "Ask",
-    "changeTopicHint": "Use back to change topic & page color",
-    "quotaExhausted": "Your AI chat quota is low or exhausted — same pool as Ask Gaspol in Review.",
+    "headlineLine1": "Still have questions?",
+    "headlineLine2": "Ask anything here",
+    "inputPlaceholder": "Write what you want to ask",
+    "chatPlaceholder": "Type a message…",
+    "changeTopicHint": "Back to change topic",
+    "quotaExhausted": "Your AI chat quota is low or exhausted.",
     "quotaExhaustedShort": "Quota exhausted — cannot send"
   },
   "button": {

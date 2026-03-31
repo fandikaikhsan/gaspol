@@ -14,13 +14,12 @@
     "expandSidebar": "Lebarkan menu samping"
   },
   "tutor": {
-    "tagline": "Sukses Bersama Gaspol",
-    "headline": "Ada yang masih bingung?",
-    "inputPlaceholder": "Tulis pertanyaanmu di sini…",
-    "chatPlaceholder": "Lanjutkan percakapan…",
-    "ask": "Tanya",
-    "changeTopicHint": "Tombol kembali untuk ganti topik & warna halaman",
-    "quotaExhausted": "Kuota chat AI kamu sudah tipis atau habis — sama seperti Tanya Gaspol di Review.",
+    "headlineLine1": "Masih ada yang bingung?",
+    "headlineLine2": "Tanya apapun di sini",
+    "inputPlaceholder": "Tulis mau tanya apa",
+    "chatPlaceholder": "Ketik pesan…",
+    "changeTopicHint": "Kembali untuk ganti topik",
+    "quotaExhausted": "Kuota chat AI kamu sudah tipis atau habis.",
     "quotaExhaustedShort": "Kuota habis — tidak bisa mengirim pesan"
   },
   "button": {
