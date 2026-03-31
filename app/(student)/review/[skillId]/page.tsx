@@ -8,7 +8,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,6 +23,7 @@ import {
 import { getActiveExamId } from "@/lib/active-exam"
 import TanyaGaspolChat from "@/components/review/TanyaGaspolChat"
 import { MaterialCardViewer } from "@/components/review/MaterialCardViewer"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 interface MaterialCard {
   id: string
@@ -50,7 +51,7 @@ export default function MaterialCardDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       }
@@ -69,6 +70,8 @@ function MaterialCardDetailContent() {
   const fromPembahasan = searchParams.get("from") === "pembahasan"
   const pembahasanModuleId = searchParams.get("moduleId")
   const entryFrom = searchParams.get("from")
+
+  const isLg = useMediaQuery("(min-width: 1024px)")
 
   const handleBack = () => {
     if (fromPembahasan && pembahasanModuleId) {
@@ -89,6 +92,7 @@ function MaterialCardDetailContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [card, setCard] = useState<MaterialCard | null>(null)
   const [skill, setSkill] = useState<SkillInfo | null>(null)
+  const [subtopicName, setSubtopicName] = useState<string | null>(null)
   const [coverage, setCoverage] = useState<Coverage | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [skillNotForActiveExam, setSkillNotForActiveExam] = useState(false)
@@ -106,10 +110,9 @@ function MaterialCardDetailContent() {
 
         const activeExamId = await getActiveExamId(supabase, user.id)
 
-        // Fetch skill info (include exam_id for validation)
         const { data: skillData } = await (supabase as any)
           .from("taxonomy_nodes")
-          .select("id, name, code, exam_id")
+          .select("id, name, code, exam_id, parent_id")
           .eq("id", skillId)
           .single()
 
@@ -119,7 +122,6 @@ function MaterialCardDetailContent() {
             name: skillData.name,
             code: skillData.code,
           })
-          // Block skills not for active exam: exam_id null or different exam
           if (
             activeExamId &&
             (skillData.exam_id === null || skillData.exam_id !== activeExamId)
@@ -128,9 +130,17 @@ function MaterialCardDetailContent() {
             setIsLoading(false)
             return
           }
+
+          if (skillData.parent_id) {
+            const { data: parent } = await (supabase as any)
+              .from("taxonomy_nodes")
+              .select("name")
+              .eq("id", skillData.parent_id)
+              .single()
+            if (parent?.name) setSubtopicName(parent.name)
+          }
         }
 
-        // Fetch published material card for this skill
         const { data: cardData } = await (supabase as any)
           .from("material_cards")
           .select("*")
@@ -158,7 +168,6 @@ function MaterialCardDetailContent() {
           })
         }
 
-        // Fetch user coverage
         if (user) {
           const { data: coverageData } = await supabase
             .from("user_skill_state")
@@ -180,7 +189,7 @@ function MaterialCardDetailContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -189,14 +198,14 @@ function MaterialCardDetailContent() {
   if (skillNotForActiveExam) {
     return (
       <div className="min-h-screen bg-background p-4">
-        <div className="max-w-2xl mx-auto py-8">
+        <div className="mx-auto max-w-2xl py-8">
           <Button variant="ghost" onClick={handleBack} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
           <Card className="border-2 border-amber-200 bg-amber-50/50">
             <CardContent className="py-12 text-center">
-              <h3 className="text-lg font-semibold mb-1">Not Available</h3>
+              <h3 className="mb-1 text-lg font-semibold">Not Available</h3>
               <p className="text-muted-foreground">
                 This material is not available for the currently active exam.
               </p>
@@ -210,15 +219,15 @@ function MaterialCardDetailContent() {
   if (!card) {
     return (
       <div className="min-h-screen bg-background p-4">
-        <div className="max-w-2xl mx-auto py-8">
+        <div className="mx-auto max-w-2xl py-8">
           <Button variant="ghost" onClick={handleBack} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
           <Card className="border-2 border-border">
             <CardContent className="py-12 text-center">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-1">No Material Card</h3>
+              <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <h3 className="mb-1 text-lg font-semibold">No Material Card</h3>
               <p className="text-muted-foreground">
                 No published material card available for this skill yet.
               </p>
@@ -232,96 +241,127 @@ function MaterialCardDetailContent() {
   const points = coverage?.total_points ?? 0
   const isCovered = coverage?.is_covered ?? false
 
+  const drillOrBackButton =
+    fromPembahasan && pembahasanModuleId ? (
+      <Button
+        variant="brutal"
+        className="w-full gap-2 shadow-brutal"
+        onClick={() =>
+          router.push(
+            `/drill/pembahasan/${pembahasanModuleId}?skillId=${skillId}`,
+          )
+        }
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Kembali ke Pembahasan
+      </Button>
+    ) : (
+      <Button
+        variant="brutal"
+        className="w-full gap-2 shadow-brutal"
+        onClick={() => router.push(`/review/${skillId}/drill?from=material`)}
+      >
+        <Target className="h-4 w-4" />
+        Latihan Skill Ini
+      </Button>
+    )
+
+  const tanyaButton = (
+    <Button
+      variant="outline"
+      className="w-full gap-2 border-2 border-border bg-background shadow-brutal-sm"
+      onClick={() => setChatOpen(true)}
+    >
+      <MessageCircle className="h-4 w-4" />
+      Tanya Gaspol
+    </Button>
+  )
+
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto py-6">
-        {/* Back Button */}
-        <Button variant="ghost" onClick={handleBack} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10 xl:gap-12">
+          <div className="min-w-0 flex-1">
+            <Button variant="ghost" onClick={handleBack} className="-ml-2 mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
 
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <h1 className="text-2xl font-bold">{card.title}</h1>
-            <Badge
-              variant="outline"
-              className={
-                isCovered
-                  ? "bg-green-100 text-green-800 border-green-200 flex-shrink-0"
-                  : "bg-muted text-muted-foreground flex-shrink-0"
-              }
-            >
-              {isCovered ? (
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-              ) : (
-                <Circle className="h-3 w-3 mr-1" />
-              )}
-              {points}/20 pts
-            </Badge>
+            {subtopicName && (
+              <p className="text-sm font-medium text-muted-foreground">
+                {subtopicName}
+              </p>
+            )}
+
+            <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
+              <h1 className="font-serif text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
+                {card.title}
+              </h1>
+              <Badge
+                variant="outline"
+                className={
+                  isCovered
+                    ? "shrink-0 border-green-200 bg-green-100 text-green-800"
+                    : "shrink-0 bg-muted text-muted-foreground"
+                }
+              >
+                {isCovered ? (
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                ) : (
+                  <Circle className="mr-1 h-3 w-3" />
+                )}
+                {points}/20 pts
+              </Badge>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:hidden">
+              {drillOrBackButton}
+              {tanyaButton}
+            </div>
+
+            <div className="mt-8 lg:mt-10">
+              <MaterialCardViewer
+                variant="editorial"
+                card={card}
+                skillName={skill?.name}
+                skillCode={skill?.code}
+                showHeader={false}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Action Buttons (F-004) */}
-        <div className="flex gap-3 mb-6">
-          {fromPembahasan && pembahasanModuleId ? (
-            <Button
-              variant="brutal"
-              className="flex-1 gap-2"
-              onClick={() =>
-                router.push(
-                  `/drill/pembahasan/${pembahasanModuleId}?skillId=${skillId}`,
-                )
-              }
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Kembali ke Pembahasan
-            </Button>
-          ) : (
-            <Button
-              variant="brutal"
-              className="flex-1 gap-2"
-              onClick={() =>
-                router.push(`/review/${skillId}/drill?from=material`)
-              }
-            >
-              <Target className="h-4 w-4" />
-              Latihan Skill Ini
-            </Button>
+          {isLg && skill && (
+            <aside className="sticky top-6 w-full max-w-[380px] shrink-0 space-y-4 self-start">
+              {drillOrBackButton}
+              <TanyaGaspolChat
+                layout="embedded"
+                skillId={skillId}
+                skillName={skill.name}
+                materialContext={{
+                  core_idea: card.core_idea,
+                  key_facts: card.key_facts,
+                  common_mistakes: card.common_mistakes,
+                }}
+              />
+            </aside>
           )}
-          <Button
-            variant="outline"
-            className="flex-1 gap-2"
-            onClick={() => setChatOpen(true)}
-          >
-            <MessageCircle className="h-4 w-4" />
-            Tanya Gaspol
-          </Button>
         </div>
-
-        {/* Material content (shared component) */}
-        <MaterialCardViewer
-          card={card}
-          skillName={skill?.name}
-          skillCode={skill?.code}
-          showHeader={false}
-        />
-        {/* Tanya Gaspol Chat Modal */}
-        {card && skill && (
-          <TanyaGaspolChat
-            open={chatOpen}
-            onOpenChange={setChatOpen}
-            skillId={skillId}
-            skillName={skill.name}
-            materialContext={{
-              core_idea: card.core_idea,
-              key_facts: card.key_facts,
-              common_mistakes: card.common_mistakes,
-            }}
-          />
-        )}
       </div>
+
+      {!isLg && skill && (
+        <TanyaGaspolChat
+          layout="dialog"
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          skillId={skillId}
+          skillName={skill.name}
+          materialContext={{
+            core_idea: card.core_idea,
+            key_facts: card.key_facts,
+            common_mistakes: card.common_mistakes,
+          }}
+        />
+      )}
     </div>
   )
 }

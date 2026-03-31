@@ -45,6 +45,13 @@
     "complete": "Kerja bagus!",
     "completeDesc": "Sesi flashcard selesai"
   },
+  "material": {
+    "facts": "Fakta",
+    "commonMistakes": "Kesalahan Umum",
+    "examplesHeading": "Contoh",
+    "exampleN": "Contoh {{n}}",
+    "explanation": "Penjelasan"
+  },
   "swipe": {
     "title": "Quick Swipe",
     "desc": "Jawaban cepat ala Tinder untuk latihan kecepatan",

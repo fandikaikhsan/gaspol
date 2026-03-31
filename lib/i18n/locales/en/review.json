@@ -45,6 +45,13 @@
     "complete": "Great work!",
     "completeDesc": "Flashcard session complete"
   },
+  "material": {
+    "facts": "Facts",
+    "commonMistakes": "Common mistakes",
+    "examplesHeading": "Example",
+    "exampleN": "Example {{n}}",
+    "explanation": "Explanation"
+  },
   "swipe": {
     "title": "Quick Swipe",
     "desc": "Tinder-style rapid answers for speed training",

@@ -7,6 +7,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Lightbulb, AlertTriangle, FileText } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 
 export type ExampleItem =
   | string
@@ -48,6 +50,11 @@ interface MaterialCardViewerProps {
   skillCode?: string
   /** Show header with title and skill */
   showHeader?: boolean
+  /**
+   * `cards` — bordered cards (admin preview).
+   * `editorial` — flat reading column + example cards only (student materi detail).
+   */
+  variant?: "cards" | "editorial"
 }
 
 export function MaterialCardViewer({
@@ -55,7 +62,9 @@ export function MaterialCardViewer({
   skillName,
   skillCode,
   showHeader = true,
+  variant = "cards",
 }: MaterialCardViewerProps) {
+  const { t } = useTranslation("review")
   const keyFacts = Array.isArray(card.key_facts)
     ? card.key_facts.map(asString).filter(Boolean)
     : []
@@ -66,9 +75,109 @@ export function MaterialCardViewer({
     ? card.examples.filter(
         (ex) =>
           (typeof ex === "string" && ex.trim()) ||
-          (isStructuredExample(ex) && ((ex.contoh && ex.contoh.trim()) || (ex.penjelasan && ex.penjelasan.trim()))),
+          (isStructuredExample(ex) &&
+            ((ex.contoh && ex.contoh.trim()) ||
+              (ex.penjelasan && ex.penjelasan.trim()))),
       )
     : []
+
+  if (variant === "editorial") {
+    return (
+      <div className="space-y-8">
+        {card.core_idea?.trim() && (
+          <p className="font-serif text-lg leading-relaxed text-foreground md:text-xl">
+            {card.core_idea}
+          </p>
+        )}
+
+        {keyFacts.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-serif text-2xl font-semibold tracking-tight text-foreground">
+              {t("material.facts")}
+            </h2>
+            <ol className="list-none space-y-3">
+              {keyFacts.map((fact, i) => (
+                <li key={i} className="flex gap-3 text-base leading-relaxed">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/80 text-xs font-bold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 pt-0.5">{fact}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {commonMistakes.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-serif text-2xl font-semibold tracking-tight text-foreground">
+              {t("material.commonMistakes")}
+            </h2>
+            <ul className="list-none space-y-2.5">
+              {commonMistakes.map((mistake, i) => (
+                <li key={i} className="flex gap-2.5 text-base leading-relaxed">
+                  <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/70" />
+                  <span className="min-w-0">{mistake}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {examples.length > 0 && (
+          <section
+            className={cn(
+              "space-y-4",
+              Boolean(
+                card.core_idea?.trim() ||
+                  keyFacts.length ||
+                  commonMistakes.length,
+              ) && "mt-10 border-t border-border/60 pt-10",
+            )}
+          >
+              <h2 className="font-serif text-2xl font-semibold tracking-tight text-foreground">
+                {t("material.examplesHeading")}
+              </h2>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {examples.map((example, i) => (
+                  <div
+                    key={i}
+                    className="space-y-2 rounded-lg border-2 border-border bg-muted/40 p-4 shadow-soft"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t("material.exampleN", { n: i + 1 })}
+                    </p>
+                    {isStructuredExample(example) ? (
+                      <>
+                        {example.contoh && example.contoh.trim() && (
+                          <p className="whitespace-pre-wrap font-serif text-base leading-relaxed">
+                            {example.contoh}
+                          </p>
+                        )}
+                        {example.penjelasan && example.penjelasan.trim() && (
+                          <div className="border-t border-border/50 pt-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t("material.explanation")}
+                            </span>
+                            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                              {example.penjelasan}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="whitespace-pre-wrap font-serif text-base leading-relaxed">
+                        {typeof example === "string" ? example : asString(example)}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+          </section>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -76,7 +185,7 @@ export function MaterialCardViewer({
         <div className="mb-4">
           <h1 className="text-2xl font-bold">{card.title}</h1>
           {(skillName || skillCode) && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground">
               {skillName}
               {skillCode ? ` (${skillCode})` : ""}
             </p>
@@ -87,7 +196,7 @@ export function MaterialCardViewer({
       {/* Core Idea */}
       <Card className="border-2 border-border">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Lightbulb className="h-5 w-5 text-yellow-500" />
             Core Idea
           </CardTitle>
@@ -101,7 +210,7 @@ export function MaterialCardViewer({
       {keyFacts.length > 0 && (
         <Card className="border-2 border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="h-5 w-5 text-blue-500" />
               Key Facts
             </CardTitle>
@@ -110,7 +219,7 @@ export function MaterialCardViewer({
             <ul className="space-y-2">
               {keyFacts.map((fact, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="h-5 w-5 rounded-full bg-blue-100 text-blue-800 text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-800">
                     {i + 1}
                   </span>
                   <span className="text-sm leading-relaxed">{fact}</span>
@@ -125,7 +234,7 @@ export function MaterialCardViewer({
       {commonMistakes.length > 0 && (
         <Card className="border-2 border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
               Common Mistakes
             </CardTitle>
@@ -134,7 +243,7 @@ export function MaterialCardViewer({
             <ul className="space-y-2">
               {commonMistakes.map((mistake, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-400 flex-shrink-0 mt-2" />
+                  <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-400" />
                   <span className="text-sm leading-relaxed">{mistake}</span>
                 </li>
               ))}
@@ -147,7 +256,7 @@ export function MaterialCardViewer({
       {examples.length > 0 && (
         <Card className="border-2 border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <BookOpen className="h-5 w-5 text-green-500" />
               Examples
             </CardTitle>
@@ -157,7 +266,7 @@ export function MaterialCardViewer({
               {examples.map((example, i) => (
                 <div
                   key={i}
-                  className="bg-muted/50 rounded-lg p-3 border border-border space-y-2"
+                  className="space-y-2 rounded-lg border border-border bg-muted/50 p-3"
                 >
                   {isStructuredExample(example) ? (
                     <>
@@ -166,7 +275,7 @@ export function MaterialCardViewer({
                           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Contoh
                           </span>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-0.5">
+                          <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed">
                             {example.contoh}
                           </p>
                         </div>
@@ -176,14 +285,14 @@ export function MaterialCardViewer({
                           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Penjelasan
                           </span>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-0.5">
+                          <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed">
                             {example.penjelasan}
                           </p>
                         </div>
                       )}
                     </>
                   ) : (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
                       {typeof example === "string" ? example : asString(example)}
                     </p>
                   )}

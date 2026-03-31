@@ -83,15 +83,18 @@ interface MaterialContext {
 }
 
 interface TanyaGaspolChatProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  /** Dialog = mobile / modal. Embedded = sticky sidebar panel (desktop). */
+  layout?: "dialog" | "embedded"
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   skillId: string
   skillName: string
   materialContext: MaterialContext
 }
 
 export default function TanyaGaspolChat({
-  open,
+  layout = "dialog",
+  open = false,
   onOpenChange,
   skillId,
   skillName,
@@ -118,9 +121,11 @@ export default function TanyaGaspolChat({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Load chat history and quota when dialog opens
+  const isActive = layout === "embedded" || open
+
+  // Load chat history and quota when panel is active
   useEffect(() => {
-    if (!open) return
+    if (!isActive) return
 
     async function loadHistory() {
       setIsFetchingHistory(true)
@@ -168,7 +173,7 @@ export default function TanyaGaspolChat({
     }
 
     loadHistory()
-  }, [open, skillId])
+  }, [isActive, skillId])
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -259,27 +264,36 @@ export default function TanyaGaspolChat({
     sendMessage(inputValue)
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed left-0 top-0 right-0 bottom-0 z-50 w-screen h-screen max-w-none rounded-none translate-x-0 translate-y-0 flex flex-col p-0 gap-0 border-0 sm:left-[50%] sm:top-[50%] sm:right-auto sm:bottom-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:w-full sm:max-w-2xl sm:h-auto sm:max-h-[88vh] sm:min-h-[min(65vh,520px)] sm:rounded-2xl sm:border-2 sm:border-charcoal">
-        {/* Header: pr-12 so token badge doesn't overlap the close (X) button */}
-        <DialogHeader className="px-4 pr-12 pt-4 pb-3 border-b border-border flex-shrink-0">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <DialogTitle className="flex items-center gap-2 text-lg min-w-0 truncate">
-              <MessageCircle className="h-5 w-5 text-primary flex-shrink-0" />
-              <span className="truncate">Tanya Gaspol</span>
-            </DialogTitle>
-            {remainingTokens !== null && (
-              <Badge variant="outline" className="gap-1 text-xs flex-shrink-0">
-                <Coins className="h-3 w-3" />
-                {remainingTokens} / {totalTokens}
-              </Badge>
-            )}
-          </div>
-        </DialogHeader>
+  const tokenBadge =
+    remainingTokens !== null ? (
+      <Badge variant="outline" className="gap-1 text-xs flex-shrink-0">
+        <Coins className="h-3 w-3" />
+        {remainingTokens} / {totalTokens}
+      </Badge>
+    ) : null
 
-        {/* Chat area */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
+  const headerEmbedded = (
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 pb-3 pt-4">
+      <h2 className="flex min-w-0 items-center gap-2 truncate text-lg font-semibold">
+        <MessageCircle className="h-5 w-5 shrink-0 text-primary" />
+        <span className="truncate">Tanya Gaspol</span>
+      </h2>
+      {tokenBadge}
+    </div>
+  )
+
+  const headerDialog = (
+    <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-2 space-y-0 border-b border-border px-4 pb-3 pr-12 pt-4">
+      <DialogTitle className="flex min-w-0 items-center gap-2 truncate text-lg font-semibold">
+        <MessageCircle className="h-5 w-5 shrink-0 text-primary" />
+        <span className="truncate">Tanya Gaspol</span>
+      </DialogTitle>
+      {tokenBadge}
+    </DialogHeader>
+  )
+
+  const chatScrollArea = (
+    <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
           {isFetchingHistory ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -378,42 +392,64 @@ export default function TanyaGaspolChat({
               <div ref={messagesEndRef} />
             </>
           )}
-        </div>
+    </div>
+  )
 
-        {/* Input area */}
-        <div className="px-4 pb-4 pt-2 border-t border-border flex-shrink-0">
-          {isQuotaExhausted ? (
-            <div className="flex items-center justify-center py-2">
-              <p className="text-xs text-muted-foreground">
-                Kuota habis — tidak bisa mengirim pesan
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ketik pertanyaanmu..."
-                disabled={isLoading}
-                className="flex-1 rounded-xl"
-                autoComplete="off"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={isLoading || !inputValue.trim()}
-                className="rounded-xl flex-shrink-0"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </form>
-          )}
+  const inputFooter = (
+    <div className="px-4 pb-4 pt-2 border-t border-border flex-shrink-0">
+      {isQuotaExhausted ? (
+        <div className="flex items-center justify-center py-2">
+          <p className="text-xs text-muted-foreground">
+            Kuota habis — tidak bisa mengirim pesan
+          </p>
         </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Ketik pertanyaanmu..."
+            disabled={isLoading}
+            className="flex-1 rounded-xl"
+            autoComplete="off"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={isLoading || !inputValue.trim()}
+            className="rounded-xl flex-shrink-0"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        </form>
+      )}
+    </div>
+  )
+
+  if (layout === "embedded") {
+    return (
+      <div
+        className="flex w-full flex-col overflow-hidden rounded-brutal border-2 border-border bg-card shadow-brutal-sm min-h-[min(70vh,560px)] max-h-[min(70vh,calc(100vh-8rem))] h-[min(70vh,560px)]"
+        aria-label="Tanya Gaspol chat"
+      >
+        {headerEmbedded}
+        {chatScrollArea}
+        {inputFooter}
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange ?? (() => {})}>
+      <DialogContent className="fixed left-0 top-0 right-0 bottom-0 z-50 w-screen h-screen max-w-none rounded-none translate-x-0 translate-y-0 flex flex-col p-0 gap-0 border-0 sm:left-[50%] sm:top-[50%] sm:right-auto sm:bottom-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:w-full sm:max-w-2xl sm:h-auto sm:max-h-[88vh] sm:min-h-[min(65vh,520px)] sm:rounded-2xl sm:border-2 sm:border-charcoal">
+        {headerDialog}
+        {chatScrollArea}
+        {inputFooter}
       </DialogContent>
     </Dialog>
   )
