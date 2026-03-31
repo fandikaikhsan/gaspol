@@ -181,9 +181,7 @@ export default function ReviewPage() {
 
         const l2Ids = [
           ...new Set(
-            l3List
-              .map((n) => n.parent_id)
-              .filter((id): id is string => !!id),
+            l3List.map((n) => n.parent_id).filter((id): id is string => !!id),
           ),
         ]
 
@@ -195,7 +193,8 @@ export default function ReviewPage() {
             .in("id", l2Ids)
             .eq("exam_id", examId)
           if (l2Err) throw l2Err
-          const l2List = (l2Rows as { id: string; name: string; code: string }[]) || []
+          const l2List =
+            (l2Rows as { id: string; name: string; code: string }[]) || []
           l2Sorted = [...l2List]
             .sort((a, b) =>
               (a.code || a.name).localeCompare(b.code || b.name, "id"),
@@ -249,7 +248,9 @@ export default function ReviewPage() {
       if (l5List.length === 0) {
         if (!cancelled) {
           setSubtopicProgress(
-            Object.fromEntries(l4Ids.map((id) => [id, { total: 0, covered: 0 }])),
+            Object.fromEntries(
+              l4Ids.map((id) => [id, { total: 0, covered: 0 }]),
+            ),
           )
         }
         return
@@ -327,7 +328,8 @@ export default function ReviewPage() {
         if (activeExamId) {
           skillsQuery = skillsQuery.eq("exam_id", activeExamId)
         }
-        const { data: skillsData, error: skillsError } = await skillsQuery.order("code")
+        const { data: skillsData, error: skillsError } =
+          await skillsQuery.order("code")
 
         if (skillsError) throw skillsError
         const skills = (skillsData as TaxonomyNode[]) || []
@@ -392,10 +394,7 @@ export default function ReviewPage() {
   )
 
   useEffect(() => {
-    if (
-      l2Filter !== "all" &&
-      !l2Options.some((o) => o.id === l2Filter)
-    ) {
+    if (l2Filter !== "all" && !l2Options.some((o) => o.id === l2Filter)) {
       setL2Filter("all")
     }
   }, [l2Options, l2Filter])
@@ -504,7 +503,7 @@ export default function ReviewPage() {
         </div>
 
         {/* Materi per subtopik — accordion + skill cards */}
-        <div className="mb-0">
+        {/* <div className="mb-0">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
             {t("section.materiTree", { fallback: "Materi per subtopik" })}
@@ -514,7 +513,7 @@ export default function ReviewPage() {
               fallback: "Buka topik untuk latihan atau baca materi per skill",
             })}
           </p>
-        </div>
+        </div> */}
 
         {!isLoading && subtopics.length > 0 && (
           <div
@@ -625,8 +624,7 @@ export default function ReviewPage() {
                                   })
                                 : total === 0
                                   ? t("accordion.emptySkills", {
-                                      fallback:
-                                        "Belum ada skill dengan materi",
+                                      fallback: "Belum ada skill dengan materi",
                                     })
                                   : t("accordion.progressLine", {
                                       covered,
@@ -654,8 +652,7 @@ export default function ReviewPage() {
                               </p>
                             ) : (
                               expanded[st.id]!.skills.map((skill) => {
-                                const points =
-                                  skill.coverage?.total_points ?? 0
+                                const points = skill.coverage?.total_points ?? 0
                                 const isCovered =
                                   skill.coverage?.is_covered ?? false
 
