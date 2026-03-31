@@ -2,12 +2,13 @@
 
 /**
  * Student Layout
- * Desktop: left sidebar nav
+ * Desktop: left sidebar (full or icon-only rail on md+)
  * Mobile: bottom nav
  * Onboarding: content-only (no nav)
  */
 
 import { usePathname } from "next/navigation"
+import { useState } from "react"
 import { BottomNav } from "@/components/navigation/BottomNav"
 import { SideNav } from "@/components/navigation/SideNav"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
@@ -20,6 +21,7 @@ export default function StudentLayout({
 }) {
   const pathname = usePathname()
   const isContentOnly = pathname?.startsWith("/onboarding")
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   return (
     <StudentLayoutClient>
@@ -30,9 +32,12 @@ export default function StudentLayout({
       ) : (
         <>
           <div className="min-h-screen md:flex">
-            <SideNav />
+            <SideNav
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+            />
 
-            <main className="flex-1 pb-16 md:pb-0">
+            <main className="min-w-0 flex-1 pb-16 md:pb-0">
               <div className="pt-6 md:pt-8">
                 <ErrorBoundary>{children}</ErrorBoundary>
               </div>

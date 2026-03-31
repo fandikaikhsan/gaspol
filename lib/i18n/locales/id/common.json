@@ -8,7 +8,9 @@
     "profileSettings": "Pengaturan Profil",
     "logout": "Keluar",
     "user": "Pengguna",
-    "gaspol": "Gaspol"
+    "gaspol": "Gaspol",
+    "collapseSidebar": "Ciutkan menu samping",
+    "expandSidebar": "Lebarkan menu samping"
   },
   "button": {
     "start": "Mulai",

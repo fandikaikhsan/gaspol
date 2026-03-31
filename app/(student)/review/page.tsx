@@ -455,7 +455,7 @@ export default function ReviewPage() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto py-6">
+      <div className="max-w-2xl md:max-w-7xl mx-auto py-6">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-1">
@@ -584,7 +584,7 @@ export default function ReviewPage() {
                 >
                   {group.l3.name}
                 </h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
                   {group.l4s.map((st) => {
                     const isExpanded = expanded[st.id] !== undefined
                     const isLoadingSt = loadingExpand === st.id

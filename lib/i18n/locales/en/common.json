@@ -8,7 +8,9 @@
     "profileSettings": "Profile Settings",
     "logout": "Logout",
     "user": "User",
-    "gaspol": "Gaspol"
+    "gaspol": "Gaspol",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "button": {
     "start": "Start",
