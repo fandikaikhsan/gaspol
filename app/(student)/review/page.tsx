@@ -2,7 +2,7 @@
 
 /**
  * Student Review Page (T-041 + T-042)
- * L4 subtopics as accordions → L5 skill cards with Latihan + Materi actions
+ * L2 section headers → L3 accordions → L5 skill cards (all L5 under an L3 combined)
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react"
@@ -39,11 +39,18 @@ interface SkillCoverage {
   is_covered: boolean
 }
 
-interface ExpandedSubtopic extends TaxonomyNode {
+interface ExpandedL3 extends TaxonomyNode {
   skills: (TaxonomyNode & {
     coverage: SkillCoverage | null
     hasMaterialCard: boolean
   })[]
+}
+
+/** Accordion ring: red (low) → amber (mid) → green (high). */
+function accordionProgressToneClass(pct: number): string {
+  if (pct <= 33) return "bg-rose-700 text-white"
+  if (pct <= 66) return "bg-amber-500 text-neutral-950"
+  return "bg-emerald-600 text-white"
 }
 
 export default function ReviewPage() {
@@ -54,31 +61,28 @@ export default function ReviewPage() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [activeExamId, setActiveExamId] = useState<string | null>(null)
-  const [subtopics, setSubtopics] = useState<TaxonomyNode[]>([])
-  const [expanded, setExpanded] = useState<
-    Record<string, ExpandedSubtopic | null>
-  >({})
+  /** L3 nodes that have at least one L5 with published materi (via L4). */
+  const [l3Topics, setL3Topics] = useState<TaxonomyNode[]>([])
+  const [expanded, setExpanded] = useState<Record<string, ExpandedL3 | null>>({})
   const [loadingExpand, setLoadingExpand] = useState<string | null>(null)
-  const [subtopicProgress, setSubtopicProgress] = useState<
+  const [topicProgress, setTopicProgress] = useState<
     Record<string, { total: number; covered: number }>
   >({})
   const [l2Options, setL2Options] = useState<{ id: string; name: string }[]>([])
-  const [l3ById, setL3ById] = useState<Record<string, TaxonomyNode>>({})
-  const [l4ToL2Id, setL4ToL2Id] = useState<Record<string, string>>({})
+  const [l3ToL2Id, setL3ToL2Id] = useState<Record<string, string>>({})
   const [l2Filter, setL2Filter] = useState<string>("all")
 
-  // Fetch L4 subtopics: active exam only, and only topics that have at least one material card
+  // Fetch L3 topics: any L3 that has ≥1 L5 with published material under its L4 children
   useEffect(() => {
-    async function fetchSubtopics() {
+    async function fetchL3Topics() {
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser()
         if (!user) {
-          setSubtopics([])
+          setL3Topics([])
           setL2Options([])
-          setL3ById({})
-          setL4ToL2Id({})
+          setL3ToL2Id({})
           setIsLoading(false)
           return
         }
@@ -87,53 +91,9 @@ export default function ReviewPage() {
         setActiveExamId(examId)
 
         if (!examId) {
-          setSubtopics([])
+          setL3Topics([])
           setL2Options([])
-          setL3ById({})
-          setL4ToL2Id({})
-          setIsLoading(false)
-          return
-        }
-
-        // Only taxonomy for active exam — exclude exam_id null (unrelated materials)
-        const { data: l4Data, error: l4Error } = await (supabase as any)
-          .from("taxonomy_nodes")
-          .select("id, name, code, level, parent_id")
-          .eq("level", 4)
-          .eq("is_active", true)
-          .eq("exam_id", examId)
-          .order("code")
-        if (l4Error) throw l4Error
-        const allL4s = (l4Data as TaxonomyNode[]) || []
-
-        if (allL4s.length === 0) {
-          setSubtopics([])
-          setL2Options([])
-          setL3ById({})
-          setL4ToL2Id({})
-          setIsLoading(false)
-          return
-        }
-
-        const l4Ids = allL4s.map((l) => l.id)
-
-        const { data: l5WithParent } = await (supabase as any)
-          .from("taxonomy_nodes")
-          .select("id, parent_id")
-          .eq("level", 5)
-          .eq("exam_id", examId)
-          .in("parent_id", l4Ids)
-
-        const l5WithParentArr = (l5WithParent || []) as Array<{
-          id: string
-          parent_id: string
-        }>
-        const l5Ids = l5WithParentArr.map((r) => r.id)
-        if (l5Ids.length === 0) {
-          setSubtopics([])
-          setL2Options([])
-          setL3ById({})
-          setL4ToL2Id({})
+          setL3ToL2Id({})
           setIsLoading(false)
           return
         }
@@ -141,47 +101,83 @@ export default function ReviewPage() {
         const { data: materialData } = await (supabase as any)
           .from("material_cards")
           .select("skill_id")
-          .in("skill_id", l5Ids)
           .eq("status", "published")
 
-        const l5WithMaterial = new Set(
-          (materialData || []).map((m: { skill_id: string }) => m.skill_id),
-        )
-        const l4IdsWithMaterial = new Set(
-          l5WithParentArr
-            .filter((r) => l5WithMaterial.has(r.id))
-            .map((r) => r.parent_id),
-        )
-
-        const filtered = allL4s.filter((l4) => l4IdsWithMaterial.has(l4.id))
-
-        const l3Ids = [
+        const l5SkillIds = [
           ...new Set(
-            filtered.map((l) => l.parent_id).filter((id): id is string => !!id),
+            (materialData || []).map((m: { skill_id: string }) => m.skill_id),
           ),
         ]
-        if (l3Ids.length === 0) {
-          setSubtopics(filtered)
+        if (l5SkillIds.length === 0) {
+          setL3Topics([])
           setL2Options([])
-          setL3ById({})
-          setL4ToL2Id({})
+          setL3ToL2Id({})
+          setIsLoading(false)
           return
         }
 
-        const { data: l3Rows, error: l3Err } = await (supabase as any)
+        const { data: l5Rows } = await (supabase as any)
+          .from("taxonomy_nodes")
+          .select("id, parent_id")
+          .in("id", l5SkillIds)
+          .eq("level", 5)
+          .eq("exam_id", examId)
+
+        const l5List = (l5Rows || []) as Array<{ id: string; parent_id: string }>
+        if (l5List.length === 0) {
+          setL3Topics([])
+          setL2Options([])
+          setL3ToL2Id({})
+          setIsLoading(false)
+          return
+        }
+
+        const l4Ids = [...new Set(l5List.map((r) => r.parent_id))]
+
+        const { data: l4Rows } = await (supabase as any)
+          .from("taxonomy_nodes")
+          .select("id, parent_id")
+          .in("id", l4Ids)
+          .eq("level", 4)
+          .eq("exam_id", examId)
+
+        const l4List = (l4Rows || []) as Array<{
+          id: string
+          parent_id: string | null
+        }>
+        const l3Ids = [
+          ...new Set(
+            l4List.map((l) => l.parent_id).filter((id): id is string => !!id),
+          ),
+        ]
+        if (l3Ids.length === 0) {
+          setL3Topics([])
+          setL2Options([])
+          setL3ToL2Id({})
+          setIsLoading(false)
+          return
+        }
+
+        const { data: l3Data, error: l3Err } = await (supabase as any)
           .from("taxonomy_nodes")
           .select("id, name, code, level, parent_id")
           .in("id", l3Ids)
+          .eq("level", 3)
+          .eq("is_active", true)
           .eq("exam_id", examId)
+          .order("code")
 
         if (l3Err) throw l3Err
-        const l3List = (l3Rows as TaxonomyNode[]) || []
-        const nextL3ById: Record<string, TaxonomyNode> = {}
-        for (const n of l3List) nextL3ById[n.id] = n
+        const allL3 = (l3Data as TaxonomyNode[]) || []
+
+        const nextL3ToL2: Record<string, string> = {}
+        for (const l3 of allL3) {
+          if (l3.parent_id) nextL3ToL2[l3.id] = l3.parent_id
+        }
 
         const l2Ids = [
           ...new Set(
-            l3List.map((n) => n.parent_id).filter((id): id is string => !!id),
+            allL3.map((n) => n.parent_id).filter((id): id is string => !!id),
           ),
         ]
 
@@ -202,32 +198,24 @@ export default function ReviewPage() {
             .map((n) => ({ id: n.id, name: n.name }))
         }
 
-        const nextL4ToL2: Record<string, string> = {}
-        for (const l4 of filtered) {
-          const l3 = l4.parent_id ? nextL3ById[l4.parent_id] : undefined
-          if (l3?.parent_id) nextL4ToL2[l4.id] = l3.parent_id
-        }
-
-        setSubtopics(filtered)
-        setL3ById(nextL3ById)
+        setL3Topics(allL3)
+        setL3ToL2Id(nextL3ToL2)
         setL2Options(l2Sorted)
-        setL4ToL2Id(nextL4ToL2)
       } catch (err) {
-        console.error("Failed to fetch subtopics:", err)
-        setSubtopics([])
+        console.error("Failed to fetch review topics:", err)
+        setL3Topics([])
         setL2Options([])
-        setL3ById({})
-        setL4ToL2Id({})
+        setL3ToL2Id({})
       } finally {
         setIsLoading(false)
       }
     }
-    fetchSubtopics()
+    fetchL3Topics()
   }, [])
 
-  // Per-accordion progress (L5 with materi / covered) for header badge — no expand required
+  // Per-L3 progress (all L5 with materi under that L3, any L4)
   useEffect(() => {
-    if (!activeExamId || subtopics.length === 0) return
+    if (!activeExamId || l3Topics.length === 0) return
     let cancelled = false
 
     async function loadProgress() {
@@ -236,21 +224,40 @@ export default function ReviewPage() {
       } = await supabase.auth.getUser()
       if (!user) return
 
-      const l4Ids = subtopics.map((s) => s.id)
+      const l3Ids = l3Topics.map((s) => s.id)
+
+      const { data: l4rows } = await (supabase as any)
+        .from("taxonomy_nodes")
+        .select("id, parent_id")
+        .in("parent_id", l3Ids)
+        .eq("level", 4)
+        .eq("exam_id", activeExamId)
+
+      const l4List = (l4rows || []) as Array<{ id: string; parent_id: string }>
+      if (l4List.length === 0) {
+        if (!cancelled) {
+          setTopicProgress(
+            Object.fromEntries(l3Ids.map((id) => [id, { total: 0, covered: 0 }])),
+          )
+        }
+        return
+      }
+
+      const l4ToL3 = new Map(l4List.map((r) => [r.id, r.parent_id]))
+      const l4Ids = l4List.map((r) => r.id)
+
       const { data: l5rows } = await (supabase as any)
         .from("taxonomy_nodes")
         .select("id, parent_id")
+        .in("parent_id", l4Ids)
         .eq("level", 5)
         .eq("exam_id", activeExamId)
-        .in("parent_id", l4Ids)
 
       const l5List = (l5rows || []) as Array<{ id: string; parent_id: string }>
       if (l5List.length === 0) {
         if (!cancelled) {
-          setSubtopicProgress(
-            Object.fromEntries(
-              l4Ids.map((id) => [id, { total: 0, covered: 0 }]),
-            ),
+          setTopicProgress(
+            Object.fromEntries(l3Ids.map((id) => [id, { total: 0, covered: 0 }])),
           )
         }
         return
@@ -267,14 +274,16 @@ export default function ReviewPage() {
         (mats || []).map((m: { skill_id: string }) => m.skill_id),
       )
 
-      const l5ByL4 = new Map<string, string[]>()
+      const l5IdsForL3 = new Map<string, string[]>()
       for (const row of l5List) {
         if (!withMat.has(row.id)) continue
-        if (!l5ByL4.has(row.parent_id)) l5ByL4.set(row.parent_id, [])
-        l5ByL4.get(row.parent_id)!.push(row.id)
+        const l3Id = l4ToL3.get(row.parent_id)
+        if (!l3Id) continue
+        if (!l5IdsForL3.has(l3Id)) l5IdsForL3.set(l3Id, [])
+        l5IdsForL3.get(l3Id)!.push(row.id)
       }
 
-      const flatIds = l5List.filter((r) => withMat.has(r.id)).map((r) => r.id)
+      const flatIds = [...new Set([...l5IdsForL3.values()].flat())]
       const { data: uss } = await supabase
         .from("user_skill_state")
         .select("micro_skill_id, is_covered")
@@ -288,42 +297,58 @@ export default function ReviewPage() {
       )
 
       const next: Record<string, { total: number; covered: number }> = {}
-      for (const l4 of subtopics) {
-        const ids = l5ByL4.get(l4.id) || []
-        next[l4.id] = {
+      for (const l3 of l3Topics) {
+        const ids = l5IdsForL3.get(l3.id) || []
+        next[l3.id] = {
           total: ids.length,
           covered: ids.filter((id) => coveredSet.has(id)).length,
         }
       }
-      if (!cancelled) setSubtopicProgress(next)
+      if (!cancelled) setTopicProgress(next)
     }
 
     loadProgress()
     return () => {
       cancelled = true
     }
-  }, [subtopics, activeExamId, supabase])
+  }, [l3Topics, activeExamId, supabase])
 
-  // Toggle expand a subtopic → load L5 skills + coverage
   const toggleExpand = useCallback(
-    async (subtopicId: string) => {
-      if (expanded[subtopicId] !== undefined) {
-        // Collapse
+    async (l3Id: string) => {
+      if (expanded[l3Id] !== undefined) {
         setExpanded((prev) => {
           const next = { ...prev }
-          delete next[subtopicId]
+          delete next[l3Id]
           return next
         })
         return
       }
 
-      setLoadingExpand(subtopicId)
+      setLoadingExpand(l3Id)
       try {
-        // Get L5 skills under this L4 — only for active exam (exclude exam_id null)
+        const { data: l4Children } = await (supabase as any)
+          .from("taxonomy_nodes")
+          .select("id")
+          .eq("parent_id", l3Id)
+          .eq("level", 4)
+          .eq("exam_id", activeExamId)
+
+        const l4Ids = ((l4Children || []) as { id: string }[]).map((r) => r.id)
+        if (l4Ids.length === 0) {
+          const topic = l3Topics.find((x) => x.id === l3Id)
+          if (topic) {
+            setExpanded((prev) => ({
+              ...prev,
+              [l3Id]: { ...topic, skills: [] },
+            }))
+          }
+          return
+        }
+
         let skillsQuery = (supabase as any)
           .from("taxonomy_nodes")
           .select("id, name, code, level, parent_id")
-          .eq("parent_id", subtopicId)
+          .in("parent_id", l4Ids)
           .eq("level", 5)
         if (activeExamId) {
           skillsQuery = skillsQuery.eq("exam_id", activeExamId)
@@ -334,7 +359,6 @@ export default function ReviewPage() {
         if (skillsError) throw skillsError
         const skills = (skillsData as TaxonomyNode[]) || []
 
-        // Get user's coverage for these skills
         const {
           data: { user },
         } = await supabase.auth.getUser()
@@ -357,7 +381,6 @@ export default function ReviewPage() {
           }
         }
 
-        // Check which skills have published material cards
         const { data: materialData } = await (supabase as any)
           .from("material_cards")
           .select("skill_id")
@@ -371,7 +394,7 @@ export default function ReviewPage() {
           (materialData || []).map((m: any) => m.skill_id),
         )
 
-        const subtopic = subtopics.find((s) => s.id === subtopicId)!
+        const topic = l3Topics.find((s) => s.id === l3Id)!
         const skillsWithMeta = skills.map((skill) => ({
           ...skill,
           coverage: coverageMap[skill.id] || null,
@@ -379,18 +402,18 @@ export default function ReviewPage() {
         }))
         setExpanded((prev) => ({
           ...prev,
-          [subtopicId]: {
-            ...subtopic,
+          [l3Id]: {
+            ...topic,
             skills: skillsWithMeta.filter((s) => s.hasMaterialCard),
           },
         }))
       } catch (err) {
-        console.error("Failed to expand subtopic:", err)
+        console.error("Failed to expand topic:", err)
       } finally {
         setLoadingExpand(null)
       }
     },
-    [expanded, subtopics, supabase, activeExamId],
+    [expanded, l3Topics, supabase, activeExamId],
   )
 
   useEffect(() => {
@@ -399,36 +422,42 @@ export default function ReviewPage() {
     }
   }, [l2Options, l2Filter])
 
-  const filteredSubtopics = useMemo(() => {
-    if (l2Filter === "all") return subtopics
-    return subtopics.filter((s) => l4ToL2Id[s.id] === l2Filter)
-  }, [subtopics, l2Filter, l4ToL2Id])
+  const filteredL3 = useMemo(() => {
+    if (l2Filter === "all") return l3Topics
+    return l3Topics.filter((l3) => l3ToL2Id[l3.id] === l2Filter)
+  }, [l3Topics, l2Filter, l3ToL2Id])
 
-  const l3Groups = useMemo(() => {
-    const map = new Map<string, { l3: TaxonomyNode; l4s: TaxonomyNode[] }>()
-    for (const l4 of filteredSubtopics) {
-      const pid = l4.parent_id
-      if (!pid) continue
-      const l3 = l3ById[pid]
-      if (!l3) continue
-      if (!map.has(pid)) map.set(pid, { l3, l4s: [] })
-      map.get(pid)!.l4s.push(l4)
+  const l2ById = useMemo(() => {
+    const m: Record<string, { id: string; name: string }> = {}
+    for (const o of l2Options) m[o.id] = o
+    return m
+  }, [l2Options])
+
+  /** L2 section → L3 accordions (subtitle = L2, accordion = L3) */
+  const l2Sections = useMemo(() => {
+    const map = new Map<
+      string,
+      { l2: { id: string; name: string }; l3s: TaxonomyNode[] }
+    >()
+    for (const l3 of filteredL3) {
+      const l2Id = l3ToL2Id[l3.id]
+      if (!l2Id) continue
+      const l2 = l2ById[l2Id]
+      if (!l2) continue
+      if (!map.has(l2Id)) map.set(l2Id, { l2, l3s: [] })
+      map.get(l2Id)!.l3s.push(l3)
     }
     const entries = [...map.entries()].sort((a, b) =>
-      (a[1].l3.code || a[1].l3.name).localeCompare(
-        b[1].l3.code || b[1].l3.name,
-        "id",
-      ),
+      (a[1].l2.name || "").localeCompare(b[1].l2.name || "", "id"),
     )
     for (const [, g] of entries) {
-      g.l4s.sort((x, y) =>
+      g.l3s.sort((x, y) =>
         (x.code || x.name).localeCompare(y.code || y.name, "id"),
       )
     }
     return entries
-  }, [filteredSubtopics, l3ById])
+  }, [filteredL3, l3ToL2Id, l2ById])
 
-  // Study modes (kept from original)
   const studyModes = [
     {
       id: "flashcards",
@@ -454,10 +483,9 @@ export default function ReviewPage() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl md:max-w-7xl mx-auto py-6">
-        {/* Header */}
+      <div className="mx-auto max-w-2xl py-6 md:max-w-7xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-1">
+          <h1 className="mb-1 text-3xl font-bold">
             {t("title", { fallback: "Review" })}
           </h1>
           <p className="text-muted-foreground">
@@ -467,8 +495,7 @@ export default function ReviewPage() {
           </p>
         </div>
 
-        {/* Study Mode Tiles (compact) */}
-        <div className="flex gap-3 mb-6">
+        <div className="mb-6 flex gap-3">
           {studyModes.map((mode) => {
             const Icon = mode.icon
             return (
@@ -482,14 +509,14 @@ export default function ReviewPage() {
                 )}
                 onClick={() => mode.available && router.push(mode.href)}
               >
-                <CardContent className="p-3 flex items-center gap-3">
+                <CardContent className="flex items-center gap-3 p-3">
                   <div
-                    className={`${mode.color} p-2 rounded-lg border border-border`}
+                    className={`${mode.color} rounded-lg border border-border p-2`}
                   >
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="font-semibold text-sm">{mode.name}</div>
+                    <div className="text-sm font-semibold">{mode.name}</div>
                     {!mode.available && (
                       <span className="text-xs text-muted-foreground">
                         {tc("status.comingSoon", { fallback: "Coming Soon" })}
@@ -502,22 +529,9 @@ export default function ReviewPage() {
           })}
         </div>
 
-        {/* Materi per subtopik — accordion + skill cards */}
-        {/* <div className="mb-0">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            {t("section.materiTree", { fallback: "Materi per subtopik" })}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("section.materiTreeHint", {
-              fallback: "Buka topik untuk latihan atau baca materi per skill",
-            })}
-          </p>
-        </div> */}
-
-        {!isLoading && subtopics.length > 0 && (
+        {!isLoading && l3Topics.length > 0 && (
           <div
-            className="flex flex-wrap gap-2 mt-5 mb-8"
+            className="mb-8 mt-5 flex flex-wrap gap-2"
             role="tablist"
             aria-label={t("filters.l2Label", { fallback: "Filter mapel" })}
           >
@@ -526,7 +540,7 @@ export default function ReviewPage() {
               role="tab"
               aria-selected={l2Filter === "all"}
               className={cn(
-                "rounded-full border-2 border-border px-4 py-2 text-sm font-semibold shadow-brutal-sm transition-all touch-target",
+                "touch-target rounded-full border-2 border-border px-4 py-2 text-sm font-semibold shadow-brutal-sm transition-all",
                 l2Filter === "all"
                   ? "bg-orange-500 text-white hover:bg-orange-600"
                   : "bg-white text-foreground hover:bg-muted/40",
@@ -542,7 +556,7 @@ export default function ReviewPage() {
                 role="tab"
                 aria-selected={l2Filter === l2.id}
                 className={cn(
-                  "rounded-full border-2 border-border px-4 py-2 text-sm font-semibold shadow-brutal-sm transition-all touch-target max-w-full text-left",
+                  "touch-target max-w-full rounded-full border-2 border-border px-4 py-2 text-left text-sm font-semibold shadow-brutal-sm transition-all",
                   l2Filter === l2.id
                     ? "bg-orange-500 text-white hover:bg-orange-600"
                     : "bg-white text-foreground hover:bg-muted/40",
@@ -559,14 +573,14 @@ export default function ReviewPage() {
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : subtopics.length === 0 ? (
-          <Card className="border-2 border-border shadow-brutal rounded-2xl">
+        ) : l3Topics.length === 0 ? (
+          <Card className="rounded-2xl border-2 border-border shadow-brutal">
             <CardContent className="py-8 text-center text-muted-foreground">
               {t("empty.noTopics", { fallback: "Belum ada topik materi." })}
             </CardContent>
           </Card>
-        ) : filteredSubtopics.length === 0 ? (
-          <Card className="border-2 border-border shadow-brutal rounded-2xl">
+        ) : filteredL3.length === 0 ? (
+          <Card className="rounded-2xl border-2 border-border shadow-brutal">
             <CardContent className="py-8 text-center text-muted-foreground">
               {t("empty.noTopicsForFilter", {
                 fallback: "Tidak ada materi untuk filter ini.",
@@ -574,20 +588,20 @@ export default function ReviewPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-8">
-            {l3Groups.map(([l3Id, group]) => (
-              <section key={l3Id} aria-labelledby={`l3-heading-${l3Id}`}>
-                <h3
-                  id={`l3-heading-${l3Id}`}
-                  className="text-xs font-bold uppercase tracking-wide text-muted-foreground px-1 mb-3"
+          <div className="space-y-10">
+            {l2Sections.map(([l2Id, section]) => (
+              <section key={l2Id} aria-labelledby={`l2-heading-${l2Id}`}>
+                <h2
+                  id={`l2-heading-${l2Id}`}
+                  className="mb-4 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground"
                 >
-                  {group.l3.name}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-                  {group.l4s.map((st) => {
+                  {section.l2.name}
+                </h2>
+                <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {section.l3s.map((st) => {
                     const isExpanded = expanded[st.id] !== undefined
                     const isLoadingSt = loadingExpand === st.id
-                    const prog = subtopicProgress[st.id]
+                    const prog = topicProgress[st.id]
                     const total = prog?.total ?? 0
                     const covered = prog?.covered ?? 0
                     const pct =
@@ -596,25 +610,25 @@ export default function ReviewPage() {
                     return (
                       <div
                         key={st.id}
-                        className="rounded-2xl border-2 border-border bg-card shadow-brutal overflow-hidden"
+                        className="overflow-hidden rounded-2xl border-2 border-border bg-card shadow-brutal"
                       >
                         <button
                           type="button"
-                          className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/25 transition-colors"
+                          className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-muted/25"
                           onClick={() => toggleExpand(st.id)}
                         >
                           <div
                             className={cn(
-                              "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm",
+                              "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm",
                               total === 0
-                                ? "bg-muted-foreground/40"
-                                : "bg-rose-900",
+                                ? "bg-muted-foreground/40 text-white"
+                                : accordionProgressToneClass(pct),
                             )}
                           >
                             {total === 0 ? "—" : `${pct}%`}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-foreground truncate">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-bold text-foreground">
                               {st.name}
                             </p>
                             <p className="text-sm text-muted-foreground">
@@ -643,9 +657,9 @@ export default function ReviewPage() {
                         </button>
 
                         {isExpanded && expanded[st.id] && (
-                          <div className="px-3 pb-4 pt-0 space-y-3 bg-muted/15 border-t border-border/60">
+                          <div className="space-y-3 border-t border-border/60 bg-muted/15 px-3 pb-4 pt-0">
                             {expanded[st.id]!.skills.length === 0 ? (
-                              <p className="text-sm text-muted-foreground py-4 text-center">
+                              <p className="py-4 text-center text-sm text-muted-foreground">
                                 {t("empty.noSkills", {
                                   fallback: "Tidak ada skill dengan materi.",
                                 })}
@@ -676,11 +690,11 @@ export default function ReviewPage() {
                                           <Circle className="h-5 w-5 text-muted-foreground/35" />
                                         )}
                                       </div>
-                                      <div className="flex-1 min-w-0 pt-0.5">
-                                        <p className="font-semibold text-foreground leading-snug">
+                                      <div className="min-w-0 flex-1 pt-0.5">
+                                        <p className="font-semibold leading-snug text-foreground">
                                           {skill.name}
                                         </p>
-                                        <p className="text-sm text-muted-foreground mt-0.5">
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
                                           {isCovered
                                             ? t("skill.done", {
                                                 fallback: "Selesai",
@@ -692,10 +706,10 @@ export default function ReviewPage() {
                                         </p>
                                       </div>
                                     </div>
-                                    <div className="flex gap-2 mt-4">
+                                    <div className="mt-4 flex gap-2">
                                       <Button
                                         type="button"
-                                        className="flex-1 rounded-full bg-orange-500 hover:bg-orange-600 text-white border-2 border-border shadow-brutal-sm h-10 touch-target"
+                                        className="touch-target h-10 flex-1 rounded-full border-2 border-border bg-orange-500 text-white shadow-brutal-sm hover:bg-orange-600"
                                         onClick={(e) => {
                                           e.stopPropagation()
                                           router.push(
@@ -703,7 +717,7 @@ export default function ReviewPage() {
                                           )
                                         }}
                                       >
-                                        <Pencil className="h-4 w-4 mr-2 shrink-0" />
+                                        <Pencil className="mr-2 h-4 w-4 shrink-0" />
                                         {t("skill.latihan", {
                                           fallback: "Latihan",
                                         })}
@@ -711,7 +725,7 @@ export default function ReviewPage() {
                                       <Button
                                         type="button"
                                         variant="outline"
-                                        className="flex-1 rounded-full border-2 border-sky-600 text-sky-800 bg-white hover:bg-sky-50 h-10 touch-target"
+                                        className="touch-target h-10 flex-1 rounded-full border-2 border-sky-600 bg-white text-sky-800 hover:bg-sky-50"
                                         disabled={!skill.hasMaterialCard}
                                         onClick={(e) => {
                                           e.stopPropagation()
@@ -720,7 +734,7 @@ export default function ReviewPage() {
                                           )
                                         }}
                                       >
-                                        <BookOpen className="h-4 w-4 mr-2 shrink-0" />
+                                        <BookOpen className="mr-2 h-4 w-4 shrink-0" />
                                         {t("skill.materi", {
                                           fallback: "Materi",
                                         })}
