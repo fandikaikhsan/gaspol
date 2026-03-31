@@ -72,9 +72,7 @@ function MaterialCardDetailContent() {
 
   const handleBack = () => {
     if (fromPembahasan && pembahasanModuleId) {
-      router.push(
-        `/drill/pembahasan/${pembahasanModuleId}?skillId=${skillId}`,
-      )
+      router.push(`/drill/pembahasan/${pembahasanModuleId}?skillId=${skillId}`)
       return
     }
     if (entryFrom === "review") {
@@ -116,9 +114,16 @@ function MaterialCardDetailContent() {
           .single()
 
         if (skillData) {
-          setSkill({ id: skillData.id, name: skillData.name, code: skillData.code })
+          setSkill({
+            id: skillData.id,
+            name: skillData.name,
+            code: skillData.code,
+          })
           // Block skills not for active exam: exam_id null or different exam
-          if (activeExamId && (skillData.exam_id === null || skillData.exam_id !== activeExamId)) {
+          if (
+            activeExamId &&
+            (skillData.exam_id === null || skillData.exam_id !== activeExamId)
+          ) {
             setSkillNotForActiveExam(true)
             setIsLoading(false)
             return
@@ -145,7 +150,10 @@ function MaterialCardDetailContent() {
               ? (cardData.common_mistakes as string[])
               : [],
             examples: Array.isArray(cardData.examples)
-              ? (cardData.examples as (string | { contoh?: string; penjelasan?: string })[])
+              ? (cardData.examples as (
+                  | string
+                  | { contoh?: string; penjelasan?: string }
+                )[])
               : [],
           })
         }
@@ -253,11 +261,6 @@ function MaterialCardDetailContent() {
               {points}/20 pts
             </Badge>
           </div>
-          {skill && (
-            <p className="text-sm text-muted-foreground">
-              {skill.name} ({skill.code})
-            </p>
-          )}
         </div>
 
         {/* Action Buttons (F-004) */}
