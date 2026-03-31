@@ -12,6 +12,7 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
+  Zap,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n"
 
 const navigation = [
+  { key: "tutor", href: "/tutor", icon: Zap },
   { key: "plan", href: "/plan", icon: Target },
   { key: "review", href: "/review", icon: BookOpen },
   { key: "analytics", href: "/analytics", icon: BarChart2 },
@@ -151,6 +153,7 @@ export function SideNav({
             const isActive = pathname.startsWith(item.href)
             const Icon = item.icon
             const label = t(`nav.${item.key}`)
+            const isTutor = item.key === "tutor"
 
             return (
               <Link
@@ -159,16 +162,31 @@ export function SideNav({
                 title={label}
                 aria-label={label}
                 className={cn(
-                  "flex items-center rounded-lg text-sm font-medium transition-colors",
+                  "flex items-center rounded-lg text-sm font-medium transition-colors border-2",
                   collapsed
                     ? "h-10 w-10 shrink-0 justify-center p-0"
                     : "gap-3 px-3 py-2",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  isTutor &&
+                    !isActive &&
+                    "border-amber-500/80 bg-amber-400 text-black hover:bg-amber-400/90 hover:text-black",
+                  isTutor &&
+                    isActive &&
+                    "border-border bg-amber-500 text-black shadow-brutal-sm",
+                  !isTutor &&
+                    isActive &&
+                    "border-transparent bg-primary text-primary-foreground",
+                  !isTutor &&
+                    !isActive &&
+                    "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <Icon className={cn(collapsed ? "h-5 w-5" : "h-4 w-4")} />
+                <Icon
+                  className={cn(
+                    collapsed ? "h-5 w-5" : "h-4 w-4",
+                    isTutor && "text-black",
+                  )}
+                  strokeWidth={isTutor ? 2.75 : 2}
+                />
                 {!collapsed && <span>{label}</span>}
               </Link>
             )

@@ -8,7 +8,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Menu, Target, BookOpen, BarChart2 } from "lucide-react"
+import { Menu, Target, BookOpen, BarChart2, Zap } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,9 +21,12 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { useTranslation } from "@/lib/i18n"
 
-const navigation = [
+const navigationBeforeTutor = [
   { key: "plan", href: "/plan", icon: Target },
   { key: "review", href: "/review", icon: BookOpen },
+] as const
+
+const navigationAfterTutor = [
   { key: "analytics", href: "/analytics", icon: BarChart2 },
 ] as const
 
@@ -65,8 +68,8 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background border-t-4 border-border md:hidden z-50">
-      <div className="flex items-center justify-around h-16 px-2">
-        {navigation.map((item) => {
+      <div className="flex items-end justify-around h-[4.25rem] px-1 pb-1">
+        {navigationBeforeTutor.map((item) => {
           const isActive = pathname.startsWith(item.href)
           const Icon = item.icon
 
@@ -75,7 +78,7 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full transition-all",
+                "flex flex-col items-center justify-center flex-1 h-full min-w-0 transition-all pb-1",
                 isActive
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -83,7 +86,7 @@ export function BottomNav() {
             >
               <div
                 className={cn(
-                  "flex items-center justify-center px-4 py-1 rounded-full transition-all",
+                  "flex items-center justify-center px-3 py-1 rounded-full transition-all",
                   isActive
                     ? "bg-primary border-2 border-border shadow-brutal-sm"
                     : "border-2 border-transparent",
@@ -93,7 +96,63 @@ export function BottomNav() {
               </div>
               <span
                 className={cn(
-                  "text-[10px] mt-1",
+                  "text-[10px] mt-1 truncate max-w-full",
+                  isActive ? "font-bold" : "font-medium",
+                )}
+              >
+                {t(`nav.${item.key}`)}
+              </span>
+            </Link>
+          )
+        })}
+
+        <Link
+          href="/tutor"
+          className="flex flex-col items-center justify-center flex-1 min-w-0 -mt-3 text-foreground transition-all"
+        >
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-full border-2 border-border shadow-brutal-sm transition-transform active:scale-95",
+              pathname.startsWith("/tutor")
+                ? "h-14 w-14 bg-amber-400 ring-2 ring-foreground/20"
+                : "h-14 w-14 bg-amber-400 hover:brightness-105",
+            )}
+          >
+            <Zap className="h-7 w-7 text-black" strokeWidth={2.75} />
+          </div>
+          <span className="text-[10px] mt-1 font-bold text-foreground truncate max-w-full">
+            {t("nav.tutor")}
+          </span>
+        </Link>
+
+        {navigationAfterTutor.map((item) => {
+          const isActive = pathname.startsWith(item.href)
+          const Icon = item.icon
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center flex-1 h-full min-w-0 transition-all pb-1",
+                isActive
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <div
+                className={cn(
+                  "flex items-center justify-center px-3 py-1 rounded-full transition-all",
+                  isActive
+                    ? "bg-primary border-2 border-border shadow-brutal-sm"
+                    : "border-2 border-transparent",
+                )}
+              >
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+              </div>
+              <span
+                className={cn(
+                  "text-[10px] mt-1 truncate max-w-full",
                   isActive ? "font-bold" : "font-medium",
                 )}
               >

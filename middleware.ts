@@ -31,7 +31,8 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/drill') ||
     path.startsWith('/review') ||
     path.startsWith('/analytics') ||
-    path.startsWith('/recycle')
+    path.startsWith('/recycle') ||
+    path.startsWith('/tutor')
 
   // If user is not authenticated and trying to access protected route
   if (!user && !isPublicRoute) {
@@ -98,10 +99,10 @@ export async function middleware(request: NextRequest) {
         const phaseAllowedRoutes: Record<string, string[]> = {
           ONBOARDING: ['/onboarding'],
           BASELINE_ASSESSMENT_IN_PROGRESS: ['/baseline'],
-          BASELINE_COMPLETE: ['/analytics', '/plan', '/baseline'],
-          PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics', '/recycle', '/baseline'],
-          RECYCLE_UNLOCKED: ['/plan', '/drill', '/review', '/analytics', '/recycle', '/baseline'],
-          RECYCLE_ASSESSMENT_IN_PROGRESS: ['/recycle', '/analytics', '/baseline'],
+          BASELINE_COMPLETE: ['/analytics', '/plan', '/baseline', '/tutor'],
+          PLAN_ACTIVE: ['/plan', '/drill', '/review', '/analytics', '/recycle', '/baseline', '/tutor'],
+          RECYCLE_UNLOCKED: ['/plan', '/drill', '/review', '/analytics', '/recycle', '/baseline', '/tutor'],
+          RECYCLE_ASSESSMENT_IN_PROGRESS: ['/recycle', '/analytics', '/baseline', '/tutor'],
         }
 
         const allowed = phaseAllowedRoutes[phase] || ['/onboarding']

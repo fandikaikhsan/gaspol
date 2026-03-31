@@ -472,6 +472,58 @@ export interface Database {
         }
         Relationships: []
       }
+      gaspol_tutor_chats: {
+        Row: {
+          id: string
+          user_id: string
+          topic_id: string
+          role: "user" | "assistant"
+          message: string
+          tokens_used: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          topic_id: string
+          role: "user" | "assistant"
+          message: string
+          tokens_used?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          topic_id?: string
+          role?: "user" | "assistant"
+          message?: string
+          tokens_used?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      tanya_gaspol_quota: {
+        Row: {
+          user_id: string
+          total_tokens: number
+          used_tokens: number
+          remaining_tokens: number
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          total_tokens?: number
+          used_tokens?: number
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          total_tokens?: number
+          used_tokens?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
