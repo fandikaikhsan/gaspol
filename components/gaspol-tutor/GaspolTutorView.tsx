@@ -36,7 +36,13 @@ function normalizeMathDelimiters(text: string): string {
   return out
 }
 
-function ChatBubble({ content, className = "" }: { content: string; className?: string }) {
+function ChatBubble({
+  content,
+  className = "",
+}: {
+  content: string
+  className?: string
+}) {
   return (
     <div
       className={cn(
@@ -113,17 +119,24 @@ export function GaspolTutorView() {
   const landingInputRef = useRef<HTMLTextAreaElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
   const pendingRef = useRef<string | null>(null)
-  const sendRef = useRef<(text: string, t?: TutorTopicId) => Promise<void>>(() => Promise.resolve())
+  const sendRef = useRef<(text: string, t?: TutorTopicId) => Promise<void>>(
+    () => Promise.resolve(),
+  )
 
   const topicMeta = activeTopic ? getTopicById(activeTopic) : null
 
   const bgStyle = activeTopic
-    ? { background: `linear-gradient(170deg, ${topicMeta?.themeColor}40 0%, ${TUTOR_DEFAULT_BG} 38%)`, transition: "background 0.5s ease" }
+    ? {
+        background: `linear-gradient(170deg, ${topicMeta?.themeColor}40 0%, ${TUTOR_DEFAULT_BG} 38%)`,
+        transition: "background 0.5s ease",
+      }
     : { backgroundColor: TUTOR_DEFAULT_BG, transition: "background 0.5s ease" }
 
   /* -- scroll -- */
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior, block: "end" }))
+    requestAnimationFrame(() =>
+      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" }),
+    )
   }, [])
 
   /* -- load quota for landing badge -- */
@@ -132,7 +145,9 @@ export function GaspolTutorView() {
     async function loadQuota() {
       try {
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         if (!user) return
         const { data } = await supabase
           .from("tanya_gaspol_quota")
@@ -146,7 +161,9 @@ export function GaspolTutorView() {
           setRemainingTokens(100)
           setTotalTokens(100)
         }
-      } catch { /* no-op */ }
+      } catch {
+        /* no-op */
+      }
     }
     loadQuota()
   }, [activeTopic])
@@ -161,15 +178,21 @@ export function GaspolTutorView() {
       setIsFetchingHistory(true)
       try {
         const supabase = createClient()
-        const token = (await supabase.auth.getSession()).data.session?.access_token
+        const token = (await supabase.auth.getSession()).data.session
+          ?.access_token
 
         await fetch("/api/gaspol-tutor/ensure-opening", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ topic_id: topicId }),
         })
 
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         if (!user || cancelled) return
 
         const { data: chatData } = await supabase
@@ -207,70 +230,99 @@ export function GaspolTutorView() {
     }
 
     boot()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [activeTopic])
 
-  useEffect(() => { if (!isFetchingHistory) scrollToBottom("auto") }, [isFetchingHistory, activeTopic, scrollToBottom])
-  useEffect(() => { if (!isFetchingHistory) scrollToBottom("smooth") }, [messages, isLoading, isFetchingHistory, scrollToBottom])
+  useEffect(() => {
+    if (!isFetchingHistory) scrollToBottom("auto")
+  }, [isFetchingHistory, activeTopic, scrollToBottom])
+  useEffect(() => {
+    if (!isFetchingHistory) scrollToBottom("smooth")
+  }, [messages, isLoading, isFetchingHistory, scrollToBottom])
 
   /* -- send -- */
-  const sendMessage = useCallback(async (text: string, topicOverride?: TutorTopicId) => {
-    const topicId = topicOverride ?? activeTopic
-    if (!topicId || !text.trim() || isLoading || isQuotaExhausted) return
+  const sendMessage = useCallback(
+    async (text: string, topicOverride?: TutorTopicId) => {
+      const topicId = topicOverride ?? activeTopic
+      if (!topicId || !text.trim() || isLoading || isQuotaExhausted) return
 
-    const userMsg: ChatRow = { id: `temp-user-${Date.now()}`, role: "user", message: text.trim(), created_at: new Date().toISOString() }
-    setMessages(prev => [...prev, userMsg])
-    setInputValue("")
-    setIsLoading(true)
+      const userMsg: ChatRow = {
+        id: `temp-user-${Date.now()}`,
+        role: "user",
+        message: text.trim(),
+        created_at: new Date().toISOString(),
+      }
+      setMessages((prev) => [...prev, userMsg])
+      setInputValue("")
+      setIsLoading(true)
 
-    try {
-      const supabase = createClient()
-      const token = (await supabase.auth.getSession()).data.session?.access_token
-      const response = await fetch("/api/gaspol-tutor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ topic_id: topicId, message: text.trim() }),
-      })
-      const data = await response.json()
+      try {
+        const supabase = createClient()
+        const token = (await supabase.auth.getSession()).data.session
+          ?.access_token
+        const response = await fetch("/api/gaspol-tutor", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ topic_id: topicId, message: text.trim() }),
+        })
+        const data = await response.json()
 
-      if (!response.ok) {
-        if (response.status === 403) {
-          setIsQuotaExhausted(true)
-          setRemainingTokens(data.remaining_tokens ?? 0)
-          setMessages(prev => prev.filter(m => m.id !== userMsg.id))
-          return
+        if (!response.ok) {
+          if (response.status === 403) {
+            setIsQuotaExhausted(true)
+            setRemainingTokens(data.remaining_tokens ?? 0)
+            setMessages((prev) => prev.filter((m) => m.id !== userMsg.id))
+            return
+          }
+          throw new Error(data.error || "Gagal mengirim pesan")
         }
-        throw new Error(data.error || "Gagal mengirim pesan")
-      }
 
-      setRemainingTokens(data.remaining_tokens)
-      if (data.remaining_tokens < 5) setIsQuotaExhausted(true)
+        setRemainingTokens(data.remaining_tokens)
+        if (data.remaining_tokens < 5) setIsQuotaExhausted(true)
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: chatData } = await supabase
-          .from("gaspol_tutor_chats")
-          .select("id, role, message, created_at")
-          .eq("user_id", user.id)
-          .eq("topic_id", topicId)
-          .order("created_at", { ascending: true })
-        if (chatData) setMessages(chatData as ChatRow[])
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (user) {
+          const { data: chatData } = await supabase
+            .from("gaspol_tutor_chats")
+            .select("id, role, message, created_at")
+            .eq("user_id", user.id)
+            .eq("topic_id", topicId)
+            .order("created_at", { ascending: true })
+          if (chatData) setMessages(chatData as ChatRow[])
+        }
+      } catch (e) {
+        console.error("[GaspolTutorView] send:", e)
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== userMsg.id),
+          {
+            id: `err-${Date.now()}`,
+            role: "assistant",
+            message: "Maaf, terjadi kesalahan. Coba lagi nanti ya.",
+            created_at: new Date().toISOString(),
+          },
+        ])
+      } finally {
+        setIsLoading(false)
+        setTimeout(() => chatInputRef.current?.focus(), 80)
       }
-    } catch (e) {
-      console.error("[GaspolTutorView] send:", e)
-      setMessages(prev => [
-        ...prev.filter(m => m.id !== userMsg.id),
-        { id: `err-${Date.now()}`, role: "assistant", message: "Maaf, terjadi kesalahan. Coba lagi nanti ya.", created_at: new Date().toISOString() },
-      ])
-    } finally {
-      setIsLoading(false)
-      setTimeout(() => chatInputRef.current?.focus(), 80)
-    }
-  }, [activeTopic, isLoading, isQuotaExhausted])
+    },
+    [activeTopic, isLoading, isQuotaExhausted],
+  )
 
   sendRef.current = sendMessage
 
-  const handleBack = () => { setActiveTopic(null); setMessages([]); setInputValue("") }
+  const handleBack = () => {
+    setActiveTopic(null)
+    setMessages([])
+    setInputValue("")
+  }
 
   /* -- auto-resize textarea -- */
   function autoResize(el: HTMLTextAreaElement | null) {
@@ -292,7 +344,10 @@ export function GaspolTutorView() {
     return (
       <button
         type="button"
-        onClick={() => { pendingRef.current = null; setActiveTopic(topicId) }}
+        onClick={() => {
+          pendingRef.current = null
+          setActiveTopic(topicId)
+        }}
         className={cn(
           "group relative flex h-full w-full flex-col justify-start overflow-hidden rounded-2xl border-2 border-border text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]",
           isHero ? "shadow-brutal p-5" : "shadow-brutal-sm p-3 md:p-4",
@@ -300,13 +355,24 @@ export function GaspolTutorView() {
         )}
         style={{ backgroundColor: topic.themeColor }}
       >
-        <span className={cn(
-          "relative z-10 font-bold leading-tight text-white drop-shadow-sm",
-          isHero ? "text-base sm:text-lg md:text-xl max-w-[60%]" : "text-xs sm:text-sm",
-        )}>
+        <span
+          className={cn(
+            "relative z-10 font-bold leading-tight text-white drop-shadow-sm",
+            isHero
+              ? "text-base sm:text-lg md:text-xl max-w-[60%]"
+              : "text-xs sm:text-sm",
+          )}
+        >
           {topic.title}
         </span>
-        <div className={cn("pointer-events-none absolute", isHero ? "bottom-0 right-0 w-[70%] h-[70%]" : "bottom-0 right-0 w-[72%] h-[72%]")}>
+        <div
+          className={cn(
+            "pointer-events-none absolute",
+            isHero
+              ? "bottom-0 right-0 w-[70%] h-[70%]"
+              : "bottom-0 right-0 w-[72%] h-[72%]",
+          )}
+        >
           <Illustration className="h-full w-full opacity-90 transition-opacity group-hover:opacity-100" />
         </div>
       </button>
@@ -318,15 +384,15 @@ export function GaspolTutorView() {
   /* ================================================================ */
 
   const landingView = (
-    <div className="flex min-h-[calc(100dvh-5rem)] md:min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-4 py-6 md:py-8">
-      <div className="flex w-full max-w-[580px] flex-col items-center gap-6 md:max-w-[640px] lg:max-w-[680px]">
-
-        {/* Headline — two bold lines */}
-        <header className="text-center">
-          <h1 className="text-[1.65rem] font-black leading-tight tracking-tight text-foreground sm:text-3xl md:text-[2rem] md:leading-tight">
-            {t("tutor.headlineLine1")}
-            <br />
-            {t("tutor.headlineLine2")}
+    <div className="flex min-h-[calc(100dvh-5rem)] md:min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-4 py-6 md:py-10 lg:py-12">
+      <div className="flex w-full max-w-[580px] flex-col items-center gap-8 md:max-w-[640px] md:gap-12 lg:max-w-[680px] lg:gap-16">
+        {/* Headline — matches material detail (review/[skillId]): font-serif + bold; larger + airy on md/lg */}
+        <header className="w-full px-2 text-center md:px-4">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground leading-[1.2] md:text-4xl md:leading-[1.18] lg:text-5xl ">
+            <span className="block">{t("tutor.headlineLine1")}</span>
+            <span className="mt-2 block md:mt-3 lg:mt-4">
+              {t("tutor.headlineLine2")}
+            </span>
           </h1>
         </header>
 
@@ -343,7 +409,12 @@ export function GaspolTutorView() {
             <TopicCard topicId="ujian_mandiri" />
             <TopicCard topicId="materi" />
             <TopicCard topicId="tips_ujian" />
-            <div className={cn("hidden md:flex items-center justify-center rounded-2xl border-2 border-border bg-[#E8E4DF] shadow-brutal-sm", GRID_POS.deco)}>
+            <div
+              className={cn(
+                "hidden md:flex items-center justify-center rounded-2xl border-2 border-border bg-[#E8E4DF] shadow-brutal-sm",
+                GRID_POS.deco,
+              )}
+            >
               <DecoThreeDashes className="w-14 opacity-60" />
             </div>
             <TopicCard topicId="jurusan" />
@@ -352,10 +423,14 @@ export function GaspolTutorView() {
 
           {/* Bento Grid — mobile */}
           <div className="grid grid-cols-2 gap-2.5 md:hidden">
-            {MOBILE_ORDER.map(id => {
+            {MOBILE_ORDER.map((id) => {
               const isHero = id === "materi"
               return (
-                <div key={id} className={isHero ? "col-span-2" : ""} style={{ minHeight: isHero ? 160 : 90 }}>
+                <div
+                  key={id}
+                  className={isHero ? "col-span-2" : ""}
+                  style={{ minHeight: isHero ? 160 : 90 }}
+                >
                   <TopicCard topicId={id} />
                 </div>
               )
@@ -365,7 +440,7 @@ export function GaspolTutorView() {
 
         {/* Input card — ChatGPT-style wide textarea */}
         <form
-          onSubmit={e => {
+          onSubmit={(e) => {
             e.preventDefault()
             if (!inputValue.trim()) return
             pendingRef.current = inputValue.trim()
@@ -374,12 +449,15 @@ export function GaspolTutorView() {
           }}
           className="w-full"
         >
-          <div className="flex flex-col gap-3 rounded-2xl bg-[#D9D3CB] px-4 pb-3 pt-4 shadow-soft md:px-5">
+          <div className="flex flex-col gap-3 rounded-2xl bg-[#D9D3CB] px-4 pb-3 pt-4 shadow-soft md:px-5 md:pt-5">
             <textarea
               ref={landingInputRef}
               value={inputValue}
-              onChange={e => { setInputValue(e.target.value); autoResize(e.target) }}
-              onKeyDown={e => {
+              onChange={(e) => {
+                setInputValue(e.target.value)
+                autoResize(e.target)
+              }}
+              onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   if (inputValue.trim()) {
@@ -391,7 +469,7 @@ export function GaspolTutorView() {
               }}
               placeholder={t("tutor.inputPlaceholder")}
               rows={1}
-              className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/40 focus:outline-none md:text-base"
+              className="w-full resize-none bg-transparent font-serif text-sm text-foreground placeholder:font-serif placeholder:text-foreground/45 focus:outline-none md:text-base"
             />
             <div className="flex items-center justify-between">
               {remainingTokens !== null ? (
@@ -422,8 +500,10 @@ export function GaspolTutorView() {
   /* ================================================================ */
 
   const chatView = (
-    <div className="mx-auto flex w-full max-w-[680px] flex-col px-3 pb-20 md:px-4 md:pb-4" style={{ height: "calc(100dvh - 4rem)" }}>
-
+    <div
+      className="mx-auto flex w-full max-w-[680px] flex-col px-3 pb-20 md:px-4 md:pb-4"
+      style={{ height: "calc(100dvh - 4rem)" }}
+    >
       {/* Header bar */}
       <div className="flex shrink-0 items-center gap-3 py-3 md:py-4">
         <button
@@ -443,8 +523,12 @@ export function GaspolTutorView() {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-foreground">{topicMeta?.title}</p>
-          <p className="text-[11px] text-muted-foreground">{t("tutor.changeTopicHint")}</p>
+          <p className="truncate text-sm font-bold text-foreground">
+            {topicMeta?.title}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {t("tutor.changeTopicHint")}
+          </p>
         </div>
 
         {remainingTokens !== null && (
@@ -463,14 +547,24 @@ export function GaspolTutorView() {
             </div>
           ) : (
             <>
-              {messages.map(msg => (
-                <div key={msg.id} className={cn("flex gap-3", msg.role === "user" && "justify-end")}>
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "flex gap-3",
+                    msg.role === "user" && "justify-end",
+                  )}
+                >
                   {msg.role === "assistant" && (
                     <div
                       className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-border"
                       style={{ backgroundColor: `${topicMeta?.themeColor}20` }}
                     >
-                      <Zap className="h-3.5 w-3.5" style={{ color: topicMeta?.themeColor }} strokeWidth={2.5} />
+                      <Zap
+                        className="h-3.5 w-3.5"
+                        style={{ color: topicMeta?.themeColor }}
+                        strokeWidth={2.5}
+                      />
                     </div>
                   )}
 
@@ -480,7 +574,9 @@ export function GaspolTutorView() {
                     </div>
                   ) : (
                     <div className="max-w-[85%] md:max-w-[80%] rounded-2xl rounded-tr-md border-2 border-border bg-foreground px-4 py-2.5 text-background shadow-brutal-sm">
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.message}</p>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {msg.message}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -492,7 +588,11 @@ export function GaspolTutorView() {
                     className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-border"
                     style={{ backgroundColor: `${topicMeta?.themeColor}20` }}
                   >
-                    <Zap className="h-3.5 w-3.5" style={{ color: topicMeta?.themeColor }} strokeWidth={2.5} />
+                    <Zap
+                      className="h-3.5 w-3.5"
+                      style={{ color: topicMeta?.themeColor }}
+                      strokeWidth={2.5}
+                    />
                   </div>
                   <div className="flex items-center gap-1.5 pt-2">
                     <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:0ms]" />
@@ -503,7 +603,9 @@ export function GaspolTutorView() {
               )}
 
               {isQuotaExhausted && (
-                <p className="text-center text-sm text-muted-foreground py-4">{t("tutor.quotaExhausted")}</p>
+                <p className="text-center text-sm text-muted-foreground py-4">
+                  {t("tutor.quotaExhausted")}
+                </p>
               )}
 
               <div ref={messagesEndRef} />
@@ -515,17 +617,25 @@ export function GaspolTutorView() {
       {/* Chat input — pinned bottom, ChatGPT-style */}
       <div className="shrink-0 pb-1 pt-3">
         {isQuotaExhausted ? (
-          <p className="py-2 text-center text-xs text-muted-foreground">{t("tutor.quotaExhaustedShort")}</p>
+          <p className="py-2 text-center text-xs text-muted-foreground">
+            {t("tutor.quotaExhaustedShort")}
+          </p>
         ) : (
           <form
-            onSubmit={e => { e.preventDefault(); sendMessage(inputValue) }}
+            onSubmit={(e) => {
+              e.preventDefault()
+              sendMessage(inputValue)
+            }}
             className="flex items-end gap-2 rounded-2xl border-2 border-border bg-card px-3 py-2 shadow-brutal-sm focus-within:border-foreground/50 transition-colors"
           >
             <textarea
               ref={chatInputRef}
               value={inputValue}
-              onChange={e => { setInputValue(e.target.value); autoResize(e.target) }}
-              onKeyDown={e => {
+              onChange={(e) => {
+                setInputValue(e.target.value)
+                autoResize(e.target)
+              }}
+              onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   sendMessage(inputValue)
@@ -542,7 +652,11 @@ export function GaspolTutorView() {
               disabled={isLoading || !inputValue.trim()}
               className="mb-0.5 h-8 w-8 shrink-0 rounded-lg border-2 border-border shadow-brutal-sm disabled:opacity-40"
             >
-              {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
             </Button>
           </form>
         )}
