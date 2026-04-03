@@ -8,12 +8,26 @@ import { createClient as createServerClient } from "@/lib/supabase/server"
 import {
   buildTutorSystemPrompt,
   getOpeningMessage,
+  isTutorTopicId,
   type TutorTopicId,
 } from "@/lib/gaspol-tutor/topics"
+import {
+  parseTutorAttachments,
+  type TutorImageAttachment,
+} from "@/lib/gaspol-tutor/tutorAttachments"
+import { ensureGaspolQuizBlock } from "@/lib/gaspol-tutor/ensureGaspolQuizBlock"
+import {
+  looksLikeCatatanQuizRequest,
+  parseCatatanQuizCards,
+} from "@/lib/gaspol-tutor/parseCatatanQuizCards"
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT = 10
 const RATE_WINDOW = 60 * 1000
+
+const CATATAN_TOPIC: TutorTopicId = "tanya_catatan"
+const MAX_ATTACHMENTS = 4
+const MAX_DATA_URL_CHARS = 5_500_000
 
 function checkRateLimit(userId: string): boolean {
   const now = Date.now()
@@ -30,23 +44,44 @@ function checkRateLimit(userId: string): boolean {
 const TOKENS_PER_QUESTION = 5
 const DEFAULT_TOTAL_TOKENS = 100
 
-const TOPIC_IDS: TutorTopicId[] = [
-  "aturan_utbk",
-  "ujian_mandiri",
-  "materi",
-  "tips_ujian",
-  "jurusan",
-  "motivasi",
-]
+/** Appended when user asks for quiz cards so the main model is nudged first. */
+const CATATAN_QUIZ_SYSTEM_REMINDER = `
 
-function isTutorTopicId(s: string): s is TutorTopicId {
-  return TOPIC_IDS.includes(s as TutorTopicId)
-}
+[FORMAT WAJIB untuk permintaan soal latihan ini]
+Output harus memuat tepat satu blok kode markdown dengan label gaspol-quiz (tiga backtick + gaspol-quiz + baris baru + JSON + tiga backtick penutup). JSON: {"items":[{"question","answer","explanation"}, ...]} dengan tepat 3 objek. Jangan menuliskan ketiga soal lengkap beserta jawaban sebagai daftar bernomor di luar blok itu — UI hanya membaca blok gaspol-quiz.`
 
 interface AISettings {
   provider: "anthropic" | "openai" | "gemini"
   api_key: string | null
   model: string
+}
+
+function validateAttachmentsPayload(
+  topicId: string,
+  raw: unknown,
+): TutorImageAttachment[] | null {
+  if (topicId !== CATATAN_TOPIC || raw == null) return null
+  const parsed = parseTutorAttachments(raw)
+  if (!parsed?.length) return null
+  if (parsed.length > MAX_ATTACHMENTS) {
+    throw new Error("Maksimal 4 gambar per pesan.")
+  }
+  for (const a of parsed) {
+    const u = a.url
+    if (
+      !u.startsWith("data:image/jpeg") &&
+      !u.startsWith("data:image/png") &&
+      !u.startsWith("data:image/webp") &&
+      !u.startsWith("data:image/gif") &&
+      !u.startsWith("https://")
+    ) {
+      throw new Error("Format lampiran tidak didukung.")
+    }
+    if (u.startsWith("data:") && u.length > MAX_DATA_URL_CHARS) {
+      throw new Error("Gambar terlalu besar. Coba foto dengan resolusi lebih kecil.")
+    }
+  }
+  return parsed
 }
 
 /** Synthetic user first so Anthropic gets user → assistant alternation. */
@@ -62,6 +97,106 @@ function historyToApiMessages(dbRows: { role: string; message: string }[]) {
       content: r.message,
     })),
   ]
+}
+
+function historyHasUserImages(
+  rows: { role: string; attachments?: unknown }[],
+): boolean {
+  return rows.some(
+    (r) =>
+      r.role === "user" &&
+      (parseTutorAttachments(r.attachments)?.length ?? 0) > 0,
+  )
+}
+
+function openaiVisionMessagesFromHistory(
+  systemPrompt: string,
+  rows: { role: string; message: string; attachments?: unknown }[],
+): { role: "system" | "user" | "assistant"; content: unknown }[] {
+  const out: { role: "system" | "user" | "assistant"; content: unknown }[] = [
+    { role: "system", content: systemPrompt },
+  ]
+  for (const r of rows) {
+    const role = r.role as "user" | "assistant"
+    if (role === "assistant") {
+      out.push({ role: "assistant", content: r.message })
+      continue
+    }
+    const atts = parseTutorAttachments(r.attachments)
+    if (atts?.length) {
+      const parts: Record<string, unknown>[] = []
+      const text = r.message.trim()
+      if (text) parts.push({ type: "text", text })
+      for (const a of atts) {
+        parts.push({
+          type: "image_url",
+          image_url: { url: a.url, detail: "auto" },
+        })
+      }
+      out.push({ role: "user", content: parts })
+    } else {
+      out.push({
+        role: "user",
+        content: r.message.trim() || "(pesan kosong)",
+      })
+    }
+  }
+  return out
+}
+
+function resolveOpenAIKeyForRewrite(settings: AISettings): string | null {
+  const env = process.env.OPENAI_API_KEY?.trim()
+  if (env) return env
+  if (settings.provider === "openai" && settings.api_key?.trim()) {
+    return settings.api_key.trim()
+  }
+  return null
+}
+
+function resolveOpenAIVisionCredentials(
+  settings: AISettings,
+): { apiKey: string; model: string } | null {
+  const model =
+    process.env.GASPOL_TUTOR_VISION_MODEL?.trim() || "gpt-4o-mini"
+  const envKey = process.env.OPENAI_API_KEY?.trim()
+  if (envKey) return { apiKey: envKey, model }
+  if (settings.provider === "openai") {
+    const k = (settings.api_key || "").trim()
+    if (k) return { apiKey: k, model }
+  }
+  return null
+}
+
+async function callOpenAIVisionChat(
+  apiKey: string,
+  model: string,
+  messages: { role: string; content: unknown }[],
+  maxTokens: number,
+): Promise<{ content: string; tokensUsed: number }> {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      messages,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(`OpenAI API error: ${error}`)
+  }
+
+  const data = await response.json()
+  return {
+    content: data.choices[0].message.content as string,
+    tokensUsed: data.usage?.total_tokens ?? 0,
+  }
 }
 
 async function callAI(
@@ -204,17 +339,46 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { topic_id, message } = body as {
+    const { topic_id, message, attachments: attachmentsRaw } = body as {
       topic_id: string
       message: string
+      attachments?: unknown
     }
 
     if (!topic_id || !isTutorTopicId(topic_id)) {
       return NextResponse.json({ error: "Invalid topic_id" }, { status: 400 })
     }
 
-    if (!message?.trim()) {
+    let validatedAttachments: TutorImageAttachment[] | null
+    try {
+      validatedAttachments = validateAttachmentsPayload(
+        topic_id,
+        attachmentsRaw,
+      )
+    } catch (e) {
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : "Lampiran tidak valid" },
+        { status: 400 },
+      )
+    }
+
+    const trimmed = (message ?? "").trim()
+    if (topic_id === CATATAN_TOPIC) {
+      if (!trimmed && !validatedAttachments?.length) {
+        return NextResponse.json(
+          { error: "Tulis pesan atau lampirkan gambar/PDF." },
+          { status: 400 },
+        )
+      }
+    } else if (!trimmed) {
       return NextResponse.json({ error: "Message required" }, { status: 400 })
+    }
+
+    if (topic_id !== CATATAN_TOPIC && attachmentsRaw != null) {
+      return NextResponse.json(
+        { error: "Lampiran hanya untuk topik Tanya Catatan." },
+        { status: 400 },
+      )
     }
 
     const supabase = createClient(
@@ -276,41 +440,120 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const trimmed = message.trim()
+    const settings = aiSettings as AISettings
+
+    const willUseVision =
+      topic_id === CATATAN_TOPIC &&
+      (validatedAttachments?.length ?? 0) > 0
+
+    if (willUseVision) {
+      const creds = resolveOpenAIVisionCredentials(settings)
+      if (!creds) {
+        return NextResponse.json(
+          {
+            error:
+              "Upload gambar membutuhkan OpenAI API key (OPENAI_API_KEY). Hubungi admin.",
+          },
+          { status: 503 },
+        )
+      }
+    }
+
     const now = new Date().toISOString()
+    const userMessageText =
+      trimmed || (validatedAttachments?.length ? "(Lampiran catatan)" : trimmed)
 
     await supabase.from("gaspol_tutor_chats").insert({
       user_id: user.id,
       topic_id,
       role: "user",
-      message: trimmed,
+      message: userMessageText,
       tokens_used: 0,
       created_at: now,
+      attachments:
+        validatedAttachments?.length && topic_id === CATATAN_TOPIC
+          ? validatedAttachments
+          : null,
     })
 
     const { data: historyRows, error: histError } = await supabase
       .from("gaspol_tutor_chats")
-      .select("role, message")
+      .select("role, message, attachments")
       .eq("user_id", user.id)
       .eq("topic_id", topic_id)
       .order("created_at", { ascending: true })
 
     if (histError || !historyRows?.length) {
       console.error("[gaspol-tutor] history:", histError)
-      return NextResponse.json({ error: "Failed to load history" }, { status: 500 })
+      return NextResponse.json(
+        { error: "Failed to load history" },
+        { status: 500 },
+      )
     }
 
     const opening = getOpeningMessage(topic_id)
     const baseSystem = buildTutorSystemPrompt(topic_id)
-    const systemPrompt = `${baseSystem}\n\n---\nPesan pembuka kartu (sudah ditampilkan di UI):\n${opening}\n---`
+    let systemPrompt = `${baseSystem}\n\n---\nPesan pembuka kartu (sudah ditampilkan di UI):\n${opening}\n---`
+    if (
+      topic_id === CATATAN_TOPIC &&
+      looksLikeCatatanQuizRequest(trimmed)
+    ) {
+      systemPrompt += CATATAN_QUIZ_SYSTEM_REMINDER
+    }
 
-    const messages = historyToApiMessages(historyRows)
+    const useVision =
+      topic_id === CATATAN_TOPIC && historyHasUserImages(historyRows)
 
-    const { content: reply } = await callAI(
-      aiSettings as AISettings,
-      systemPrompt,
-      messages,
-    )
+    let reply: string
+
+    if (useVision) {
+      const creds = resolveOpenAIVisionCredentials(settings)
+      if (!creds) {
+        return NextResponse.json(
+          {
+            error:
+              "Percakapan dengan gambar membutuhkan OpenAI. Hubungi admin untuk OPENAI_API_KEY.",
+          },
+          { status: 503 },
+        )
+      }
+      const oaMessages = openaiVisionMessagesFromHistory(
+        systemPrompt,
+        historyRows,
+      )
+      const maxOut =
+        topic_id === CATATAN_TOPIC ? 2500 : 1000
+      const { content } = await callOpenAIVisionChat(
+        creds.apiKey,
+        creds.model,
+        oaMessages,
+        maxOut,
+      )
+      reply = content
+    } else {
+      const textOnlyRows = historyRows.map((r) => ({
+        role: r.role,
+        message: r.message,
+      }))
+      const messages = historyToApiMessages(textOnlyRows)
+      const { content } = await callAI(settings, systemPrompt, messages)
+      reply = content
+    }
+
+    if (
+      topic_id === CATATAN_TOPIC &&
+      looksLikeCatatanQuizRequest(trimmed) &&
+      !parseCatatanQuizCards(reply)
+    ) {
+      const rewriteKey = resolveOpenAIKeyForRewrite(settings)
+      const rewriteModel =
+        process.env.GASPOL_TUTOR_QUIZ_REWRITE_MODEL?.trim() ||
+        process.env.GASPOL_TUTOR_VISION_MODEL?.trim() ||
+        "gpt-4o-mini"
+      if (rewriteKey) {
+        reply = await ensureGaspolQuizBlock(reply, rewriteKey, rewriteModel)
+      }
+    }
 
     await supabase.from("gaspol_tutor_chats").insert({
       user_id: user.id,

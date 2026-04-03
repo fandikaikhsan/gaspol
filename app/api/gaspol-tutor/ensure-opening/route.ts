@@ -5,20 +5,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { createClient as createServerClient } from "@/lib/supabase/server"
-import { getOpeningMessage, type TutorTopicId } from "@/lib/gaspol-tutor/topics"
-
-const TOPIC_IDS: TutorTopicId[] = [
-  "aturan_utbk",
-  "ujian_mandiri",
-  "materi",
-  "tips_ujian",
-  "jurusan",
-  "motivasi",
-]
-
-function isTutorTopicId(s: string): s is TutorTopicId {
-  return TOPIC_IDS.includes(s as TutorTopicId)
-}
+import { getOpeningMessage, isTutorTopicId } from "@/lib/gaspol-tutor/topics"
 
 export async function POST(request: NextRequest) {
   try {

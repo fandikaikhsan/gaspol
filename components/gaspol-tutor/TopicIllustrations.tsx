@@ -99,6 +99,34 @@ export function IllustrationJurusan({ className = "" }: { className?: string }) 
   )
 }
 
+export function IllustrationTanyaCatatan({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" fill="none" className={className} aria-hidden>
+      <rect x="22" y="18" width="56" height="70" rx="5" fill="white" fillOpacity={0.2} />
+      <rect x="26" y="26" width="36" height="3" rx="1.5" fill="white" fillOpacity={0.45} />
+      <rect x="26" y="34" width="28" height="3" rx="1.5" fill="white" fillOpacity={0.35} />
+      <rect x="26" y="42" width="32" height="3" rx="1.5" fill="white" fillOpacity={0.3} />
+      <rect x="26" y="54" width="20" height="20" rx="3" fill="white" fillOpacity={0.15} />
+      <path
+        d="M32 62 L38 68 L50 56"
+        stroke="#FFD700"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity={0.75}
+      />
+      <circle cx="72" cy="28" r="10" fill="white" fillOpacity={0.25} />
+      <path
+        d="M68 28h8M72 24v8"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeOpacity={0.5}
+      />
+    </svg>
+  )
+}
+
 export function IllustrationMotivasi({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" fill="none" className={className} aria-hidden>

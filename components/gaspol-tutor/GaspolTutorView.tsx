@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown"
 import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
 import "katex/dist/katex.min.css"
-import { ArrowLeft, Loader2, Send, Zap } from "lucide-react"
+import { ArrowLeft, Loader2, Paperclip, Send, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
@@ -18,12 +18,19 @@ import {
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n"
 import {
+  parseTutorAttachments,
+  type TutorImageAttachment,
+} from "@/lib/gaspol-tutor/tutorAttachments"
+import { parseCatatanQuizCards } from "@/lib/gaspol-tutor/parseCatatanQuizCards"
+import { CatatanQuizCards } from "./CatatanQuizCards"
+import {
   IllustrationAturanUTBK,
   IllustrationUjianMandiri,
   IllustrationMateri,
   IllustrationTipsUjian,
   IllustrationJurusan,
   IllustrationMotivasi,
+  IllustrationTanyaCatatan,
   DecoThreeDashes,
 } from "./TopicIllustrations"
 
@@ -35,6 +42,24 @@ function normalizeMathDelimiters(text: string): string {
   let out = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, m) => `$$${m}$$`)
   out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_, m) => `$${m}$`)
   return out
+}
+
+function UserAttachmentThumbs({ raw }: { raw: unknown }) {
+  const atts = parseTutorAttachments(raw)
+  if (!atts?.length) return null
+  return (
+    <div className="mb-2 flex flex-wrap gap-2">
+      {atts.map((a, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={i}
+          src={a.url}
+          alt=""
+          className="max-h-40 max-w-[200px] rounded-lg border-2 border-background/30 object-contain"
+        />
+      ))}
+    </div>
+  )
 }
 
 function ChatBubble({
@@ -67,6 +92,7 @@ interface ChatRow {
   role: "user" | "assistant"
   message: string
   created_at: string
+  attachments?: unknown | null
 }
 
 const ILLUST: Record<TutorTopicId, React.FC<{ className?: string }>> = {
@@ -76,6 +102,7 @@ const ILLUST: Record<TutorTopicId, React.FC<{ className?: string }>> = {
   tips_ujian: IllustrationTipsUjian,
   jurusan: IllustrationJurusan,
   motivasi: IllustrationMotivasi,
+  tanya_catatan: IllustrationTanyaCatatan,
 }
 
 /*  Desktop 5-col bento:
@@ -89,6 +116,7 @@ const GRID_POS: Record<TutorTopicId | "deco", string> = {
   deco: "col-start-1 row-start-2",
   jurusan: "col-start-2 row-start-2",
   motivasi: "col-start-5 row-start-2",
+  tanya_catatan: "col-start-1 col-span-5 row-start-3",
 }
 
 const MOBILE_ORDER: TutorTopicId[] = [
@@ -97,6 +125,7 @@ const MOBILE_ORDER: TutorTopicId[] = [
   "materi",
   "tips_ujian",
   "jurusan",
+  "tanya_catatan",
   "motivasi",
 ]
 
@@ -118,14 +147,24 @@ export function GaspolTutorView() {
   const [remainingTokens, setRemainingTokens] = useState<number | null>(null)
   const [totalTokens, setTotalTokens] = useState(100)
   const [isQuotaExhausted, setIsQuotaExhausted] = useState(false)
+  const [pendingAttachments, setPendingAttachments] = useState<
+    TutorImageAttachment[]
+  >([])
+  const [attachError, setAttachError] = useState<string | null>(null)
+  const [isAttachProcessing, setIsAttachProcessing] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const landingInputRef = useRef<HTMLTextAreaElement>(null)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
   const pendingRef = useRef<string | null>(null)
-  const sendRef = useRef<(text: string, t?: TutorTopicId) => Promise<void>>(
-    () => Promise.resolve(),
-  )
+  const sendRef = useRef<
+    (
+      text: string,
+      t?: TutorTopicId,
+      attach?: TutorImageAttachment[],
+    ) => Promise<void>
+  >(() => Promise.resolve())
   /** Prefill for composer when opening from drill hub (?topic=materi&skill=…). */
   const materiDraftRef = useRef<string | null>(null)
   const materiDraftAppliedRef = useRef(false)
@@ -227,7 +266,7 @@ export function GaspolTutorView() {
 
         const { data: chatData } = await supabase
           .from("gaspol_tutor_chats")
-          .select("id, role, message, created_at")
+          .select("id, role, message, created_at, attachments")
           .eq("user_id", user.id)
           .eq("topic_id", topicId)
           .order("created_at", { ascending: true })
@@ -288,18 +327,34 @@ export function GaspolTutorView() {
 
   /* -- send -- */
   const sendMessage = useCallback(
-    async (text: string, topicOverride?: TutorTopicId) => {
+    async (
+      text: string,
+      topicOverride?: TutorTopicId,
+      attachOverride?: TutorImageAttachment[],
+    ) => {
       const topicId = topicOverride ?? activeTopic
-      if (!topicId || !text.trim() || isLoading || isQuotaExhausted) return
+      const attach =
+        attachOverride ??
+        (topicId === "tanya_catatan" ? pendingAttachments : [])
+      const hasAttach = attach.length > 0
+      if (
+        !topicId ||
+        (!text.trim() && !hasAttach) ||
+        isLoading ||
+        isQuotaExhausted
+      )
+        return
 
       const userMsg: ChatRow = {
         id: `temp-user-${Date.now()}`,
         role: "user",
-        message: text.trim(),
+        message: text.trim() || "(Lampiran catatan)",
         created_at: new Date().toISOString(),
+        attachments: hasAttach ? attach : undefined,
       }
       setMessages((prev) => [...prev, userMsg])
       setInputValue("")
+      if (topicId === "tanya_catatan") setPendingAttachments([])
       setIsLoading(true)
 
       try {
@@ -312,7 +367,11 @@ export function GaspolTutorView() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ topic_id: topicId, message: text.trim() }),
+          body: JSON.stringify({
+            topic_id: topicId,
+            message: text.trim(),
+            ...(hasAttach ? { attachments: attach } : {}),
+          }),
         })
         const data = await response.json()
 
@@ -321,6 +380,7 @@ export function GaspolTutorView() {
             setIsQuotaExhausted(true)
             setRemainingTokens(data.remaining_tokens ?? 0)
             setMessages((prev) => prev.filter((m) => m.id !== userMsg.id))
+            if (topicId === "tanya_catatan") setPendingAttachments(attach)
             return
           }
           throw new Error(data.error || "Gagal mengirim pesan")
@@ -335,7 +395,7 @@ export function GaspolTutorView() {
         if (user) {
           const { data: chatData } = await supabase
             .from("gaspol_tutor_chats")
-            .select("id, role, message, created_at")
+            .select("id, role, message, created_at, attachments")
             .eq("user_id", user.id)
             .eq("topic_id", topicId)
             .order("created_at", { ascending: true })
@@ -343,6 +403,7 @@ export function GaspolTutorView() {
         }
       } catch (e) {
         console.error("[GaspolTutorView] send:", e)
+        if (topicId === "tanya_catatan") setPendingAttachments(attach)
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== userMsg.id),
           {
@@ -357,15 +418,47 @@ export function GaspolTutorView() {
         setTimeout(() => chatInputRef.current?.focus(), 80)
       }
     },
-    [activeTopic, isLoading, isQuotaExhausted],
+    [activeTopic, isLoading, isQuotaExhausted, pendingAttachments],
   )
 
   sendRef.current = sendMessage
+
+  const handleCatatanFiles = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      setAttachError(null)
+      // Copy to array before clearing input: FileList is live; resetting value
+      // empties it in many browsers before async work runs.
+      const picked = e.target.files ? Array.from(e.target.files) : []
+      e.target.value = ""
+      if (!picked.length) return
+      setIsAttachProcessing(true)
+      try {
+        const { filesToTutorAttachments } = await import(
+          "@/lib/gaspol-tutor/filesToTutorAttachments"
+        )
+        const next = await filesToTutorAttachments(picked)
+        if (!next.length) {
+          setAttachError(t("tutor.catatanAttachError"))
+          return
+        }
+        setPendingAttachments((prev) => [...prev, ...next].slice(0, 4))
+      } catch (err) {
+        console.error("[GaspolTutorView] attachment:", err)
+        setAttachError(t("tutor.catatanAttachError"))
+      } finally {
+        setIsAttachProcessing(false)
+      }
+    },
+    [t],
+  )
 
   const handleBack = () => {
     setActiveTopic(null)
     setMessages([])
     setInputValue("")
+    setPendingAttachments([])
+    setAttachError(null)
+    setIsAttachProcessing(false)
     materiDraftAppliedRef.current = false
     materiDraftRef.current = null
     const hasDrillParams =
@@ -455,7 +548,7 @@ export function GaspolTutorView() {
             className="hidden md:grid gap-2.5"
             style={{
               gridTemplateColumns: "1fr 1.2fr 1.4fr 1.4fr 1fr",
-              gridTemplateRows: "100px 100px",
+              gridTemplateRows: "100px 100px 92px",
             }}
           >
             <TopicCard topicId="aturan_utbk" />
@@ -472,6 +565,7 @@ export function GaspolTutorView() {
             </div>
             <TopicCard topicId="jurusan" />
             <TopicCard topicId="motivasi" />
+            <TopicCard topicId="tanya_catatan" />
           </div>
 
           {/* Bento Grid — mobile */}
@@ -622,11 +716,31 @@ export function GaspolTutorView() {
                   )}
 
                   {msg.role === "assistant" ? (
-                    <div className="max-w-[85%] md:max-w-[80%]">
-                      <ChatBubble content={msg.message} />
+                    <div className="w-full max-w-[85%] md:max-w-[80%]">
+                      {activeTopic === "tanya_catatan" ? (
+                        (() => {
+                          const quiz = parseCatatanQuizCards(msg.message)
+                          if (quiz) {
+                            return (
+                              <CatatanQuizCards
+                                messageId={msg.id}
+                                preamble={quiz.preamble}
+                                postamble={quiz.postamble}
+                                items={quiz.items}
+                                accentColor={topicMeta?.themeColor}
+                                t={t}
+                              />
+                            )
+                          }
+                          return <ChatBubble content={msg.message} />
+                        })()
+                      ) : (
+                        <ChatBubble content={msg.message} />
+                      )}
                     </div>
                   ) : (
                     <div className="max-w-[85%] md:max-w-[80%] rounded-2xl rounded-tr-md border-2 border-border bg-foreground px-4 py-2.5 text-background shadow-brutal-sm">
+                      <UserAttachmentThumbs raw={msg.attachments} />
                       <p className="whitespace-pre-wrap text-sm leading-relaxed">
                         {msg.message}
                       </p>
@@ -669,49 +783,150 @@ export function GaspolTutorView() {
 
       {/* Chat input — pinned bottom, ChatGPT-style */}
       <div className="shrink-0 pb-1 pt-3">
+        {activeTopic === "tanya_catatan" && !isFetchingHistory && (
+          <div className="mb-3 space-y-2">
+            <p className="text-[11px] text-muted-foreground px-0.5">
+              {t("tutor.catatanQuickHint")}
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isLoading || isQuotaExhausted}
+                className="h-auto min-h-9 whitespace-normal border-2 border-border text-left text-xs font-semibold leading-snug"
+                onClick={() => sendMessage(t("tutor.catatanQuickQuiz"))}
+              >
+                {t("tutor.catatanQuickQuiz")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isLoading || isQuotaExhausted}
+                className="h-auto min-h-9 whitespace-normal border-2 border-border text-left text-xs font-semibold leading-snug"
+                onClick={() => sendMessage(t("tutor.catatanQuickSummary"))}
+              >
+                {t("tutor.catatanQuickSummary")}
+              </Button>
+            </div>
+          </div>
+        )}
         {isQuotaExhausted ? (
           <p className="py-2 text-center text-xs text-muted-foreground">
             {t("tutor.quotaExhaustedShort")}
           </p>
         ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              sendMessage(inputValue)
-            }}
-            className="flex items-end gap-2 rounded-2xl border-2 border-border bg-card px-3 py-2 shadow-brutal-sm focus-within:border-foreground/50 transition-colors"
-          >
-            <textarea
-              ref={chatInputRef}
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value)
-                autoResize(e.target)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  sendMessage(inputValue)
-                }
-              }}
-              placeholder={t("tutor.chatPlaceholder")}
-              disabled={isLoading}
-              rows={1}
-              className="min-h-[36px] max-h-[120px] flex-1 resize-none bg-transparent text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-50"
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,application/pdf"
+              multiple
+              className="sr-only"
+              tabIndex={-1}
+              onChange={handleCatatanFiles}
             />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={isLoading || !inputValue.trim()}
-              className="mb-0.5 h-8 w-8 shrink-0 rounded-lg border-2 border-border shadow-brutal-sm disabled:opacity-40"
+            {activeTopic === "tanya_catatan" && isAttachProcessing && (
+              <p className="mb-2 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                {t("tutor.catatanProcessing")}
+              </p>
+            )}
+            {activeTopic === "tanya_catatan" && attachError && (
+              <p className="mb-2 text-center text-xs text-destructive">
+                {attachError}
+              </p>
+            )}
+            {activeTopic === "tanya_catatan" && pendingAttachments.length > 0 && (
+              <div className="mb-2 rounded-xl border-2 border-border bg-muted/40 px-3 py-2">
+                <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
+                  {t("tutor.catatanPendingLabel")} ({pendingAttachments.length}
+                  /4)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {pendingAttachments.map((a, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={a.url}
+                      alt=""
+                      className="h-16 w-16 rounded-md border border-border object-cover"
+                    />
+                  ))}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-16 px-2 text-xs"
+                    onClick={() => setPendingAttachments([])}
+                  >
+                    {t("tutor.catatanClearPending")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                sendMessage(inputValue)
+              }}
+              className="flex items-end gap-2 rounded-2xl border-2 border-border bg-card px-3 py-2 shadow-brutal-sm focus-within:border-foreground/50 transition-colors"
             >
-              {isLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Send className="h-3.5 w-3.5" />
+              {activeTopic === "tanya_catatan" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={isLoading || isAttachProcessing}
+                  className="mb-0.5 h-8 w-8 shrink-0 rounded-lg"
+                  aria-label={t("tutor.catatanAttach")}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isAttachProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-4 w-4" />
+                  )}
+                </Button>
               )}
-            </Button>
-          </form>
+              <textarea
+                ref={chatInputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value)
+                  autoResize(e.target)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    sendMessage(inputValue)
+                  }
+                }}
+                placeholder={t("tutor.chatPlaceholder")}
+                disabled={isLoading}
+                rows={1}
+                className="min-h-[36px] max-h-[120px] flex-1 resize-none bg-transparent text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-50"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={
+                  isLoading ||
+                  (activeTopic === "tanya_catatan"
+                    ? !inputValue.trim() && pendingAttachments.length === 0
+                    : !inputValue.trim())
+                }
+                className="mb-0.5 h-8 w-8 shrink-0 rounded-lg border-2 border-border shadow-brutal-sm disabled:opacity-40"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </form>
+          </>
         )}
       </div>
     </div>

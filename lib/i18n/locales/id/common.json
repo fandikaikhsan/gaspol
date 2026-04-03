@@ -23,7 +23,19 @@
     "quotaExhaustedShort": "Kuota habis — tidak bisa mengirim pesan",
     "drillHubLineSkill": "Konteks: aku lagi latihan materi \"{{skill}}\".",
     "drillHubLineModule": "Modul latihan: \"{{module}}\".",
-    "drillHubPromptSuffix": "Yang ingin kutanyakan: "
+    "drillHubPromptSuffix": "Yang ingin kutanyakan: ",
+    "catatanQuickHint": "Pintasan (bisa juga upload foto/PDF di bawah):",
+    "catatanQuickQuiz": "Buat 3 soal latihan lengkap dengan jawaban dan penjelasan dari catatanku.",
+    "catatanQuickSummary": "Ringkas materi dari catatanku — aku mau diskusi tentang poin-poinnya.",
+    "catatanAttach": "Lampirkan gambar atau PDF",
+    "catatanPendingLabel": "Lampiran siap dikirim",
+    "catatanAttachError": "Gagal memproses file. Coba format JPG/PNG/WebP atau PDF.",
+    "catatanClearPending": "Hapus lampiran",
+    "catatanProcessing": "Memproses file…",
+    "catatanQuizSoal": "Soal",
+    "catatanTapReveal": "Ketuk kartu untuk lihat jawaban & penjelasan",
+    "catatanAnswerLabel": "Jawaban",
+    "catatanExplanationLabel": "Penjelasan"
   },
   "button": {
     "start": "Mulai",

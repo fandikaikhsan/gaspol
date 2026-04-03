@@ -481,6 +481,7 @@ export interface Database {
           message: string
           tokens_used: number | null
           created_at: string
+          attachments: unknown | null
         }
         Insert: {
           id?: string
@@ -490,6 +491,7 @@ export interface Database {
           message: string
           tokens_used?: number | null
           created_at?: string
+          attachments?: unknown | null
         }
         Update: {
           id?: string
@@ -499,6 +501,7 @@ export interface Database {
           message?: string
           tokens_used?: number | null
           created_at?: string
+          attachments?: unknown | null
         }
         Relationships: []
       }

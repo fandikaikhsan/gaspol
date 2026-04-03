@@ -23,7 +23,19 @@
     "quotaExhaustedShort": "Quota exhausted — cannot send",
     "drillHubLineSkill": "Context: I'm practicing \"{{skill}}\".",
     "drillHubLineModule": "Practice module: \"{{module}}\".",
-    "drillHubPromptSuffix": "I'd like to ask: "
+    "drillHubPromptSuffix": "I'd like to ask: ",
+    "catatanQuickHint": "Shortcuts (you can also attach a photo/PDF below):",
+    "catatanQuickQuiz": "Create 3 practice questions with answers and explanations from my notes.",
+    "catatanQuickSummary": "Summarize the material from my notes — I want to discuss the key points.",
+    "catatanAttach": "Attach image or PDF",
+    "catatanPendingLabel": "Attachments ready to send",
+    "catatanAttachError": "Could not process the file. Try JPG/PNG/WebP or PDF.",
+    "catatanClearPending": "Remove uploads",
+    "catatanProcessing": "Processing file…",
+    "catatanQuizSoal": "Question",
+    "catatanTapReveal": "Tap the card to reveal answer & explanation",
+    "catatanAnswerLabel": "Answer",
+    "catatanExplanationLabel": "Explanation"
   },
   "button": {
     "start": "Start",
