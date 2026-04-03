@@ -99,5 +99,25 @@
     "submissionFailed": "Pengiriman gagal"
   },
   "recommendation": "Berdasarkan analytics kamu, kami sarankan fokus pada",
-  "modulesAvailable": "{{count}} modul tersedia"
+  "modulesAvailable": "{{count}} modul tersedia",
+  "skillHub": {
+    "pageSubtitle": "Latihan Materi",
+    "tutorCta": "Tanya Materi ke Tutor",
+    "tutorModalTitle": "Tanya materi ke Tutor",
+    "tutorModalPlaceholder": "Tanyakan konsep, contoh, atau bagian materi yang membingungkan—semua dalam satu pesan.",
+    "tutorContextFallback": "Konteks: aku di halaman latihan drill skill dari Review.",
+    "tutorModalModulesLine": "{{count}} modul latihan tersedia untuk skill ini.",
+    "tutorModelPracticeModulesLine": "Di halaman ini ada {{count}} modul latihan.",
+    "moduleTitle": "Modul {{n}}",
+    "questionChip": "{{count}} Soal Latihan",
+    "questionChipUnknown": "Soal latihan",
+    "minutesChip": "{{count}} Menit",
+    "start": "Mulai Latihan",
+    "continue": "Lanjutkan Latihan",
+    "repeat": "Ulangi Latihan",
+    "required": "Wajib",
+    "loadError": "Gagal memuat modul.",
+    "back": "Kembali",
+    "empty": "Belum ada modul latihan untuk skill ini."
+  }
 }

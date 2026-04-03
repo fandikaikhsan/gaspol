@@ -20,7 +20,10 @@
     "chatPlaceholder": "Type a message…",
     "changeTopicHint": "Back to change topic",
     "quotaExhausted": "Your AI chat quota is low or exhausted.",
-    "quotaExhaustedShort": "Quota exhausted — cannot send"
+    "quotaExhaustedShort": "Quota exhausted — cannot send",
+    "drillHubLineSkill": "Context: I'm practicing \"{{skill}}\".",
+    "drillHubLineModule": "Practice module: \"{{module}}\".",
+    "drillHubPromptSuffix": "I'd like to ask: "
   },
   "button": {
     "start": "Start",
@@ -82,7 +85,15 @@
     "unsupported": "Unsupported question format",
     "unansweredWarning": "You have {{count}} unanswered question(s). Submit anyway?",
     "reviewLater": "Review Later",
-    "flagged": "Flagged"
+    "mark": "Mark",
+    "flagged": "Flagged",
+    "soalNumber": "Question {{n}}",
+    "drillDefaultModule": "Practice module",
+    "askTutorCta": "Ask the tutor about this question",
+    "tutorModalTitle": "Ask the tutor about this question",
+    "tutorModalPlaceholder": "Ask about this question or add any extra context in one message (e.g. which step confuses you).",
+    "tutorContextLine": "Question {{current}} of {{total}} · {{module}} · {{preview}}",
+    "tutorSendError": "Sorry, something went wrong. Please try again."
   },
   "assessment": {
     "baseline": "Baseline Assessment",

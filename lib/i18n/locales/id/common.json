@@ -20,7 +20,10 @@
     "chatPlaceholder": "Ketik pesan…",
     "changeTopicHint": "Kembali untuk ganti topik",
     "quotaExhausted": "Kuota chat AI kamu sudah tipis atau habis.",
-    "quotaExhaustedShort": "Kuota habis — tidak bisa mengirim pesan"
+    "quotaExhaustedShort": "Kuota habis — tidak bisa mengirim pesan",
+    "drillHubLineSkill": "Konteks: aku lagi latihan materi \"{{skill}}\".",
+    "drillHubLineModule": "Modul latihan: \"{{module}}\".",
+    "drillHubPromptSuffix": "Yang ingin kutanyakan: "
   },
   "button": {
     "start": "Mulai",
@@ -82,7 +85,15 @@
     "unsupported": "Format soal tidak didukung",
     "unansweredWarning": "Kamu memiliki {{count}} soal belum dijawab. Tetap kirim?",
     "reviewLater": "Tinjau Nanti",
-    "flagged": "Ditandai"
+    "mark": "Tandai",
+    "flagged": "Ditandai",
+    "soalNumber": "Soal {{n}}",
+    "drillDefaultModule": "Modul latihan",
+    "askTutorCta": "Tanya Soal ke Tutor",
+    "tutorModalTitle": "Tanya tutor tentang soal ini",
+    "tutorModalPlaceholder": "Tanyakan tentang soal ini atau tambahkan konteks lain dalam satu pesan (misalnya bagian yang membingungkan).",
+    "tutorContextLine": "Soal {{current}} dari {{total}} · {{module}} · {{preview}}",
+    "tutorSendError": "Maaf, terjadi kesalahan. Coba lagi ya."
   },
   "assessment": {
     "baseline": "Baseline Assessment",

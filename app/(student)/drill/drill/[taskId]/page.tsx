@@ -296,6 +296,13 @@ export default function DrillRunnerPage() {
     )
   }
 
+  const drillModuleLabel =
+    typeof module?.name === "string" && module.name.trim()
+      ? module.name.trim()
+      : typeof module?.title === "string" && module.title.trim()
+        ? module.title.trim()
+        : undefined
+
   return (
     <QuestionRunner
       key={runKey}
@@ -311,6 +318,7 @@ export default function DrillRunnerPage() {
       timeLimit={module?.time_limit_min}
       showTimer={!!module?.time_limit_min}
       allowNavigation={true}
+      drillModuleLabel={drillModuleLabel}
     />
   )
 }

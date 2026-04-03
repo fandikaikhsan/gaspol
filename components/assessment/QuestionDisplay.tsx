@@ -6,6 +6,7 @@
  */
 
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 import { MathRenderer } from "./MathRenderer"
 import { DocumentRenderer } from "@/lib/content-renderer/DocumentRenderer"
 import type { BlocksContainer } from "@/lib/content-renderer/types"
@@ -16,6 +17,7 @@ interface QuestionDisplayProps {
   questionNumber: number
   /** Structured stimulus blocks; when present, used instead of stem for primary content */
   contentStimulus?: BlocksContainer | null
+  className?: string
 }
 
 export function QuestionDisplay({
@@ -23,13 +25,14 @@ export function QuestionDisplay({
   stemImages,
   questionNumber,
   contentStimulus,
+  className,
 }: QuestionDisplayProps) {
   const hasStructuredContent =
     contentStimulus?.blocks && contentStimulus.blocks.length > 0
 
   return (
-    <div className="space-y-4">
-      <div className="prose prose-lg max-w-none">
+    <div className={cn("space-y-4", className)}>
+      <div className="prose prose-sm sm:prose-base max-w-none">
         {hasStructuredContent ? (
           <div className="leading-relaxed">
             <DocumentRenderer blocks={contentStimulus.blocks} />

@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
@@ -105,6 +106,9 @@ const MOBILE_ORDER: TutorTopicId[] = [
 
 export function GaspolTutorView() {
   const { t } = useTranslation("common")
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const [activeTopic, setActiveTopic] = useState<TutorTopicId | null>(null)
   const [messages, setMessages] = useState<ChatRow[]>([])
@@ -122,6 +126,9 @@ export function GaspolTutorView() {
   const sendRef = useRef<(text: string, t?: TutorTopicId) => Promise<void>>(
     () => Promise.resolve(),
   )
+  /** Prefill for composer when opening from drill hub (?topic=materi&skill=…). */
+  const materiDraftRef = useRef<string | null>(null)
+  const materiDraftAppliedRef = useRef(false)
 
   const topicMeta = activeTopic ? getTopicById(activeTopic) : null
 
@@ -138,6 +145,29 @@ export function GaspolTutorView() {
       messagesEndRef.current?.scrollIntoView({ behavior, block: "end" }),
     )
   }, [])
+
+  /* -- deep link: /tutor?topic=materi → open "Masih Bingung Sama Materi" chat -- */
+  useLayoutEffect(() => {
+    if (searchParams.get("topic") === "materi") {
+      setActiveTopic("materi")
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (searchParams.get("topic") !== "materi") {
+      materiDraftRef.current = null
+      return
+    }
+    const skill = searchParams.get("skill")?.trim() ?? ""
+    const practiceModule = searchParams.get("practiceModule")?.trim() ?? ""
+    const lines: string[] = []
+    if (skill) lines.push(t("tutor.drillHubLineSkill", { skill }))
+    if (practiceModule)
+      lines.push(t("tutor.drillHubLineModule", { module: practiceModule }))
+    const intro = lines.join("\n")
+    const suffix = t("tutor.drillHubPromptSuffix")
+    materiDraftRef.current = intro ? `${intro}\n\n${suffix}` : suffix
+  }, [searchParams, t])
 
   /* -- load quota for landing badge -- */
   useEffect(() => {
@@ -235,6 +265,20 @@ export function GaspolTutorView() {
     }
   }, [activeTopic])
 
+  /* -- apply drill-hub draft to composer once history is ready -- */
+  useEffect(() => {
+    if (activeTopic !== "materi" || isFetchingHistory) return
+    if (searchParams.get("topic") !== "materi") return
+    const draft = materiDraftRef.current
+    if (draft == null || materiDraftAppliedRef.current) return
+    materiDraftAppliedRef.current = true
+    setInputValue(draft)
+    requestAnimationFrame(() => {
+      autoResize(chatInputRef.current)
+      chatInputRef.current?.focus()
+    })
+  }, [activeTopic, isFetchingHistory, searchParams])
+
   useEffect(() => {
     if (!isFetchingHistory) scrollToBottom("auto")
   }, [isFetchingHistory, activeTopic, scrollToBottom])
@@ -322,6 +366,15 @@ export function GaspolTutorView() {
     setActiveTopic(null)
     setMessages([])
     setInputValue("")
+    materiDraftAppliedRef.current = false
+    materiDraftRef.current = null
+    const hasDrillParams =
+      searchParams.has("topic") ||
+      searchParams.has("skill") ||
+      searchParams.has("practiceModule")
+    if (hasDrillParams) {
+      router.replace(pathname || "/tutor", { scroll: false })
+    }
   }
 
   /* -- auto-resize textarea -- */

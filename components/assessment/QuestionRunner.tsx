@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n"
 import { Question, AssessmentSession } from "@/lib/assessment/types"
+import type { BlocksContainer } from "@/lib/content-renderer/types"
 import { QuestionDisplay } from "./QuestionDisplay"
 import { AnswerOptions } from "./AnswerOptions"
 import { TrueFalseOptions } from "./TrueFalseOptions"
@@ -39,7 +40,13 @@ import {
   RotateCcw,
   ArrowRight,
   Flag,
+  ChevronLeft,
+  ChevronRight,
+  Zap,
+  Timer,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { DrillTutorQuestionModal } from "@/components/drill/DrillTutorQuestionModal"
 
 // Result data returned by the parent after submission
 export interface ModuleResult {
@@ -73,6 +80,8 @@ interface QuestionRunnerProps {
   showTimer?: boolean
   allowNavigation?: boolean
   autoSubmitOnTimeUp?: boolean
+  /** Shown as the small label above the question title (drill neo layout only). */
+  drillModuleLabel?: string
 }
 
 export function QuestionRunner({
@@ -89,6 +98,7 @@ export function QuestionRunner({
   showTimer = true,
   allowNavigation = true,
   autoSubmitOnTimeUp = true,
+  drillModuleLabel,
 }: QuestionRunnerProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -113,6 +123,11 @@ export function QuestionRunner({
     pts: number
     key: number
   } | null>(null)
+  const [tutorModalOpen, setTutorModalOpen] = useState(false)
+
+  const isDrillNeo = contextType === "drill"
+  const drillHeaderModule =
+    drillModuleLabel?.trim() || t("question.drillDefaultModule")
 
   // T-035: Restore answers and timer from localStorage on mount (resume in-progress)
   const storageKey = `qr-session-${moduleId}`
@@ -393,7 +408,8 @@ export function QuestionRunner({
             options={currentQuestion.options as any}
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
-            optionContentBlocks={optionContentBlocks}
+            optionContentBlocks={optionContentBlocks as any}
+            neoDrill={isDrillNeo}
           />
         )
       case "mcq4":
@@ -403,7 +419,8 @@ export function QuestionRunner({
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
             optionKeys={["A", "B", "C", "D"]}
-            optionContentBlocks={optionContentBlocks}
+            optionContentBlocks={optionContentBlocks as any}
+            neoDrill={isDrillNeo}
           />
         )
       case "tf":
@@ -412,7 +429,7 @@ export function QuestionRunner({
             options={currentQuestion.options as any}
             selectedAnswer={currentAnswer}
             onAnswerChange={handleAnswerChange}
-            optionContentBlocks={optionContentBlocks}
+            optionContentBlocks={optionContentBlocks as any}
           />
         )
       case "mcktable":
@@ -615,152 +632,387 @@ export function QuestionRunner({
     )
   }
 
+  const timerDigits =
+    timeRemaining !== null
+      ? formatTime(timeRemaining)
+      : formatTime(timeElapsed)
+
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
+    <div
+      className={cn(
+        "min-h-screen p-3 sm:p-4",
+        isDrillNeo ? "bg-[#F5F5F0]" : "bg-background",
+      )}
+    >
+      <div
+        className={cn(
+          "mx-auto min-w-0",
+          isDrillNeo ? "max-w-[800px]" : "max-w-3xl",
+        )}
+      >
         {/* Header with timer and progress */}
-        <div className="mb-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">
-                {t("question.questionOf", {
-                  current: currentIndex + 1,
-                  total: totalQuestions,
-                })}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {contextType === "baseline"
-                  ? t("assessment.baseline")
-                  : contextType === "drill"
-                    ? t("assessment.practiceDrill")
-                    : contextType === "mock"
-                      ? t("assessment.mockTest")
-                      : t("assessment.recycleCheckpoint")}
-              </p>
-            </div>
-
-            {showTimer && (
-              <div className="text-right">
-                <div
-                  className={`text-3xl font-bold ${isTimeWarning ? "text-destructive" : ""}`}
-                >
-                  {timeRemaining !== null
-                    ? formatTime(timeRemaining)
-                    : formatTime(timeElapsed)}
+        <div className="mb-4 md:mb-6 space-y-3 md:space-y-4">
+          {isDrillNeo ? (
+            <>
+              <div className="flex items-start justify-between gap-3 min-w-0">
+                <div className="min-w-0">
+                  <p className="font-sans text-xs font-medium tracking-wide text-black/70 md:text-sm">
+                    {drillHeaderModule}
+                  </p>
+                  <h1 className="font-serif text-2xl font-bold tracking-tight text-black sm:text-3xl md:text-4xl">
+                    {t("question.soalNumber", { n: currentIndex + 1 })}
+                  </h1>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {timeRemaining !== null
-                    ? t("assessment.timeRemaining")
-                    : t("assessment.timeElapsed")}
-                </p>
+                <div
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-full border-2 border-black bg-white px-3 py-2 font-sans text-sm font-semibold tabular-nums shadow-[2px_2px_0px_0px_#000] sm:px-3.5 sm:text-base",
+                    showTimer && isTimeWarning ? "text-destructive" : "text-black",
+                  )}
+                >
+                  <Timer className="h-4 w-4 shrink-0 sm:h-[18px] sm:w-[18px]" />
+                  {showTimer ? timerDigits : formatTime(perQuestionElapsed)}
+                </div>
               </div>
-            )}
-          </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full border border-black bg-[#D8EDE1]">
+                <div
+                  className="h-full bg-[#E3DFF2] transition-[width] duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between items-center gap-3 min-w-0">
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold">
+                    {t("question.questionOf", {
+                      current: currentIndex + 1,
+                      total: totalQuestions,
+                    })}
+                  </h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {contextType === "baseline"
+                      ? t("assessment.baseline")
+                      : contextType === "mock"
+                        ? t("assessment.mockTest")
+                        : t("assessment.recycleCheckpoint")}
+                  </p>
+                </div>
 
-          <Progress value={progress} className="h-2" />
+                {showTimer && (
+                  <div className="text-right shrink-0">
+                    <div
+                      className={`text-xl sm:text-2xl md:text-3xl font-bold tabular-nums ${isTimeWarning ? "text-destructive" : ""}`}
+                    >
+                      {timerDigits}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {timeRemaining !== null
+                        ? t("assessment.timeRemaining")
+                        : t("assessment.timeElapsed")}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-          <div className="flex gap-2 flex-wrap">
-            <Badge variant="outline">
-              {currentQuestion.difficulty.toUpperCase()}
-            </Badge>
-            <Badge variant="outline">{currentQuestion.cognitive_level}</Badge>
-            <Badge variant="outline">{currentQuestion.question_format}</Badge>
-            {/* T-033: Per-question elapsed time */}
-            <Badge variant="outline" className="ml-auto">
-              ⏱ {formatTime(perQuestionElapsed)}
-            </Badge>
-          </div>
+              <Progress value={progress} className="h-2" />
+            </>
+          )}
+
+          {!isDrillNeo && (
+            <div className="flex gap-2 flex-wrap">
+              <Badge variant="outline">
+                {currentQuestion.difficulty.toUpperCase()}
+              </Badge>
+              <Badge variant="outline">{currentQuestion.cognitive_level}</Badge>
+              <Badge variant="outline">{currentQuestion.question_format}</Badge>
+              <Badge variant="outline" className="ml-auto">
+                ⏱ {formatTime(perQuestionElapsed)}
+              </Badge>
+            </div>
+          )}
         </div>
 
         {/* Question Card */}
-        <Card className="mb-6 relative">
-          {/* T-069: Points fly-up animation */}
+        <Card
+          className={cn(
+            "relative mb-6 min-w-0",
+            isDrillNeo &&
+              "rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_#000]",
+          )}
+        >
           {pointsFlyUp && (
             <div
               key={pointsFlyUp.key}
-              className="absolute -top-2 right-4 text-lg font-bold text-primary animate-points-fly pointer-events-none z-10"
+              className={cn(
+                "pointer-events-none absolute -top-2 right-4 z-10 animate-points-fly text-lg font-bold",
+                isDrillNeo ? "text-black" : "text-primary",
+              )}
             >
               +{pointsFlyUp.pts} pts
             </div>
           )}
-          <CardHeader>
+          <CardHeader className="p-4 md:p-6">
             <QuestionDisplay
               stem={currentQuestion.stem}
               stemImages={currentQuestion.stem_images}
               questionNumber={currentIndex + 1}
               contentStimulus={
-                currentQuestion.content?.stimulus as { blocks: unknown[] } | undefined
+                currentQuestion.content?.stimulus as BlocksContainer | undefined
+              }
+              className={
+                isDrillNeo
+                  ? "font-serif text-black [&_.prose]:font-serif [&_.prose]:text-black"
+                  : undefined
               }
             />
           </CardHeader>
 
-          <CardContent>{renderAnswerInput()}</CardContent>
+          <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
+            {renderAnswerInput()}
+          </CardContent>
 
-          <CardFooter className="flex justify-between">
-            <div className="flex gap-2">
-              <Button
-                variant="brutal-outline"
-                onClick={handlePrevious}
-                disabled={
-                  currentIndex === 0 || !allowNavigation || isSubmitting
-                }
-              >
-                {t("button.previous")}
-              </Button>
-              {/* T-034: Review-later flag */}
-              <Button
-                variant={
-                  flagged.has(currentQuestion.id) ? "brutal-secondary" : "ghost"
-                }
-                size="sm"
-                onClick={() => {
-                  setFlagged((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(currentQuestion.id))
-                      next.delete(currentQuestion.id)
-                    else next.add(currentQuestion.id)
-                    return next
-                  })
-                }}
-                className="gap-1"
-              >
-                <Flag
-                  className={`w-4 h-4 ${flagged.has(currentQuestion.id) ? "fill-current text-orange-500" : ""}`}
-                />
-                {t("question.reviewLater", { fallback: "Review Later" })}
-              </Button>
-            </div>
-
-            <div className="flex gap-2">
-              {/* Mobile-only: Jump to Question button opens bottom sheet */}
-              {allowNavigation && (
-                <Button
-                  variant="brutal-secondary"
-                  onClick={() => setIsQuestionPaletteOpen(true)}
+          <CardFooter className="flex min-w-0 flex-col gap-3 p-4 pt-0 md:p-6 md:pt-0">
+            {isDrillNeo ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setTutorModalOpen(true)}
                   disabled={isSubmitting}
-                  className="md:hidden"
+                  className="flex w-full touch-target items-center justify-center gap-2 rounded-xl border-2 border-black bg-[#E8A246] px-4 py-3.5 font-serif text-base font-semibold text-black shadow-[0px_4px_0px_0px_#000] transition-[transform,box-shadow] hover:bg-[#e49a3d] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#000] disabled:pointer-events-none disabled:opacity-50 md:py-4 md:text-lg"
                 >
-                  <Grid3X3 className="h-4 w-4 mr-2" />
-                  {t("question.jump")}
-                </Button>
-              )}
+                  <Zap className="h-5 w-5 shrink-0" strokeWidth={2.25} />
+                  {t("question.askTutorCta")}
+                </button>
 
-              <Button
-                onClick={handleNext}
-                disabled={isSubmitting || !hasCurrentAnswer}
-              >
-                {isSubmitting
-                  ? t("button.submitting")
-                  : isLastQuestion
-                    ? t("button.finish")
-                    : t("button.next")}
-              </Button>
-            </div>
+                <div className="grid w-full grid-cols-4 gap-2 sm:gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handlePrevious}
+                    disabled={
+                      currentIndex === 0 || !allowNavigation || isSubmitting
+                    }
+                    aria-label={t("button.previous")}
+                    className="h-12 w-full min-w-0 rounded-xl border-2 border-black bg-[#E8E8E6] shadow-[2px_2px_0px_0px_#000] hover:bg-[#dededc] disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  {allowNavigation ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsQuestionPaletteOpen(true)}
+                      disabled={isSubmitting}
+                      aria-label={t("question.jumpToQuestion")}
+                      className="flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-black bg-[#D8EDE1] px-1 font-sans text-[10px] font-semibold leading-tight text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#c8e5d5] sm:flex-row sm:gap-1 sm:text-xs md:px-2"
+                    >
+                      <Grid3X3 className="h-4 w-4 shrink-0 sm:h-[18px] sm:w-[18px]" />
+                      <span className="max-w-full truncate">{t("question.jump")}</span>
+                    </Button>
+                  ) : (
+                    <span className="h-12 min-w-0" aria-hidden />
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setFlagged((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(currentQuestion.id))
+                          next.delete(currentQuestion.id)
+                        else next.add(currentQuestion.id)
+                        return next
+                      })
+                    }}
+                    disabled={isSubmitting}
+                    aria-label={t("question.mark")}
+                    className={cn(
+                      "flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-black px-1 font-sans text-[10px] font-semibold leading-tight shadow-[2px_2px_0px_0px_#000] sm:flex-row sm:gap-1 sm:text-xs md:px-2",
+                      flagged.has(currentQuestion.id)
+                        ? "bg-[#FFF3E0] text-black hover:bg-[#ffe8c8]"
+                        : "bg-white text-black hover:bg-[#F5F5F0]",
+                    )}
+                  >
+                    <Flag
+                      className={cn(
+                        "h-4 w-4 shrink-0 sm:h-[18px] sm:w-[18px]",
+                        flagged.has(currentQuestion.id)
+                          ? "fill-current text-orange-600"
+                          : "",
+                      )}
+                    />
+                    <span className="max-w-full truncate">{t("question.mark")}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={handleNext}
+                    disabled={isSubmitting || !hasCurrentAnswer}
+                    aria-label={
+                      isSubmitting
+                        ? t("button.submitting")
+                        : isLastQuestion
+                          ? t("button.finish")
+                          : t("button.next")
+                    }
+                    className="h-12 w-full min-w-0 rounded-xl border-2 border-black bg-[#E3DFF2] shadow-[2px_2px_0px_0px_#000] hover:bg-[#d4cef0] disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex w-full min-w-0 flex-col gap-3 md:hidden">
+                  <div className="flex justify-center">
+                    <Button
+                      variant={
+                        flagged.has(currentQuestion.id)
+                          ? "brutal-secondary"
+                          : "ghost"
+                      }
+                      size="sm"
+                      onClick={() => {
+                        setFlagged((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(currentQuestion.id))
+                            next.delete(currentQuestion.id)
+                          else next.add(currentQuestion.id)
+                          return next
+                        })
+                      }}
+                      className="h-10 gap-2 px-4 text-sm"
+                    >
+                      <Flag
+                        className={`h-4 w-4 shrink-0 ${flagged.has(currentQuestion.id) ? "fill-current text-orange-500" : ""}`}
+                      />
+                      {t("question.mark")}
+                    </Button>
+                  </div>
+
+                  <div className="grid w-full min-w-0 grid-cols-3 items-center gap-2">
+                    <div className="flex min-w-0 justify-start">
+                      <Button
+                        variant="brutal-outline"
+                        size="icon"
+                        onClick={handlePrevious}
+                        disabled={
+                          currentIndex === 0 || !allowNavigation || isSubmitting
+                        }
+                        aria-label={t("button.previous")}
+                        className="h-11 w-11 shrink-0"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                    </div>
+                    <div className="flex min-w-0 justify-center">
+                      {allowNavigation ? (
+                        <Button
+                          variant="brutal-secondary"
+                          size="icon"
+                          onClick={() => setIsQuestionPaletteOpen(true)}
+                          disabled={isSubmitting}
+                          aria-label={t("question.jumpToQuestion")}
+                          className="h-11 w-11 shrink-0"
+                        >
+                          <Grid3X3 className="h-5 w-5" />
+                        </Button>
+                      ) : (
+                        <span className="h-11 w-11 shrink-0" aria-hidden />
+                      )}
+                    </div>
+                    <div className="flex min-w-0 justify-end">
+                      <Button
+                        size="icon"
+                        onClick={handleNext}
+                        disabled={isSubmitting || !hasCurrentAnswer}
+                        aria-label={
+                          isSubmitting
+                            ? t("button.submitting")
+                            : isLastQuestion
+                              ? t("button.finish")
+                              : t("button.next")
+                        }
+                        className="h-11 w-11 shrink-0"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden w-full gap-3 md:flex md:flex-row md:flex-nowrap md:items-center md:justify-between">
+                  <div className="flex min-w-0 gap-2 md:w-auto">
+                    <Button
+                      variant="brutal-outline"
+                      onClick={handlePrevious}
+                      disabled={
+                        currentIndex === 0 || !allowNavigation || isSubmitting
+                      }
+                      className="h-11 whitespace-nowrap px-4 text-sm"
+                    >
+                      {t("button.previous")}
+                    </Button>
+                    <Button
+                      variant={
+                        flagged.has(currentQuestion.id)
+                          ? "brutal-secondary"
+                          : "ghost"
+                      }
+                      size="sm"
+                      onClick={() => {
+                        setFlagged((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(currentQuestion.id))
+                            next.delete(currentQuestion.id)
+                          else next.add(currentQuestion.id)
+                          return next
+                        })
+                      }}
+                      className="h-9 gap-1 whitespace-nowrap px-3 text-sm"
+                    >
+                      <Flag
+                        className={`h-4 w-4 shrink-0 ${flagged.has(currentQuestion.id) ? "fill-current text-orange-500" : ""}`}
+                      />
+                      {t("question.reviewLater", { fallback: "Review Later" })}
+                    </Button>
+                  </div>
+
+                  <div className="flex min-w-0 shrink-0 gap-2 md:justify-end">
+                    {allowNavigation && (
+                      <Button
+                        variant="brutal-secondary"
+                        onClick={() => setIsQuestionPaletteOpen(true)}
+                        disabled={isSubmitting}
+                        className="h-11 whitespace-nowrap px-4 text-sm"
+                      >
+                        <Grid3X3 className="mr-2 h-4 w-4 shrink-0" />
+                        {t("question.jump")}
+                      </Button>
+                    )}
+
+                    <Button
+                      onClick={handleNext}
+                      disabled={isSubmitting || !hasCurrentAnswer}
+                      className="h-11 whitespace-nowrap px-4 text-sm"
+                    >
+                      {isSubmitting
+                        ? t("button.submitting")
+                        : isLastQuestion
+                          ? t("button.finish")
+                          : t("button.next")}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardFooter>
         </Card>
 
-        {/* Question Grid Navigation - Desktop only */}
-        {allowNavigation && (
+        {/* Question Grid Navigation - Desktop only (hidden on drill neo — use Lompat) */}
+        {allowNavigation && !isDrillNeo && (
           <Card className="hidden md:block">
             <CardHeader>
               <h3 className="font-semibold">{t("question.quickNavigation")}</h3>
@@ -825,7 +1077,14 @@ export function QuestionRunner({
           open={isQuestionPaletteOpen}
           onOpenChange={setIsQuestionPaletteOpen}
         >
-          <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl">
+          <SheetContent
+            side="bottom"
+            className={cn(
+              "h-[70vh] rounded-t-2xl",
+              isDrillNeo &&
+                "border-t-2 border-black bg-[#F5F5F0] shadow-[0_-4px_0_0_#000]",
+            )}
+          >
             <SheetHeader className="text-left mb-4">
               <SheetTitle>{t("question.jumpToQuestion")}</SheetTitle>
               <SheetDescription>
@@ -901,6 +1160,17 @@ export function QuestionRunner({
             </div>
           </SheetContent>
         </Sheet>
+
+        {isDrillNeo && (
+          <DrillTutorQuestionModal
+            open={tutorModalOpen}
+            onOpenChange={setTutorModalOpen}
+            questionStem={currentQuestion.stem}
+            questionNumber={currentIndex + 1}
+            totalQuestions={totalQuestions}
+            moduleLabel={drillHeaderModule}
+          />
+        )}
       </div>
     </div>
   )

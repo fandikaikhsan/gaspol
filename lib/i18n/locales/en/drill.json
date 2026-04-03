@@ -99,5 +99,25 @@
     "submissionFailed": "Submission failed"
   },
   "recommendation": "Based on your analytics, we recommend focusing on",
-  "modulesAvailable": "{{count}} modules available"
+  "modulesAvailable": "{{count}} modules available",
+  "skillHub": {
+    "pageSubtitle": "Material practice",
+    "tutorCta": "Ask Tutor about this material",
+    "tutorModalTitle": "Ask the tutor about this material",
+    "tutorModalPlaceholder": "Ask about concepts, examples, or what confuses you—all in one message.",
+    "tutorContextFallback": "Context: I'm on the skill practice drill page from Review.",
+    "tutorModalModulesLine": "{{count}} practice modules available for this skill.",
+    "tutorModelPracticeModulesLine": "This page lists {{count}} practice modules.",
+    "moduleTitle": "Module {{n}}",
+    "questionChip": "{{count}} practice questions",
+    "questionChipUnknown": "Practice questions",
+    "minutesChip": "{{count}} min",
+    "start": "Start practice",
+    "continue": "Continue practice",
+    "repeat": "Practice again",
+    "required": "Required",
+    "loadError": "Could not load modules.",
+    "back": "Back",
+    "empty": "No practice modules for this skill yet."
+  }
 }

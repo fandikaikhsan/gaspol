@@ -466,20 +466,23 @@ export default function PembahasanPage() {
 
                 {/* Material card link */}
                 {materialCard && (
-                  <div className="border-t-2 border-border pt-3">
+                  <div className="border-t-2 border-border pt-3 w-full min-w-0">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2 text-xs"
+                      title={`Lihat Materi: ${materialCard.title}`}
+                      className="w-full max-w-full min-w-0 justify-start gap-2 text-xs"
                       onClick={() =>
                         router.push(
                           `/review/${question.micro_skill_id}?from=pembahasan&moduleId=${moduleId}`,
                         )
                       }
                     >
-                      <BookOpen className="h-3.5 w-3.5" />
-                      Lihat Materi: {materialCard.title}
-                      <ExternalLink className="h-3 w-3" />
+                      <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                      <span className="min-w-0 flex-1 truncate text-left">
+                        Lihat Materi: {materialCard.title}
+                      </span>
+                      <ExternalLink className="h-3 w-3 shrink-0" />
                     </Button>
                   </div>
                 )}

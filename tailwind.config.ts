@@ -72,6 +72,12 @@ const config: Config = {
   		fontFamily: {
   			sans: [typography.fontFamily.sans],
   			mono: [typography.fontFamily.mono],
+  			serif: [
+  				'var(--font-playfair)',
+  				'Georgia',
+  				'Times New Roman',
+  				'serif',
+  			],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

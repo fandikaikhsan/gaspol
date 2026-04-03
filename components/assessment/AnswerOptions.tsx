@@ -19,6 +19,8 @@ interface AnswerOptionsProps {
   optionKeys?: readonly string[] // Override option keys (default: auto-detect from options)
   /** Structured content blocks per option key; when present, used instead of options[key] */
   optionContentBlocks?: Record<string, { blocks: ContentBlock[] }>
+  /** Drill runner neo-brutalist option rows */
+  neoDrill?: boolean
 }
 
 export function AnswerOptions({
@@ -29,6 +31,7 @@ export function AnswerOptions({
   showCorrectAnswer,
   optionKeys: overrideKeys,
   optionContentBlocks,
+  neoDrill = false,
 }: AnswerOptionsProps) {
   // Auto-detect keys: if E exists → MCQ5, else if True/False → TF, otherwise MCQ4
   const optionKeys =
@@ -48,7 +51,11 @@ export function AnswerOptions({
         </div>
       )
     }
-    return <span className="leading-relaxed">{options[key] ?? ""}</span>
+    return (
+      <span className="leading-relaxed">
+        {(options as Record<string, string>)[key] ?? ""}
+      </span>
+    )
   }
 
   return (
@@ -56,7 +63,7 @@ export function AnswerOptions({
       value={selectedAnswer}
       onValueChange={onAnswerChange}
       disabled={disabled}
-      className="space-y-3"
+      className="space-y-2 md:space-y-3"
     >
       {optionKeys.map((key) => {
         const isSelected = selectedAnswer === key
@@ -70,30 +77,34 @@ export function AnswerOptions({
           <div
             key={key}
             className={`
-              flex items-start gap-4 rounded-lg border-2 p-4 transition-all
-              ${!showCorrectAnswer && !isSelected ? "border-border bg-background hover:bg-muted" : ""}
-              ${!showCorrectAnswer && isSelected ? "border-primary bg-primary/10 shadow-brutal-sm" : ""}
-              ${showCorrectAnswer && isCorrect ? "border-status-strong bg-status-strong/10" : ""}
-              ${showCorrectAnswer && isWrong ? "border-destructive bg-destructive/10" : ""}
-              ${showCorrectAnswer && !isCorrect && !isWrong ? "border-border bg-background opacity-60" : ""}
+              flex items-start gap-2 md:gap-4 rounded-xl border p-3 md:p-4 transition-all
+              ${neoDrill && !showCorrectAnswer && !isSelected ? "border border-black bg-[#E8E8E4] hover:bg-[#E0E0DC]" : ""}
+              ${neoDrill && !showCorrectAnswer && isSelected ? "border-2 border-black bg-white shadow-[0_4px_0_0_#000]" : ""}
+              ${!neoDrill && !showCorrectAnswer && !isSelected ? "rounded-lg border-2 border-border bg-background hover:bg-muted" : ""}
+              ${!neoDrill && !showCorrectAnswer && isSelected ? "rounded-lg border-2 border-primary bg-primary/10 shadow-brutal-sm" : ""}
+              ${showCorrectAnswer && isCorrect ? "rounded-lg border-2 border-status-strong bg-status-strong/10" : ""}
+              ${showCorrectAnswer && isWrong ? "rounded-lg border-2 border-destructive bg-destructive/10" : ""}
+              ${showCorrectAnswer && !isCorrect && !isWrong ? "rounded-lg border-2 border-border bg-background opacity-60" : ""}
             `}
           >
             <RadioGroupItem
               value={key}
               id={`option-${key}`}
               disabled={disabled || !!showCorrectAnswer}
-              className="mt-1"
+              className={neoDrill ? "mt-1 border-black text-black" : "mt-1"}
             />
             <Label
               htmlFor={`option-${key}`}
-              className="flex flex-1 cursor-pointer items-start gap-4"
+              className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 md:gap-4"
             >
               {/* Option letter */}
               <div
                 className={`
-                  flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold
-                  ${!showCorrectAnswer && !isSelected ? "border-border bg-background" : ""}
-                  ${!showCorrectAnswer && isSelected ? "border-primary bg-primary text-primary-foreground" : ""}
+                  flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold md:h-8 md:w-8 md:text-base
+                  ${neoDrill && !showCorrectAnswer && !isSelected ? "border-black bg-white text-black" : ""}
+                  ${neoDrill && !showCorrectAnswer && isSelected ? "border-black bg-black text-white" : ""}
+                  ${!neoDrill && !showCorrectAnswer && !isSelected ? "border-border bg-background" : ""}
+                  ${!neoDrill && !showCorrectAnswer && isSelected ? "border-primary bg-primary text-primary-foreground" : ""}
                   ${showCorrectAnswer && isCorrect ? "border-status-strong bg-status-strong text-white" : ""}
                   ${showCorrectAnswer && isWrong ? "border-destructive bg-destructive text-white" : ""}
                 `}
